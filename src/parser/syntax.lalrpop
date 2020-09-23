@@ -1,0 +1,165 @@
+use super::nodes::*;
+use super::lexer::{Token, LexicalError};
+
+grammar<'input>(input: &'input str);
+
+// templates
+SepVec<T, C>: Vec<T> = {
+    <v:(<T> Repeated<C>)*> => v,
+    <v:(<T> Repeated<C>)*> <e:T> => {
+        let mut v = v;
+        v.push(e);
+        v
+    },
+};
+
+Repeated<C>: C = {
+    <r:C> => r,
+    Repeated<C> <r:C> => r,
+}
+
+// syntax
+pub Source: Statements = {
+    SepVec<Statement, ";"> => Statements(<>),
+    Repeated<";"> <l:SepVec<Statement, ";">> => Statements(l),
+}
+
+Statement: Statement = {
+    Expression => Statement::NodeTree(<>),
+    // Assignment => Statement::NodeTree(<>),
+}
+
+// Assignment: Node = {
+//     <l:@L> <v:Variable> "=" <e:Expression> <r:@R> => Node::Assignment(Loc(l, r), Box::new(v), Box::new(e)),
+// }
+
+Expression: Node = {
+    Expr0,
+}
+
+Expr0: Node = {
+    <e1:Expr0> <l:@L> "or" <r:@R> <e2:Expr1> => Node::LogicalOr(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr1,
+}
+
+Expr1: Node = {
+    <e1:Expr1> <l:@L> "and" <r:@R> <e2:Expr2> => Node::LogicalAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr2,
+}
+
+Expr2: Node = {
+    <e1:Expr2> <l:@L> "==" <r:@R> <e2:Expr3> => Node::Equality(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr2> <l:@L> "~=" <r:@R> <e2:Expr3> => Node::Inequality(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr2> <l:@L> "<" <r:@R> <e2:Expr3> => Node::LessThan(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr2> <l:@L> ">" <r:@R> <e2:Expr3> => Node::GreaterThan(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr2> <l:@L> "<=" <r:@R> <e2:Expr3> => Node::LessOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr2> <l:@L> ">=" <r:@R> <e2:Expr3> => Node::GreaterOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr3,
+}
+
+Expr3: Node = {
+    <e1:Expr3> <l:@L> "|" <r:@R> <e2:Expr4> => Node::BitwiseOr(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr4,
+}
+
+Expr4: Node = {
+    <e1:Expr4> <l:@L> "~" <r:@R> <e2:Expr5> => Node::BitwiseXor(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr5,
+}
+
+Expr5: Node = {
+    <e1:Expr5> <l:@L> "&" <r:@R> <e2:Expr6> => Node::BitwiseAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr6,
+}
+
+Expr6: Node = {
+    <e1:Expr6> <l:@L> "<<" <r:@R> <e2:Expr7> => Node::LeftShift(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr6> <l:@L> ">>" <r:@R> <e2:Expr7> => Node::RightShift(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr7,
+}
+
+Expr7: Node = {
+    <e1:Expr7> <l:@L> ".." <r:@R> <e2:Expr8> => Node::Concatenation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr8,
+}
+
+Expr8: Node = {
+    <e1:Expr8> <l:@L> "+" <r:@R> <e2:Expr9> => Node::Addition(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr8> <l:@L> "-" <r:@R> <e2:Expr9> => Node::Subtraction(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr9,
+}
+
+Expr9: Node = {
+    <e1:Expr9> <l:@L> "*" <r:@R> <e2:Expr10> => Node::Multiplication(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr9> <l:@L> "/" <r:@R> <e2:Expr10> => Node::Division(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr9> <l:@L> "//" <r:@R> <e2:Expr10> => Node::FloorDivision(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Expr9> <l:@L> "%" <r:@R> <e2:Expr10> => Node::Modulo(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr10,
+}
+
+Expr10: Node = {
+    <l:@L> "not" <r:@R> <e:Expr10> => Node::UnaryNot(Loc(l, r), Box::new(e)),
+    <l:@L> "#" <r:@R> <e:Expr10> => Node::UnaryLength(Loc(l, r), Box::new(e)),
+    <l:@L> "-" <r:@R> <e:Expr10> => Node::UnaryMinus(Loc(l, r), Box::new(e)),
+    <l:@L> "~" <r:@R> <e:Expr10> => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
+    Expr11,
+}
+
+Expr11: Node = {
+    <e1:Expr11> <l:@L> "^" <r:@R> <e2:Expr12> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Expr12,
+}
+
+Expr12: Node = {
+    <l:@L> <s:LexNumberLiteral> <r:@R> => Node::NumberLiteral(Loc(l, r), s.parse::<f64>().unwrap()),
+    <l:@L> "(" <e:Expression> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
+    <l:@L> <s:LexVariable> <r:@R> => Node::Variable(Loc(l, r), s.to_string()),
+}
+
+extern {
+    type Location = usize;
+    type Error = LexicalError;
+
+    enum Token<'input> {
+        "^" => Token::OpExponentiation,
+        "not" => Token::OpLogicalNot,
+        "#" => Token::OpLength,
+        "*" => Token::OpMultiplication,
+        "/" => Token::OpDivision,
+        "//" => Token::OpFloorDivision,
+        "%" => Token::OpModulo,
+        "+" => Token::OpAddition,
+        "-" => Token::Minus,
+        ".." => Token::OpConcatenation,
+        "<<" => Token::OpLeftShift,
+        ">>" => Token::OpRightShift,
+        "&" => Token::OpBitwiseAnd,
+        "~" => Token::Tilde,
+        "|" => Token::OpBitwiseOr,
+        "==" => Token::OpEquality,
+        "~=" => Token::OpInequality,
+        "<" => Token::OpLessThan,
+        ">" => Token::OpGreaterThan,
+        "<=" => Token::OpLessOrEqual,
+        ">=" => Token::OpGreaterOrEqual,
+        "and" => Token::OpLogicalAnd,
+        "or" => Token::OpLogicalOr,
+        ";" => Token::Semicolon,
+        "," => Token::Comma,
+        "(" => Token::OpenRoundBracket,
+        ")" => Token::CloseRoundBracket,
+        "[" => Token::OpenSquareBracket,
+        "]" => Token::CloseSquareBracket,
+        "{" => Token::OpenCurlyBracket,
+        "}" => Token::CloseCurlyBracket,
+        "=" => Token::EqualsSign,
+        "." => Token::Period,
+        "nil" => Token::Nil,
+        "false" => Token::False,
+        "true" => Token::True,
+        "..." => Token::VarArg,
+
+        LexVariable => Token::Variable(<&'input str>),
+        LexNumberLiteral => Token::Number(<&'input str>),
+    }
+}
