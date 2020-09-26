@@ -5,6 +5,15 @@ grammar<'input>(input: &'input str);
 
 // templates
 SepVec<T, C>: Vec<T> = {
+    <v:(<T> C)*> => v,
+    <v:(<T> C)*> <e:T> => {
+        let mut v = v;
+        v.push(e);
+        v
+    },
+};
+
+SepVecEmpty<T, C>: Vec<T> = {
     <v:(<T> Repeated<C>)*> => v,
     <v:(<T> Repeated<C>)*> <e:T> => {
         let mut v = v;
@@ -20,100 +29,130 @@ Repeated<C>: C = {
 
 // syntax
 pub Source: Statements = {
-    SepVec<Statement, ";"> => Statements(<>),
-    Repeated<";"> <l:SepVec<Statement, ";">> => Statements(l),
+    SepVecEmpty<Statement, ";"> => Statements(<>),
+    Repeated<";"> <l:SepVecEmpty<Statement, ";">> => Statements(l),
 }
 
 Statement: Statement = {
-    Expression => Statement::NodeTree(<>),
-    // Assignment => Statement::NodeTree(<>),
+    Exp => Statement::NodeTree(<>),
 }
 
-// Assignment: Node = {
-//     <l:@L> <v:Variable> "=" <e:Expression> <r:@R> => Node::Assignment(Loc(l, r), Box::new(v), Box::new(e)),
-// }
-
-Expression: Node = {
-    Expr0,
+Exp: Node = {
+    Operation,
+    TableConstructor,
+    // LiteralString
+    // FunctionDef
+    // PrefixExp
 }
 
-Expr0: Node = {
-    <e1:Expr0> <l:@L> "or" <r:@R> <e2:Expr1> => Node::LogicalOr(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr1,
+TableConstructor: Node = {
+    <l:@L> "{" <e:FieldList> "}" <r:@R> => Node::TableConstructor(Loc(l, r), Box::new(e)),
 }
 
-Expr1: Node = {
-    <e1:Expr1> <l:@L> "and" <r:@R> <e2:Expr2> => Node::LogicalAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr2,
+FieldList: Node = {
+    <l:@L> <v:SepVec<Field, FieldSep>> <r:@R> => Node::Fields(Loc(l, r), v),
 }
 
-Expr2: Node = {
-    <e1:Expr2> <l:@L> "==" <r:@R> <e2:Expr3> => Node::Equality(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr2> <l:@L> "~=" <r:@R> <e2:Expr3> => Node::Inequality(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr2> <l:@L> "<" <r:@R> <e2:Expr3> => Node::LessThan(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr2> <l:@L> ">" <r:@R> <e2:Expr3> => Node::GreaterThan(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr2> <l:@L> "<=" <r:@R> <e2:Expr3> => Node::LessOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr2> <l:@L> ">=" <r:@R> <e2:Expr3> => Node::GreaterOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr3,
+Field: Node = {
+    <l:@L> "[" <e1:Exp> "]" "=" <e2:Exp> <r:@R> => Node::FieldNamedBracket(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Var> "=" <e2:Exp> <r:@R>         => Node::FieldNamed(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e:Exp> <r:@R>                       => Node::FieldSequential(Loc(l, r), Box::new(e)),
 }
 
-Expr3: Node = {
-    <e1:Expr3> <l:@L> "|" <r:@R> <e2:Expr4> => Node::BitwiseOr(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr4,
+FieldSep = {
+    ",",
+    ";",
 }
 
-Expr4: Node = {
-    <e1:Expr4> <l:@L> "~" <r:@R> <e2:Expr5> => Node::BitwiseXor(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr5,
+Operation: Node = {
+    Op0,
 }
 
-Expr5: Node = {
-    <e1:Expr5> <l:@L> "&" <r:@R> <e2:Expr6> => Node::BitwiseAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr6,
+Op0: Node = {
+    <e1:Op0> <l:@L> "or" <r:@R> <e2:Op1> => Node::LogicalOr(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op1,
 }
 
-Expr6: Node = {
-    <e1:Expr6> <l:@L> "<<" <r:@R> <e2:Expr7> => Node::LeftShift(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr6> <l:@L> ">>" <r:@R> <e2:Expr7> => Node::RightShift(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr7,
+Op1: Node = {
+    <e1:Op1> <l:@L> "and" <r:@R> <e2:Op2> => Node::LogicalAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op2,
 }
 
-Expr7: Node = {
-    <e1:Expr7> <l:@L> ".." <r:@R> <e2:Expr8> => Node::Concatenation(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr8,
+Op2: Node = {
+    <e1:Op2> <l:@L> "==" <r:@R> <e2:Op3> => Node::Equality(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op2> <l:@L> "~=" <r:@R> <e2:Op3> => Node::Inequality(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op2> <l:@L> "<" <r:@R> <e2:Op3>  => Node::LessThan(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op2> <l:@L> ">" <r:@R> <e2:Op3>  => Node::GreaterThan(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op2> <l:@L> "<=" <r:@R> <e2:Op3> => Node::LessOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op2> <l:@L> ">=" <r:@R> <e2:Op3> => Node::GreaterOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op3,
 }
 
-Expr8: Node = {
-    <e1:Expr8> <l:@L> "+" <r:@R> <e2:Expr9> => Node::Addition(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr8> <l:@L> "-" <r:@R> <e2:Expr9> => Node::Subtraction(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr9,
+Op3: Node = {
+    <e1:Op3> <l:@L> "|" <r:@R> <e2:Op4> => Node::BitwiseOr(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op4,
 }
 
-Expr9: Node = {
-    <e1:Expr9> <l:@L> "*" <r:@R> <e2:Expr10> => Node::Multiplication(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr9> <l:@L> "/" <r:@R> <e2:Expr10> => Node::Division(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr9> <l:@L> "//" <r:@R> <e2:Expr10> => Node::FloorDivision(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Expr9> <l:@L> "%" <r:@R> <e2:Expr10> => Node::Modulo(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr10,
+Op4: Node = {
+    <e1:Op4> <l:@L> "~" <r:@R> <e2:Op5> => Node::BitwiseXor(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op5,
 }
 
-Expr10: Node = {
-    <l:@L> "not" <r:@R> <e:Expr10> => Node::UnaryNot(Loc(l, r), Box::new(e)),
-    <l:@L> "#" <r:@R> <e:Expr10> => Node::UnaryLength(Loc(l, r), Box::new(e)),
-    <l:@L> "-" <r:@R> <e:Expr10> => Node::UnaryMinus(Loc(l, r), Box::new(e)),
-    <l:@L> "~" <r:@R> <e:Expr10> => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
-    Expr11,
+Op5: Node = {
+    <e1:Op5> <l:@L> "&" <r:@R> <e2:Op6> => Node::BitwiseAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op6,
 }
 
-Expr11: Node = {
-    <e1:Expr11> <l:@L> "^" <r:@R> <e2:Expr12> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Expr12,
+Op6: Node = {
+    <e1:Op6> <l:@L> "<<" <r:@R> <e2:Op7> => Node::LeftShift(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op6> <l:@L> ">>" <r:@R> <e2:Op7> => Node::RightShift(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op7,
 }
 
-Expr12: Node = {
-    <l:@L> <s:LexNumberLiteral> <r:@R> => Node::NumberLiteral(Loc(l, r), s.parse::<f64>().unwrap()),
-    <l:@L> "(" <e:Expression> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
-    <l:@L> <s:LexVariable> <r:@R> => Node::Variable(Loc(l, r), s.to_string()),
+Op7: Node = {
+    <e1:Op7> <l:@L> ".." <r:@R> <e2:Op8> => Node::Concatenation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op8,
+}
+
+Op8: Node = {
+    <e1:Op8> <l:@L> "+" <r:@R> <e2:Op9> => Node::Addition(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op8> <l:@L> "-" <r:@R> <e2:Op9> => Node::Subtraction(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op9,
+}
+
+Op9: Node = {
+    <e1:Op9> <l:@L> "*" <r:@R> <e2:Op10>  => Node::Multiplication(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op9> <l:@L> "/" <r:@R> <e2:Op10>  => Node::Division(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op9> <l:@L> "//" <r:@R> <e2:Op10> => Node::FloorDivision(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op9> <l:@L> "%" <r:@R> <e2:Op10>  => Node::Modulo(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op10,
+}
+
+Op10: Node = {
+    <l:@L> "not" <r:@R> <e:Op10> => Node::UnaryNot(Loc(l, r), Box::new(e)),
+    <l:@L> "#" <r:@R> <e:Op10>   => Node::UnaryLength(Loc(l, r), Box::new(e)),
+    <l:@L> "-" <r:@R> <e:Op10>   => Node::UnaryMinus(Loc(l, r), Box::new(e)),
+    <l:@L> "~" <r:@R> <e:Op10>   => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
+    Op11,
+}
+
+Op11: Node = {
+    <e1:Op11> <l:@L> "^" <r:@R> <e2:Op12> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Op12,
+}
+
+Op12: Node = {
+    <l:@L> "nil" <r:@R>           => Node::Nil(Loc(l, r)),
+    <l:@L> "false" <r:@R>         => Node::False(Loc(l, r)),
+    <l:@L> "true" <r:@R>          => Node::True(Loc(l, r)),
+    <l:@L> "..." <r:@R>           => Node::VarArg(Loc(l, r)),
+    <l:@L> <s:Numeral> <r:@R>     => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
+    <l:@L> "(" <e:Exp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
+    Var,
+}
+
+Var: Node = {
+    <l:@L> <s:LexVariable> <r:@R> => Node::Var(Loc(l, r), s.to_string()),
 }
 
 extern {
@@ -121,45 +160,45 @@ extern {
     type Error = LexicalError;
 
     enum Token<'input> {
-        "^" => Token::OpExponentiation,
-        "not" => Token::OpLogicalNot,
-        "#" => Token::OpLength,
-        "*" => Token::OpMultiplication,
-        "/" => Token::OpDivision,
-        "//" => Token::OpFloorDivision,
-        "%" => Token::OpModulo,
-        "+" => Token::OpAddition,
-        "-" => Token::Minus,
-        ".." => Token::OpConcatenation,
-        "<<" => Token::OpLeftShift,
-        ">>" => Token::OpRightShift,
-        "&" => Token::OpBitwiseAnd,
-        "~" => Token::Tilde,
-        "|" => Token::OpBitwiseOr,
-        "==" => Token::OpEquality,
-        "~=" => Token::OpInequality,
-        "<" => Token::OpLessThan,
-        ">" => Token::OpGreaterThan,
-        "<=" => Token::OpLessOrEqual,
-        ">=" => Token::OpGreaterOrEqual,
-        "and" => Token::OpLogicalAnd,
-        "or" => Token::OpLogicalOr,
-        ";" => Token::Semicolon,
-        "," => Token::Comma,
-        "(" => Token::OpenRoundBracket,
-        ")" => Token::CloseRoundBracket,
-        "[" => Token::OpenSquareBracket,
-        "]" => Token::CloseSquareBracket,
-        "{" => Token::OpenCurlyBracket,
-        "}" => Token::CloseCurlyBracket,
-        "=" => Token::EqualsSign,
-        "." => Token::Period,
-        "nil" => Token::Nil,
+        "^"     => Token::OpExponentiation,
+        "not"   => Token::OpLogicalNot,
+        "#"     => Token::OpLength,
+        "*"     => Token::OpMultiplication,
+        "/"     => Token::OpDivision,
+        "//"    => Token::OpFloorDivision,
+        "%"     => Token::OpModulo,
+        "+"     => Token::OpAddition,
+        "-"     => Token::Minus,
+        ".."    => Token::OpConcatenation,
+        "<<"    => Token::OpLeftShift,
+        ">>"    => Token::OpRightShift,
+        "&"     => Token::OpBitwiseAnd,
+        "~"     => Token::Tilde,
+        "|"     => Token::OpBitwiseOr,
+        "=="    => Token::OpEquality,
+        "~="    => Token::OpInequality,
+        "<"     => Token::OpLessThan,
+        ">"     => Token::OpGreaterThan,
+        "<="    => Token::OpLessOrEqual,
+        ">="    => Token::OpGreaterOrEqual,
+        "and"   => Token::OpLogicalAnd,
+        "or"    => Token::OpLogicalOr,
+        ";"     => Token::Semicolon,
+        ","     => Token::Comma,
+        "("     => Token::OpenRoundBracket,
+        ")"     => Token::CloseRoundBracket,
+        "["     => Token::OpenSquareBracket,
+        "]"     => Token::CloseSquareBracket,
+        "{"     => Token::OpenCurlyBracket,
+        "}"     => Token::CloseCurlyBracket,
+        "="     => Token::EqualsSign,
+        "."     => Token::Period,
+        "nil"   => Token::Nil,
         "false" => Token::False,
-        "true" => Token::True,
-        "..." => Token::VarArg,
+        "true"  => Token::True,
+        "..."   => Token::VarArg,
 
         LexVariable => Token::Variable(<&'input str>),
-        LexNumberLiteral => Token::Number(<&'input str>),
+        Numeral => Token::Number(<&'input str>),
     }
 }

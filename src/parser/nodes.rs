@@ -23,7 +23,6 @@ impl fmt::Display for Statements {
 #[derive(Debug)]
 pub enum Statement {
     NodeTree(Node),
-    // Command(Cmd),
 }
 
 impl fmt::Display for Statement {
@@ -31,7 +30,6 @@ impl fmt::Display for Statement {
         use Statement::*;
         match self {
             NodeTree(exprs) => write!(f, "{}{}", exprs, Token::Semicolon),
-            // Command(cmd) => write!(f, "{}{}", cmd, Token::Semicolon),
         }
     }
 }
@@ -69,10 +67,20 @@ pub enum Node {
     LogicalAnd(Loc, Box<Node>, Box<Node>),
     LogicalOr(Loc, Box<Node>, Box<Node>),
 
-    // Assignment(Loc, Box<Node>, Box<Node>),
-    Variable(Loc, std::string::String),
-    NumberLiteral(Loc, f64),
+    Var(Loc, std::string::String),
+    Numeral(Loc, f64),
     RoundBrackets(Loc, Box<Node>),
+
+    Nil(Loc),
+    False(Loc),
+    True(Loc),
+    VarArg(Loc),
+
+    TableConstructor(Loc, Box<Node>),
+    Fields(Loc, Vec<Node>),
+    FieldNamedBracket(Loc, Box<Node>, Box<Node>),
+    FieldNamed(Loc, Box<Node>, Box<Node>),
+    FieldSequential(Loc, Box<Node>),
 }
 
 impl fmt::Display for Node {
@@ -110,10 +118,29 @@ impl fmt::Display for Node {
             LogicalAnd(_, l, r) => write!(f, "{} and {}", l, r),
             LogicalOr(_, l, r) => write!(f, "{} or {}", l, r),
 
-            // Assignment(_, l, r) => write!(f, "{} = {}", l, r),
-            Variable(_, s) => write!(f, "{}", s),
-            NumberLiteral(_, n) => write!(f, "{}", n),
+            Var(_, s) => write!(f, "{}", s),
+            Numeral(_, n) => write!(f, "{}", n),
             RoundBrackets(_, r) => write!(f, "({})", r),
+
+            Nil(_) => write!(f, "nil"),
+            False(_) => write!(f, "false"),
+            True(_) => write!(f, "true"),
+            VarArg(_) => write!(f, "..."),
+
+            TableConstructor(_, r) => write!(f, "{{{}}}", r),
+            Fields(_, fields) => {
+                if !fields.is_empty() {
+                    write!(f, " ")?;
+                    for field in &fields[0..fields.len() - 1] {
+                        write!(f, "{}, ", field)?;
+                    }
+                    write!(f, "{} ", fields.last().unwrap())?;
+                }
+                Ok(())
+            },
+            FieldNamedBracket(_, e1, e2) => write!(f, "[{}] = {}", e1, e2),
+            FieldNamed(_, e1, e2) => write!(f, "{} = {}", e1, e2),
+            FieldSequential(_, e) => write!(f, "{}", e),
         }
     }
 }

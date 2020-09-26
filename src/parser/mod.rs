@@ -99,6 +99,29 @@ fn test_errors() {
 }
 
 #[test]
+fn test_table() {
+    let result = parse("{ }");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "{};");
+
+    let result = parse("{ 1 }");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "{ 1 };");
+
+    let result = parse("{ 1, 2, 3; 4, 5; 6; 7 }");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "{ 1, 2, 3, 4, 5, 6, 7 };");
+
+    let result = parse("{ a = 1, 2, b = 4, 4 }");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "{ a = 1, 2, b = 4, 4 };");
+
+    let result = parse("{ a = { b = true }, [b] = { a = true } }");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "{ a = { b = true }, [b] = { a = true } };");
+}
+
+#[test]
 fn test_statements() {
     let result = parse(";;;;;");
     assert!(result.is_ok());
