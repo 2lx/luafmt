@@ -4,37 +4,136 @@ use super::lexer::{Token, LexicalError};
 grammar<'input>(input: &'input str);
 
 // templates
-SepVec<T, C>: Vec<T> = {
-    <v:(<T> C)*> => v,
-    <v:(<T> C)*> <e:T> => {
+SimpleVec<T>: Vec<T> = {
+    <v:(<T>)*> <e:T> => {
         let mut v = v;
         v.push(e);
         v
     },
-};
-
-SepVecEmpty<T, C>: Vec<T> = {
-    <v:(<T> Repeated<C>)*> => v,
-    <v:(<T> Repeated<C>)*> <e:T> => {
-        let mut v = v;
-        v.push(e);
-        v
-    },
-};
-
-Repeated<C>: C = {
-    <r:C> => r,
-    Repeated<C> <r:C> => r,
 }
+
+// no zero count, no end sep
+SepVec<T, C>: Vec<T> = {
+    <e:T> => {
+        let mut v = Vec::new();
+        v.push(e);
+        v
+    },
+    <e:T> <v:(C <T>)+> => {
+        let mut v = v;
+        v.insert(0, e);
+        v
+    }
+};
 
 // syntax
-pub Source: Statements = {
-    SepVecEmpty<Statement, ";"> => Statements(<>),
-    Repeated<";"> <l:SepVecEmpty<Statement, ";">> => Statements(l),
+pub Chunk: Node = {
+    Block,
 }
 
-Statement: Statement = {
-    OpExp => Statement::NodeTree(<>),
+Block: Node = {
+    Stats,
+}
+
+Stats: Node = {
+    <l:@L> <n:SimpleVec<Stat>> <r:@R> => Node::StatementList(Loc(l, r), n),
+}
+
+Stat: Node = {
+    <l:@L> ";" <r:@R>                           => Node::StatementEmpty(Loc(l, r)),
+    <l:@L> "do" <n:Block> "end" <r:@R>          => Node::StatementDoEnd(Loc(l, r), Box::new(n)),
+    <l:@L> <n1:VarList> "=" <n2:ExpList> <r:@R> => Node::StatementVarExp(Loc(l, r), Box::new(n1), Box::new(n2)),
+}
+
+// RetStat
+// Label
+// Funcname
+
+VarList: Node = {
+    <l:@L> <n:SepVec<Var, ",">> <r:@R> => Node::VarList(Loc(l, r), n),
+}
+
+Var: Node = {
+    <l:@L> <n:Name> <r:@R>                          => Node::Var(Loc(l, r), Box::new(n)),
+    <l:@L> <e1:PrefixExp> "[" <e2:OpExp> "]" <r:@R> => Node::TableIndex(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:PrefixExp> "." <e2:Name> <r:@R>      => Node::TableMember(Loc(l, r), Box::new(e1), Box::new(e2)),
+}
+
+NameList: Node = {
+    <l:@L> <n:SepVec<Name, ",">> <r:@R> => Node::NameList(Loc(l, r), n),
+}
+
+Name: Node = {
+    <l:@L> <s:LexVariable> <r:@R> => Node::Name(Loc(l, r), s.to_string()),
+}
+
+ExpList: Node = {
+    <l:@L> <n:SepVec<OpExp, ",">> <r:@R> => Node::ExpList(Loc(l, r), n),
+}
+
+Exp: Node = {
+    // StringLiteral
+    TableConstructor,
+    FunctionDef,
+    PrefixExp,
+    <l:@L> "nil" <r:@R>       => Node::Nil(Loc(l, r)),
+    <l:@L> "false" <r:@R>     => Node::False(Loc(l, r)),
+    <l:@L> "true" <r:@R>      => Node::True(Loc(l, r)),
+    <l:@L> "..." <r:@R>       => Node::VarArg(Loc(l, r)),
+    <l:@L> <s:Numeral> <r:@R> => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
+    <l:@L> "(" <e:OpExp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
+}
+
+PrefixExp: Node = {
+    Var,
+    FunctionCall,
+    // <l:@L> "(" <e:OpExp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
+}
+
+FunctionCall: Node = {
+    <l:@L> <n1:PrefixExp> <n2:Args> <r:@R>               => Node::FnStaticCall(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> <n1:PrefixExp> ":" <n2:Name> <n3:Args> <r:@R> => Node::FnMethodCall(Loc(l, r), Box::new(n1), Box::new(n2), Box::new(n3)),
+}
+
+Args: Node = {
+    <l:@L> "(" <e:ExpList> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
+    <l:@L> "(" ")" <r:@R>             => Node::RoundBrackets(Loc(l, r), Box::new(Node::Empty)),
+    TableConstructor,
+    // StringLiteral
+}
+
+FunctionDef: Node = {
+    <l:@L> "function" <n:FuncBody> <r:@R> => Node::FunctionDef(Loc(l, r), Box::new(n)),
+}
+
+FuncBody: Node = {
+    <l:@L> "(" <n1:ParList> ")" <n2:Block> "end" <r:@R> => Node::FuncBody(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> "(" ")" <n:Block> "end" <r:@R>               => Node::FuncBody(Loc(l, r), Box::new(Node::Empty), Box::new(n)),
+}
+
+ParList: Node = {
+    <l:@L> <n:NameList> <r:@R>           => Node::ParList(Loc(l, r), Box::new(n), Box::new(Node::Empty)),
+    // <l:@L> <n:NameList> "," "..." <r:@R> => Node::ParList(Loc(l, r), Box::new(n), Box::new(Node::VarArg(Loc(l, r)))),
+    // <l:@L> "..." <r:@R>                  => Node::ParList(Loc(l, r), Box::new(Node::Empty), Box::new(Node::VarArg(Loc(l, r)))),
+}
+
+TableConstructor: Node = {
+    <l:@L> "{" <e:FieldList> "}" <r:@R> => Node::TableConstructor(Loc(l, r), Box::new(e)),
+}
+
+FieldList: Node = {
+    <l:@L> <v:SepVec<Field, FieldSep>> <r:@R> => Node::Fields(Loc(l, r), v),
+}
+
+Field: Node = {
+    <l:@L> "[" <e1:OpExp> "]" "=" <e2:OpExp> <r:@R> => Node::FieldNamedBracket(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Var> "=" <e2:OpExp> <r:@R>           => Node::FieldNamed(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e:OpExp> <r:@R>                         => Node::FieldSequential(Loc(l, r), Box::new(e)),
+}
+
+FieldSep = {
+    ",",
+    ";",
 }
 
 OpExp: Node = {
@@ -102,10 +201,10 @@ Op9: Node = {
 }
 
 Op10: Node = {
-    <l:@L> "not" <r:@R> <e:Op10> => Node::UnaryNot(Loc(l, r), Box::new(e)),
-    <l:@L> "#"   <r:@R> <e:Op10> => Node::UnaryLength(Loc(l, r), Box::new(e)),
-    <l:@L> "-"   <r:@R> <e:Op10> => Node::UnaryMinus(Loc(l, r), Box::new(e)),
-    <l:@L> "~"   <r:@R> <e:Op10> => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
+    <l:@L> "not" <r:@R> <e:Op11> => Node::UnaryNot(Loc(l, r), Box::new(e)),
+    <l:@L> "#"   <r:@R> <e:Op11> => Node::UnaryLength(Loc(l, r), Box::new(e)),
+    <l:@L> "-"   <r:@R> <e:Op11> => Node::UnaryMinus(Loc(l, r), Box::new(e)),
+    <l:@L> "~"   <r:@R> <e:Op11> => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
     Op11,
 }
 
@@ -114,107 +213,53 @@ Op11: Node = {
     Exp,
 }
 
-Exp: Node = {
-    TableConstructor,
-    // LiteralString
-    // FunctionDef
-    PrefixExp,
-    <l:@L> "nil" <r:@R>           => Node::Nil(Loc(l, r)),
-    <l:@L> "false" <r:@R>         => Node::False(Loc(l, r)),
-    <l:@L> "true" <r:@R>          => Node::True(Loc(l, r)),
-    <l:@L> "..." <r:@R>           => Node::VarArg(Loc(l, r)),
-    <l:@L> <s:Numeral> <r:@R>     => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
-}
-
-PrefixExp: Node = {
-    Var,
-    FunctionCall,
-    <l:@L> "(" <e:OpExp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
-}
-
-FunctionCall: Node = {
-    <l:@L> <n1:PrefixExp> <n2:Args> <r:@R> => Node::FnStaticCall(Loc(l, r), Box::new(n1), Box::new(n2)),
-    <l:@L> <n1:PrefixExp> ":" <s:LexVariable> <n2:Args> <r:@R> => Node::FnMethodCall(Loc(l, r), Box::new(n1), s.to_string(), Box::new(n2)),
-}
-
-Args: Node = {
-    <l:@L> "(" <e:ExpList> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
-    TableConstructor,
-    // StringLiteral
-}
-
-ExpList: Node = {
-    <l:@L> <n:SepVecEmpty<OpExp, ",">> <r:@R> => Node::ExpList(Loc(l, r), n),
-}
-
-Var: Node = {
-    <l:@L> <s:LexVariable> <r:@R> => Node::Var(Loc(l, r), s.to_string()),
-    <l:@L> <e1:PrefixExp> "[" <e2:OpExp> "]" <r:@R> => Node::TableIndex(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <l:@L> <e1:PrefixExp> "." <s:LexVariable> <r:@R> => Node::TableMember(Loc(l, r), Box::new(e1), s.to_string()),
-}
-
-TableConstructor: Node = {
-    <l:@L> "{" <e:FieldList> "}" <r:@R> => Node::TableConstructor(Loc(l, r), Box::new(e)),
-}
-
-FieldList: Node = {
-    <l:@L> <v:SepVec<Field, FieldSep>> <r:@R> => Node::Fields(Loc(l, r), v),
-}
-
-Field: Node = {
-    <l:@L> "[" <e1:OpExp> "]" "=" <e2:OpExp> <r:@R> => Node::FieldNamedBracket(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <l:@L> <e1:Var> "=" <e2:OpExp> <r:@R>           => Node::FieldNamed(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <l:@L> <e:OpExp> <r:@R>                         => Node::FieldSequential(Loc(l, r), Box::new(e)),
-}
-
-FieldSep = {
-    ",",
-    ";",
-}
-
 extern {
     type Location = usize;
     type Error = LexicalError;
 
     enum Token<'input> {
-        "^"     => Token::OpExponentiation,
-        "not"   => Token::OpLogicalNot,
-        "#"     => Token::OpLength,
-        "*"     => Token::OpMultiplication,
-        "/"     => Token::OpDivision,
-        "//"    => Token::OpFloorDivision,
-        "%"     => Token::OpModulo,
-        "+"     => Token::OpAddition,
-        "-"     => Token::Minus,
-        ".."    => Token::OpConcatenation,
-        "<<"    => Token::OpLeftShift,
-        ">>"    => Token::OpRightShift,
-        "&"     => Token::OpBitwiseAnd,
-        "~"     => Token::Tilde,
-        "|"     => Token::OpBitwiseOr,
-        "=="    => Token::OpEquality,
-        "~="    => Token::OpInequality,
-        "<"     => Token::OpLessThan,
-        ">"     => Token::OpGreaterThan,
-        "<="    => Token::OpLessOrEqual,
-        ">="    => Token::OpGreaterOrEqual,
-        "and"   => Token::OpLogicalAnd,
-        "or"    => Token::OpLogicalOr,
-        ";"     => Token::Semicolon,
-        ","     => Token::Comma,
-        ":"     => Token::Colon,
-        "("     => Token::OpenRoundBracket,
-        ")"     => Token::CloseRoundBracket,
-        "["     => Token::OpenSquareBracket,
-        "]"     => Token::CloseSquareBracket,
-        "{"     => Token::OpenCurlyBracket,
-        "}"     => Token::CloseCurlyBracket,
-        "="     => Token::EqualsSign,
-        "."     => Token::Period,
-        "nil"   => Token::Nil,
-        "false" => Token::False,
-        "true"  => Token::True,
-        "..."   => Token::VarArg,
+        "^"   => Token::OpExponentiation,
+        "not" => Token::OpLogicalNot,
+        "#"   => Token::OpLength,
+        "*"   => Token::OpMultiplication,
+        "/"   => Token::OpDivision,
+        "//"  => Token::OpFloorDivision,
+        "%"   => Token::OpModulo,
+        "+"   => Token::OpAddition,
+        "-"   => Token::Minus,
+        ".."  => Token::OpConcatenation,
+        "<<"  => Token::OpLeftShift,
+        ">>"  => Token::OpRightShift,
+        "&"   => Token::OpBitwiseAnd,
+        "~"   => Token::Tilde,
+        "|"   => Token::OpBitwiseOr,
+        "=="  => Token::OpEquality,
+        "~="  => Token::OpInequality,
+        "<"   => Token::OpLessThan,
+        ">"   => Token::OpGreaterThan,
+        "<="  => Token::OpLessOrEqual,
+        ">="  => Token::OpGreaterOrEqual,
+        "and" => Token::OpLogicalAnd,
+        "or"  => Token::OpLogicalOr,
+        ";"   => Token::Semicolon,
+        ","   => Token::Comma,
+        ":"   => Token::Colon,
+        "("   => Token::OpenRoundBracket,
+        ")"   => Token::CloseRoundBracket,
+        "["   => Token::OpenSquareBracket,
+        "]"   => Token::CloseSquareBracket,
+        "{"   => Token::OpenCurlyBracket,
+        "}"   => Token::CloseCurlyBracket,
+        "="   => Token::EqualsSign,
+        "."   => Token::Period,
+
+        "nil"      => Token::Nil,
+        "false"    => Token::False,
+        "true"     => Token::True,
+        "..."      => Token::VarArg,
+        "function" => Token::Function,
+        "do"       => Token::Do,
+        "end"      => Token::End,
 
         LexVariable => Token::Variable(<&'input str>),
         Numeral => Token::Number(<&'input str>),

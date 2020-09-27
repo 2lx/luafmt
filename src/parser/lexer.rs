@@ -56,6 +56,9 @@ pub enum Token<'input> {
     False,
     True,
     VarArg,
+    Function,
+    Do,
+    End,
 }
 
 impl fmt::Display for Token<'_> {
@@ -112,6 +115,9 @@ impl fmt::Display for Token<'_> {
             Token::False => write!(f, "false"),
             Token::True => write!(f, "true"),
             Token::VarArg => write!(f, "..."),
+            Token::Function => write!(f, "function"),
+            Token::Do => write!(f, "do"),
+            Token::End => write!(f, "end"),
         }
     }
 }
@@ -123,6 +129,9 @@ static KEYWORDS: phf::Map<&'static str, Token> = phf_map! {
     "nil" => Token::Nil,
     "false" => Token::False,
     "true" => Token::True,
+    "function" => Token::Function,
+    "do" => Token::Do,
+    "end" => Token::End,
 };
 
 #[derive(Debug)]
