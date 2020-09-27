@@ -84,6 +84,9 @@ pub enum Node {
 
     TableIndex(Loc, Box<Node>, Box<Node>),
     TableMember(Loc, Box<Node>, std::string::String),
+    ExpList(Loc, Vec<Node>),
+    FnStaticCall(Loc, Box<Node>, Box<Node>),
+    FnMethodCall(Loc, Box<Node>, std::string::String, Box<Node>),
 }
 
 impl fmt::Display for Node {
@@ -147,6 +150,17 @@ impl fmt::Display for Node {
 
             TableIndex(_, e1, e2) => write!(f, "{}[{}]", e1, e2),
             TableMember(_, e1, s) => write!(f, "{}.{}", e1, s),
+            ExpList(_, exps) => {
+                if !exps.is_empty() {
+                    for exp in &exps[0..exps.len() - 1] {
+                        write!(f, "{}, ", exp)?;
+                    }
+                    write!(f, "{}", exps.last().unwrap())?;
+                }
+                Ok(())
+            },
+            FnStaticCall(_, n1, n2) => write!(f, "{}{}", n1, n2),
+            FnMethodCall(_, n1, s, n2) => write!(f, "{}:{}{}", n1, s, n2),
         }
     }
 }

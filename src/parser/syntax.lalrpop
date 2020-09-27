@@ -128,15 +128,25 @@ Exp: Node = {
 
 PrefixExp: Node = {
     Var,
-    // FunctionCall,
+    FunctionCall,
     <l:@L> "(" <e:OpExp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
 }
 
-// FunctionCall: Node = {
-//     PrefixExp Args => Node::,
-//     // PrefixExp Args =>,
-// }
-//
+FunctionCall: Node = {
+    <l:@L> <n1:PrefixExp> <n2:Args> <r:@R> => Node::FnStaticCall(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> <n1:PrefixExp> ":" <s:LexVariable> <n2:Args> <r:@R> => Node::FnMethodCall(Loc(l, r), Box::new(n1), s.to_string(), Box::new(n2)),
+}
+
+Args: Node = {
+    <l:@L> "(" <e:ExpList> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
+    TableConstructor,
+    // StringLiteral
+}
+
+ExpList: Node = {
+    <l:@L> <n:SepVecEmpty<OpExp, ",">> <r:@R> => Node::ExpList(Loc(l, r), n),
+}
+
 Var: Node = {
     <l:@L> <s:LexVariable> <r:@R> => Node::Var(Loc(l, r), s.to_string()),
     <l:@L> <e1:PrefixExp> "[" <e2:OpExp> "]" <r:@R> => Node::TableIndex(Loc(l, r), Box::new(e1), Box::new(e2)),
@@ -192,6 +202,7 @@ extern {
         "or"    => Token::OpLogicalOr,
         ";"     => Token::Semicolon,
         ","     => Token::Comma,
+        ":"     => Token::Colon,
         "("     => Token::OpenRoundBracket,
         ")"     => Token::CloseRoundBracket,
         "["     => Token::OpenSquareBracket,

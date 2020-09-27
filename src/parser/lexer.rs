@@ -40,6 +40,7 @@ pub enum Token<'input> {
 
     Semicolon,
     Comma,
+    Colon,
 
     OpenRoundBracket,
     CloseRoundBracket,
@@ -93,6 +94,7 @@ impl fmt::Display for Token<'_> {
 
             Token::Semicolon => write!(f, ";"),
             Token::Comma => write!(f, ","),
+            Token::Colon => write!(f, ":"),
 
             Token::OpenRoundBracket => write!(f, "("),
             Token::CloseRoundBracket => write!(f, ")"),
@@ -263,6 +265,7 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some((i, ';')) => return Some(Ok((i, Token::Semicolon, i + 1))),
                 Some((i, ',')) => return Some(Ok((i, Token::Comma, i + 1))),
+                Some((i, ':')) => return Some(Ok((i, Token::Colon, i + 1))),
 
                 Some((i, '(')) => return Some(Ok((i, Token::OpenRoundBracket, i + 1))),
                 Some((i, ')')) => return Some(Ok((i, Token::CloseRoundBracket, i + 1))),

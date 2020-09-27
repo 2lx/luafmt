@@ -130,6 +130,21 @@ fn test_table() {
 }
 
 #[test]
+fn test_functions() {
+    let result = parse("fn_name(a1, a2)");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "fn_name(a1, a2);");
+
+    let result = parse("fn_name{a1, a2}");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "fn_name{ a1, a2 };");
+
+    let result = parse("fn_name:method{a1, a2}");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "fn_name:method{ a1, a2 };");
+}
+
+#[test]
 fn test_statements() {
     let result = parse(";;;;;");
     assert!(result.is_ok());
