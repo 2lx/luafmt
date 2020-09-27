@@ -63,16 +63,12 @@ NameList: Node = {
     <l:@L> <n:SepVec<Name, ",">> <r:@R> => Node::NameList(Loc(l, r), n),
 }
 
-Name: Node = {
-    <l:@L> <s:LexVariable> <r:@R> => Node::Name(Loc(l, r), s.to_string()),
-}
-
 ExpList: Node = {
     <l:@L> <n:SepVec<OpExp, ",">> <r:@R> => Node::ExpList(Loc(l, r), n),
 }
 
 Exp: Node = {
-    // StringLiteral
+    StringLiteral,
     TableConstructor,
     FunctionDef,
     PrefixExp,
@@ -99,7 +95,7 @@ Args: Node = {
     <l:@L> "(" <e:ExpList> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
     <l:@L> "(" ")" <r:@R>             => Node::RoundBrackets(Loc(l, r), Box::new(Node::Empty)),
     TableConstructor,
-    // StringLiteral
+    StringLiteral,
 }
 
 FunctionDef: Node = {
@@ -213,6 +209,15 @@ Op11: Node = {
     Exp,
 }
 
+Name: Node = {
+    <l:@L> <s:LexVariable> <r:@R> => Node::Name(Loc(l, r), s.to_string()),
+}
+
+StringLiteral: Node = {
+    <l:@L> <s:NormalStringLiteral> <r:@R> => Node::NormalStringLiteral(Loc(l, r), s.to_string()),
+    <l:@L> <s:CharStringLiteral> <r:@R> => Node::CharStringLiteral(Loc(l, r), s.to_string()),
+}
+
 extern {
     type Location = usize;
     type Error = LexicalError;
@@ -261,7 +266,9 @@ extern {
         "do"       => Token::Do,
         "end"      => Token::End,
 
-        LexVariable => Token::Variable(<&'input str>),
-        Numeral => Token::Number(<&'input str>),
+        LexVariable         => Token::Variable(<&'input str>),
+        Numeral             => Token::Numeral(<&'input str>),
+        NormalStringLiteral => Token::NormalStringLiteral(<&'input str>),
+        CharStringLiteral   => Token::CharStringLiteral(<&'input str>),
     }
 }

@@ -36,7 +36,9 @@ pub enum Token<'input> {
     OpLogicalOr,
 
     Variable(&'input str),
-    Number(&'input str),
+    Numeral(&'input str),
+    NormalStringLiteral(&'input str),
+    CharStringLiteral(&'input str),
 
     Semicolon,
     Comma,
@@ -107,7 +109,9 @@ impl fmt::Display for Token<'_> {
             Token::CloseCurlyBracket => write!(f, "}}"),
 
             Token::Variable(s) => write!(f, "\"{}\"", s),
-            Token::Number(n) => write!(f, "\"{}\"", n),
+            Token::Numeral(n) => write!(f, "\"{}\"", n),
+            Token::NormalStringLiteral(s) => write!(f, "\"{}\"", s),
+            Token::CharStringLiteral(s) => write!(f, "'{}'", s),
             Token::EqualsSign => write!(f, "="),
             Token::Period => write!(f, "."),
 
@@ -182,6 +186,24 @@ impl<'input> Lexer<'input> {
                 break;
             }
             end = *i;
+            self.chars.next();
+        }
+
+        end + 1
+    }
+
+    fn get_string_end(&mut self, prefix: char, start: usize) -> usize {
+        let mut end = start;
+        let mut escaped = false;
+
+        while let Some((i, ch)) = self.chars.peek() {
+            end = *i;
+
+            match *ch {
+                '\\' => escaped = true,
+                c@'"' | c@'\'' if !escaped && c == prefix => break,
+                _ => {},
+            }
             self.chars.next();
         }
 
@@ -283,9 +305,19 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, '{')) => return Some(Ok((i, Token::OpenCurlyBracket, i + 1))),
                 Some((i, '}')) => return Some(Ok((i, Token::CloseCurlyBracket, i + 1))),
 
+                Some((i, ch)) if ch == '"' => {
+                    let end = self.get_string_end('"', i);
+                    return Some(Ok((i, Token::NormalStringLiteral(&self.input[i + 1..end - 1]), end)));
+                }
+
+                Some((i, ch)) if ch == '\'' => {
+                    let end = self.get_string_end('\'', i);
+                    return Some(Ok((i, Token::CharStringLiteral(&self.input[i + 1..end - 1]), end)));
+                }
+
                 Some((i, ch)) if ch.is_ascii_digit() => {
                     let end = self.get_number_end(i);
-                    return Some(Ok((i, Token::Number(&self.input[i..end]), end)));
+                    return Some(Ok((i, Token::Numeral(&self.input[i..end]), end)));
                 }
 
                 Some((i, ch)) if ch.is_ascii_alphabetic() => {

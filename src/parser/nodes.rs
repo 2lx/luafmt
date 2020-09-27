@@ -44,6 +44,8 @@ pub enum Node {
     False(Loc),
     True(Loc),
     VarArg(Loc),
+    NormalStringLiteral(Loc, String),
+    CharStringLiteral(Loc, String),
 
     TableConstructor(Loc, Box<Node>),
     Fields(Loc, Vec<Node>),
@@ -66,8 +68,23 @@ pub enum Node {
     StatementEmpty(Loc),
     StatementDoEnd(Loc, Box<Node>),
     StatementVarExp(Loc, Box<Node>, Box<Node>),
-    Name(Loc, std::string::String),
+    Name(Loc, String),
     Empty,
+}
+
+fn print_node_vec(
+    f: &mut fmt::Formatter,
+    elems: &Vec<Node>,
+    sep: &str,
+) -> Result<(), core::fmt::Error> {
+    if !elems.is_empty() {
+        write!(f, "{}", sep)?;
+        for elem in &elems[0..elems.len() - 1] {
+            write!(f, "{}, ", elem)?;
+        }
+        write!(f, "{}{}", elems.last().unwrap(), sep)?;
+    }
+    Ok(())
 }
 
 impl fmt::Display for Node {
@@ -113,60 +130,21 @@ impl fmt::Display for Node {
             False(_) => write!(f, "false"),
             True(_) => write!(f, "true"),
             VarArg(_) => write!(f, "..."),
+            NormalStringLiteral(_, s) => write!(f, "\"{}\"", s),
+            CharStringLiteral(_, s) => write!(f, "'{}'", s),
 
             TableConstructor(_, r) => write!(f, "{{{}}}", r),
-            Fields(_, fields) => {
-                if !fields.is_empty() {
-                    write!(f, " ")?;
-                    for field in &fields[0..fields.len() - 1] {
-                        write!(f, "{}, ", field)?;
-                    }
-                    write!(f, "{} ", fields.last().unwrap())?;
-                }
-                Ok(())
-            },
+            Fields(_, fields) => print_node_vec(f, fields, " "),
             FieldNamedBracket(_, e1, e2) => write!(f, "[{}] = {}", e1, e2),
             FieldNamed(_, e1, e2) => write!(f, "{} = {}", e1, e2),
             FieldSequential(_, e) => write!(f, "{}", e),
 
             TableIndex(_, e1, e2) => write!(f, "{}[{}]", e1, e2),
             TableMember(_, e1, s) => write!(f, "{}.{}", e1, s),
-            ExpList(_, exps) => {
-                if !exps.is_empty() {
-                    for exp in &exps[0..exps.len() - 1] {
-                        write!(f, "{}, ", exp)?;
-                    }
-                    write!(f, "{}", exps.last().unwrap())?;
-                }
-                Ok(())
-            },
-            NameList(_, names) => {
-                if !names.is_empty() {
-                    for name in &names[0..names.len() - 1] {
-                        write!(f, "{}, ", name)?;
-                    }
-                    write!(f, "{}", names.last().unwrap())?;
-                }
-                Ok(())
-            },
-            VarList(_, vars) => {
-                if !vars.is_empty() {
-                    for var in &vars[0..vars.len() - 1] {
-                        write!(f, "{}, ", var)?;
-                    }
-                    write!(f, "{}", vars.last().unwrap())?;
-                }
-                Ok(())
-            },
-            StatementList(_, stts) => {
-                if !stts.is_empty() {
-                    for stt in &stts[0..stts.len() - 1] {
-                        write!(f, "{}; ", stt)?;
-                    }
-                    write!(f, "{};", stts.last().unwrap())?;
-                }
-                Ok(())
-            },
+            ExpList(_, exps) => print_node_vec(f, exps, ""),
+            NameList(_, names) => print_node_vec(f, names, ""),
+            VarList(_, vars) => print_node_vec(f, vars, ""),
+            StatementList(_, stts) => print_node_vec(f, stts, ""),
             StatementEmpty(_) => Ok(()),
             StatementDoEnd(_, n) => write!(f, "do {} end", n),
             StatementVarExp(_, n1, n2) => write!(f, "{} = {}", n1, n2),
@@ -174,7 +152,7 @@ impl fmt::Display for Node {
             FnStaticCall(_, n1, n2) => write!(f, "{}{}", n1, n2),
             FnMethodCall(_, n1, s, n2) => write!(f, "{}:{}{}", n1, s, n2),
             ParList(_, n1, n2) => write!(f, "{}, {}", n1, n2),
-            FunctionDef(_, n) =>  write!(f, "function {}", n),
+            FunctionDef(_, n) => write!(f, "function {}", n),
             FuncBody(_, n1, n2) => write!(f, "({}) {} end", n1, n2),
 
             Empty => Ok(()),
