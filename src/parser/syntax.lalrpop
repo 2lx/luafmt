@@ -34,37 +34,10 @@ pub Source: Statements = {
 }
 
 Statement: Statement = {
-    Exp => Statement::NodeTree(<>),
+    OpExp => Statement::NodeTree(<>),
 }
 
-Exp: Node = {
-    Operation,
-    TableConstructor,
-    // LiteralString
-    // FunctionDef
-    // PrefixExp
-}
-
-TableConstructor: Node = {
-    <l:@L> "{" <e:FieldList> "}" <r:@R> => Node::TableConstructor(Loc(l, r), Box::new(e)),
-}
-
-FieldList: Node = {
-    <l:@L> <v:SepVec<Field, FieldSep>> <r:@R> => Node::Fields(Loc(l, r), v),
-}
-
-Field: Node = {
-    <l:@L> "[" <e1:Exp> "]" "=" <e2:Exp> <r:@R> => Node::FieldNamedBracket(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <l:@L> <e1:Var> "=" <e2:Exp> <r:@R>         => Node::FieldNamed(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <l:@L> <e:Exp> <r:@R>                       => Node::FieldSequential(Loc(l, r), Box::new(e)),
-}
-
-FieldSep = {
-    ",",
-    ";",
-}
-
-Operation: Node = {
+OpExp: Node = {
     Op0,
 }
 
@@ -81,8 +54,8 @@ Op1: Node = {
 Op2: Node = {
     <e1:Op2> <l:@L> "==" <r:@R> <e2:Op3> => Node::Equality(Loc(l, r), Box::new(e1), Box::new(e2)),
     <e1:Op2> <l:@L> "~=" <r:@R> <e2:Op3> => Node::Inequality(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op2> <l:@L> "<" <r:@R> <e2:Op3>  => Node::LessThan(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op2> <l:@L> ">" <r:@R> <e2:Op3>  => Node::GreaterThan(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op2> <l:@L> "<"  <r:@R> <e2:Op3> => Node::LessThan(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op2> <l:@L> ">"  <r:@R> <e2:Op3> => Node::GreaterThan(Loc(l, r), Box::new(e1), Box::new(e2)),
     <e1:Op2> <l:@L> "<=" <r:@R> <e2:Op3> => Node::LessOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
     <e1:Op2> <l:@L> ">=" <r:@R> <e2:Op3> => Node::GreaterOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op3,
@@ -121,38 +94,72 @@ Op8: Node = {
 }
 
 Op9: Node = {
-    <e1:Op9> <l:@L> "*" <r:@R> <e2:Op10>  => Node::Multiplication(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op9> <l:@L> "/" <r:@R> <e2:Op10>  => Node::Division(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op9> <l:@L> "*"  <r:@R> <e2:Op10> => Node::Multiplication(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op9> <l:@L> "/"  <r:@R> <e2:Op10> => Node::Division(Loc(l, r), Box::new(e1), Box::new(e2)),
     <e1:Op9> <l:@L> "//" <r:@R> <e2:Op10> => Node::FloorDivision(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op9> <l:@L> "%" <r:@R> <e2:Op10>  => Node::Modulo(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op9> <l:@L> "%"  <r:@R> <e2:Op10> => Node::Modulo(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op10,
 }
 
 Op10: Node = {
     <l:@L> "not" <r:@R> <e:Op10> => Node::UnaryNot(Loc(l, r), Box::new(e)),
-    <l:@L> "#" <r:@R> <e:Op10>   => Node::UnaryLength(Loc(l, r), Box::new(e)),
-    <l:@L> "-" <r:@R> <e:Op10>   => Node::UnaryMinus(Loc(l, r), Box::new(e)),
-    <l:@L> "~" <r:@R> <e:Op10>   => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
+    <l:@L> "#"   <r:@R> <e:Op10> => Node::UnaryLength(Loc(l, r), Box::new(e)),
+    <l:@L> "-"   <r:@R> <e:Op10> => Node::UnaryMinus(Loc(l, r), Box::new(e)),
+    <l:@L> "~"   <r:@R> <e:Op10> => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
     Op11,
 }
 
 Op11: Node = {
-    <e1:Op11> <l:@L> "^" <r:@R> <e2:Op12> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
-    Op12,
+    <e1:Op11> <l:@L> "^" <r:@R> <e2:Exp> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    Exp,
 }
 
-Op12: Node = {
+Exp: Node = {
+    TableConstructor,
+    // LiteralString
+    // FunctionDef
+    PrefixExp,
     <l:@L> "nil" <r:@R>           => Node::Nil(Loc(l, r)),
     <l:@L> "false" <r:@R>         => Node::False(Loc(l, r)),
     <l:@L> "true" <r:@R>          => Node::True(Loc(l, r)),
     <l:@L> "..." <r:@R>           => Node::VarArg(Loc(l, r)),
     <l:@L> <s:Numeral> <r:@R>     => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
-    <l:@L> "(" <e:Exp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
-    Var,
 }
 
+PrefixExp: Node = {
+    Var,
+    // FunctionCall,
+    <l:@L> "(" <e:OpExp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
+}
+
+// FunctionCall: Node = {
+//     PrefixExp Args => Node::,
+//     // PrefixExp Args =>,
+// }
+//
 Var: Node = {
     <l:@L> <s:LexVariable> <r:@R> => Node::Var(Loc(l, r), s.to_string()),
+    <l:@L> <e1:PrefixExp> "[" <e2:OpExp> "]" <r:@R> => Node::TableIndex(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:PrefixExp> "." <s:LexVariable> <r:@R> => Node::TableMember(Loc(l, r), Box::new(e1), s.to_string()),
+}
+
+TableConstructor: Node = {
+    <l:@L> "{" <e:FieldList> "}" <r:@R> => Node::TableConstructor(Loc(l, r), Box::new(e)),
+}
+
+FieldList: Node = {
+    <l:@L> <v:SepVec<Field, FieldSep>> <r:@R> => Node::Fields(Loc(l, r), v),
+}
+
+Field: Node = {
+    <l:@L> "[" <e1:OpExp> "]" "=" <e2:OpExp> <r:@R> => Node::FieldNamedBracket(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Var> "=" <e2:OpExp> <r:@R>           => Node::FieldNamed(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e:OpExp> <r:@R>                         => Node::FieldSequential(Loc(l, r), Box::new(e)),
+}
+
+FieldSep = {
+    ",",
+    ";",
 }
 
 extern {

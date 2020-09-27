@@ -119,6 +119,14 @@ fn test_table() {
     let result = parse("{ a = { b = true }, [b] = { a = true } }");
     assert!(result.is_ok());
     assert_eq!(&format!("{}", result.unwrap()), "{ a = { b = true }, [b] = { a = true } };");
+
+    let result = parse("tbl[4 + b]");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "tbl[4 + b];");
+
+    let result = parse("tbl.field");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "tbl.field;");
 }
 
 #[test]

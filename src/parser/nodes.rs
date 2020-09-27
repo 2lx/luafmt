@@ -81,6 +81,9 @@ pub enum Node {
     FieldNamedBracket(Loc, Box<Node>, Box<Node>),
     FieldNamed(Loc, Box<Node>, Box<Node>),
     FieldSequential(Loc, Box<Node>),
+
+    TableIndex(Loc, Box<Node>, Box<Node>),
+    TableMember(Loc, Box<Node>, std::string::String),
 }
 
 impl fmt::Display for Node {
@@ -141,6 +144,9 @@ impl fmt::Display for Node {
             FieldNamedBracket(_, e1, e2) => write!(f, "[{}] = {}", e1, e2),
             FieldNamed(_, e1, e2) => write!(f, "{} = {}", e1, e2),
             FieldSequential(_, e) => write!(f, "{}", e),
+
+            TableIndex(_, e1, e2) => write!(f, "{}[{}]", e1, e2),
+            TableMember(_, e1, s) => write!(f, "{}.{}", e1, s),
         }
     }
 }
