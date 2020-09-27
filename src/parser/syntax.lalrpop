@@ -12,6 +12,15 @@ SimpleVec<T>: Vec<T> = {
         v
     },
 }
+// can be empty, no separators
+SimpleEmptyVec<T>: Vec<T> = {
+    => Vec::new(),
+    <v:(<T>)*> <e:T> => {
+        let mut v = v;
+        v.push(e);
+        v
+    },
+}
 
 // cannot be empty, no separator at the end
 SepVec<T, C>: Vec<T> = {
@@ -21,6 +30,16 @@ SepVec<T, C>: Vec<T> = {
         v
     },
     <e:T> <v:(C <T>)+> => {
+        let mut v = v;
+        v.insert(0, e);
+        v
+    }
+};
+
+// can be empty, no separator at the end
+SepEmptyVec<T, C>: Vec<T> = {
+    => Vec::new(),
+    <e:T> <v:(C <T>)*> => {
         let mut v = v;
         v.insert(0, e);
         v
@@ -48,12 +67,11 @@ pub Chunk: Node = {
 
 Block: Node = {
     Stats,
-    <l:@L> <empr:@R> <n2:RetStat> <r:@R> => Node::StatsRetStat(Loc(l, r), Box::new(Node::Empty(Loc(l, empr))), Box::new(n2)),
     <l:@L> <n1:Stats> <n2:RetStat> <r:@R> => Node::StatsRetStat(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
 Stats: Node = {
-    <l:@L> <n:SimpleVec<Stat>> <r:@R> => Node::StatementList(Loc(l, r), n),
+    <l:@L> <n:SimpleEmptyVec<Stat>> <r:@R> => Node::StatementList(Loc(l, r), n),
 }
 
 Stat: Node = {
@@ -151,18 +169,11 @@ FunctionDef: Node = {
 }
 
 FuncBody: Node = {
-    <l:@L> "(" <n1:ParList> ")" <n2:Block> "end" <r:@R>
-        => Node::FuncBody(Loc(l, r), Box::new(n1), Box::new(n2)),
-    <l:@L> "(" <empl:@L> <empr:@R> ")" <n:Block> "end" <r:@R>
-        => Node::FuncBody(Loc(l, r), Box::new(Node::Empty(Loc(empl, empr))), Box::new(n)),
-    <l:@L> "(" <n1:ParList> ")" <empl2:@L> <empr2:@R> "end" <r:@R>
-            => Node::FuncBody(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl2, empr2)))),
-    <l:@L> "(" <empl1:@L> <empr1:@R> ")" <empl2:@L> <empr2:@R> "end" <r:@R>
-            => Node::FuncBody(Loc(l, r), Box::new(Node::Empty(Loc(empl1, empr1))), Box::new(Node::Empty(Loc(empl2, empr2)))),
+    <l:@L> "(" <n1:ParList> ")" <n2:Block> "end" <r:@R> => Node::FuncBody(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
 ParList: Node = {
-    <l:@L> <n:SepVec<Par, ",">> <r:@R> => Node::ParList(Loc(l, r), n),
+    <l:@L> <n:SepEmptyVec<Par, ",">> <r:@R> => Node::ParList(Loc(l, r), n),
 }
 
 Par: Node = {

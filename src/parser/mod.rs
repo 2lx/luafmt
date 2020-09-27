@@ -177,9 +177,14 @@ fn test_function() {
     assert!(result.is_ok(), "{:?}", result);
     assert_eq!( &format!("{}", result.unwrap()), "fn = function(a, b) return a, b end");
 
+    // no RetStat
     let result = parse("fn = function(a, b) end");
     assert!(result.is_ok(), "{:?}", result);
     assert_eq!( &format!("{}", result.unwrap()), "fn = function(a, b) end");
+
+    let result = parse("fn = function() end");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "fn = function() end");
 }
 
 #[test]

@@ -170,10 +170,8 @@ impl fmt::Display for Node {
             FnMethodCall(_, n1, s, n2) => write!(f, "{}:{}{}", n1, s, n2),
             ParList(_, pars) => print_node_vec(f, pars, "", ",", " "),
             FunctionDef(_, n) => write!(f, "function{}", n),
-            FuncBody(_, n1, n2) => match (&**n1, &**n2) {
-                (Node::Empty(_), Node::Empty(_)) => write!(f, "() end"),
-                (_, Node::Empty(_)) => write!(f, "({}) end", n1),
-                (Node::Empty(_), _) => write!(f, "() {} end", n2),
+            FuncBody(_, n1, n2) => match &**n2 {
+                Node::StatementList(_, v2) if v2.is_empty() => write!(f, "({}) end", n1),
                 _ => write!(f, "({}) {} end", n1, n2),
             },
             FuncName(_, names, n) => {
@@ -201,7 +199,7 @@ impl fmt::Display for Node {
                 _ => write!(f, "return {}", n),
             },
             StatsRetStat(_, n1, n2) => match **n1 {
-                Node::Empty(_) => write!(f, "{}", n2),
+                Node::StatementList(_, ref v) if v.is_empty() => write!(f, "{}", n2),
                 _ => write!(f, "{} {}", n1, n2),
             }
 
