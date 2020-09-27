@@ -33,6 +33,7 @@ pub Chunk: Node = {
 
 Block: Node = {
     Stats,
+    <l:@L> <n1:Stats> <n2:RetStat> <r:@R> => Node::StatsRetStat(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
 Stats: Node = {
@@ -40,14 +41,38 @@ Stats: Node = {
 }
 
 Stat: Node = {
-    <l:@L> ";" <r:@R>                           => Node::StatementEmpty(Loc(l, r)),
-    <l:@L> "do" <n:Block> "end" <r:@R>          => Node::StatementDoEnd(Loc(l, r), Box::new(n)),
-    <l:@L> <n1:VarList> "=" <n2:ExpList> <r:@R> => Node::StatementVarExp(Loc(l, r), Box::new(n1), Box::new(n2)),
+    FunctionCall,
+    Label,
+    <l:@L> ";" <r:@R>                                    => Node::StatementEmpty(Loc(l, r)),
+    <l:@L> <n1:VarList> "=" <n2:ExpList> <r:@R>          => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> "break" <r:@R>                                => Node::Break(Loc(l, r)),
+    <l:@L> "goto" <n:Name> <r:@R>                        => Node::GoTo(Loc(l, r), Box::new(n)),
+    <l:@L> "do" <n:Block> "end" <r:@R>                   => Node::DoEnd(Loc(l, r), Box::new(n)),
+    <l:@L> "while" <e:OpExp> "do" <n:Block> "end" <r:@R> => Node::While(Loc(l, r), Box::new(e), Box::new(n)),
+    <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>   => Node::Repeat(Loc(l, r), Box::new(n), Box::new(e)),
+    // if
+    <l:@L> "for" <n:Name> "=" <e1:OpExp> "," <e2:OpExp> "," <e3:OpExp> "do" <b:Block> "end" <r:@R> => Node::ForInt(Loc(l, r), Box::new(n), Box::new(e1), Box::new(e2), Box::new(e3), Box::new(b)),
+    <l:@L> "for" <n:NameList> "in" <e:ExpList> "do" <b:Block> "end" <r:@R> => Node::ForRange(Loc(l, r), Box::new(n), Box::new(e), Box::new(b)),
+    // <l:@L> "function" <n1:FuncName> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
+    // <l:@L> "local" "function" <n1:FuncName> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R> => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
-// RetStat
-// Label
-// Funcname
+RetStat: Node = {
+    <l:@L> "return" <r:@R> => Node::RetStat(Loc(l, r), Box::new(Node::Empty)),
+    <l:@L> "return" <n:ExpList> <r:@R> => Node::RetStat(Loc(l, r), Box::new(n)),
+    <l:@L> "return" ";" <r:@R> => Node::RetStat(Loc(l, r), Box::new(Node::Empty)),
+    <l:@L> "return" <n:ExpList> ";" <r:@R> => Node::RetStat(Loc(l, r), Box::new(n)),
+}
+
+Label: Node = {
+    <l:@L> "::" <n:Name> "::" <r:@R> => Node::Label(Loc(l, r), Box::new(n)),
+}
+
+FuncName: Node = {
+    <l:@L> <v:SepVec<Var, ".">> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(Node::Empty)),
+    <l:@L> <v:SepVec<Var, ".">> ":" <n:Name> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(n)),
+}
 
 VarList: Node = {
     <l:@L> <n:SepVec<Var, ",">> <r:@R> => Node::VarList(Loc(l, r), n),
@@ -249,6 +274,7 @@ extern {
         ";"   => Token::Semicolon,
         ","   => Token::Comma,
         ":"   => Token::Colon,
+        "::"  => Token::Label,
         "("   => Token::OpenRoundBracket,
         ")"   => Token::CloseRoundBracket,
         "["   => Token::OpenSquareBracket,
@@ -258,13 +284,26 @@ extern {
         "="   => Token::EqualsSign,
         "."   => Token::Period,
 
-        "nil"      => Token::Nil,
-        "false"    => Token::False,
-        "true"     => Token::True,
         "..."      => Token::VarArg,
-        "function" => Token::Function,
+        "break"    => Token::Break,
         "do"       => Token::Do,
+        "else"     => Token::Else,
+        "elseif"   => Token::ElseIf,
         "end"      => Token::End,
+        "false"    => Token::False,
+        "for"      => Token::For,
+        "function" => Token::Function,
+        "goto"     => Token::GoTo,
+        "if"       => Token::If,
+        "in"       => Token::In,
+        "local"    => Token::Local,
+        "nil"      => Token::Nil,
+        "repeat"   => Token::Repeat,
+        "return"   => Token::Return,
+        "then"     => Token::Then,
+        "true"     => Token::True,
+        "until"    => Token::Until,
+        "while"    => Token::While,
 
         LexVariable         => Token::Variable(<&'input str>),
         Numeral             => Token::Numeral(<&'input str>),

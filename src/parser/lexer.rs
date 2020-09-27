@@ -43,6 +43,7 @@ pub enum Token<'input> {
     Semicolon,
     Comma,
     Colon,
+    Label,
 
     OpenRoundBracket,
     CloseRoundBracket,
@@ -54,13 +55,26 @@ pub enum Token<'input> {
     EqualsSign,
     Period,
 
-    Nil,
-    False,
-    True,
-    VarArg,
-    Function,
+    Break,
     Do,
+    Else,
+    ElseIf,
     End,
+    False,
+    For,
+    Function,
+    GoTo,
+    If,
+    In,
+    Local,
+    Nil,
+    Repeat,
+    Return,
+    Then,
+    True,
+    Until,
+    VarArg,
+    While,
 }
 
 impl fmt::Display for Token<'_> {
@@ -100,6 +114,7 @@ impl fmt::Display for Token<'_> {
             Token::Semicolon => write!(f, ";"),
             Token::Comma => write!(f, ","),
             Token::Colon => write!(f, ":"),
+            Token::Label => write!(f, "::"),
 
             Token::OpenRoundBracket => write!(f, "("),
             Token::CloseRoundBracket => write!(f, ")"),
@@ -115,27 +130,53 @@ impl fmt::Display for Token<'_> {
             Token::EqualsSign => write!(f, "="),
             Token::Period => write!(f, "."),
 
-            Token::Nil => write!(f, "nil"),
-            Token::False => write!(f, "false"),
-            Token::True => write!(f, "true"),
-            Token::VarArg => write!(f, "..."),
+            Token::Break    => write!(f, "break"),
+            Token::Do       => write!(f, "do"),
+            Token::Else     => write!(f, "else"),
+            Token::ElseIf   => write!(f, "elseif"),
+            Token::End      => write!(f, "end"),
+            Token::False    => write!(f, "false"),
+            Token::For      => write!(f, "for"),
             Token::Function => write!(f, "function"),
-            Token::Do => write!(f, "do"),
-            Token::End => write!(f, "end"),
+            Token::GoTo     => write!(f, "goto"),
+            Token::If       => write!(f, "if"),
+            Token::In       => write!(f, "in"),
+            Token::Local    => write!(f, "local"),
+            Token::Nil      => write!(f, "nil"),
+            Token::Repeat   => write!(f, "repeat"),
+            Token::Return   => write!(f, "return"),
+            Token::Then     => write!(f, "then"),
+            Token::True     => write!(f, "true"),
+            Token::Until    => write!(f, "until"),
+            Token::VarArg   => write!(f, "..."),
+            Token::While    => write!(f, "while"),
         }
     }
 }
 
 static KEYWORDS: phf::Map<&'static str, Token> = phf_map! {
-    "not" => Token::OpLogicalNot,
-    "and" => Token::OpLogicalAnd,
-    "or" => Token::OpLogicalOr,
-    "nil" => Token::Nil,
-    "false" => Token::False,
-    "true" => Token::True,
+    "and"      => Token::OpLogicalAnd,
+    "break"    => Token::Break,
+    "do"       => Token::Do,
+    "else"     => Token::Else,
+    "elseif"   => Token::ElseIf,
+    "end"      => Token::End,
+    "false"    => Token::False,
+    "for"      => Token::For,
     "function" => Token::Function,
-    "do" => Token::Do,
-    "end" => Token::End,
+    "goto"     => Token::GoTo,
+    "if"       => Token::If,
+    "in"       => Token::In,
+    "local"    => Token::Local,
+    "nil"      => Token::Nil,
+    "not"      => Token::OpLogicalNot,
+    "or"       => Token::OpLogicalOr,
+    "repeat"   => Token::Repeat,
+    "return"   => Token::Return,
+    "then"     => Token::Then,
+    "true"     => Token::True,
+    "until"    => Token::Until,
+    "while"    => Token::While,
 };
 
 #[derive(Debug)]
@@ -296,7 +337,13 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some((i, ';')) => return Some(Ok((i, Token::Semicolon, i + 1))),
                 Some((i, ',')) => return Some(Ok((i, Token::Comma, i + 1))),
-                Some((i, ':')) => return Some(Ok((i, Token::Colon, i + 1))),
+                Some((i, ':')) => match self.chars.peek() {
+                    Some((_, ':')) => {
+                        self.chars.next();
+                        return Some(Ok((i, Token::Label, i + 2)));
+                    }
+                    _ => return Some(Ok((i, Token::Colon, i + 1))),
+                },
 
                 Some((i, '(')) => return Some(Ok((i, Token::OpenRoundBracket, i + 1))),
                 Some((i, ')')) => return Some(Ok((i, Token::CloseRoundBracket, i + 1))),
