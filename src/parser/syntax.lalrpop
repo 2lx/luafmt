@@ -4,6 +4,7 @@ use super::lexer::{Token, LexicalError};
 grammar<'input>(input: &'input str);
 
 // templates
+// cannot be empty, no separators
 SimpleVec<T>: Vec<T> = {
     <v:(<T>)*> <e:T> => {
         let mut v = v;
@@ -12,7 +13,7 @@ SimpleVec<T>: Vec<T> = {
     },
 }
 
-// no zero count, no end sep
+// cannot be empty, no separator at the end
 SepVec<T, C>: Vec<T> = {
     <e:T> => {
         let mut v = Vec::new();
@@ -26,6 +27,20 @@ SepVec<T, C>: Vec<T> = {
     }
 };
 
+// cannot be empty, may have a separator at the end
+SepVecEnd<T, C>: Vec<T> = {
+    <e:T> C? => {
+        let mut v = Vec::new();
+        v.push(e);
+        v
+    },
+    <e:T> <v:(C <T>)+> C? => {
+        let mut v = v;
+        v.insert(0, e);
+        v
+    },
+};
+
 // syntax
 pub Chunk: Node = {
     Block,
@@ -33,6 +48,7 @@ pub Chunk: Node = {
 
 Block: Node = {
     Stats,
+    <l:@L> <empr:@R> <n2:RetStat> <r:@R> => Node::StatsRetStat(Loc(l, r), Box::new(Node::Empty(Loc(l, empr))), Box::new(n2)),
     <l:@L> <n1:Stats> <n2:RetStat> <r:@R> => Node::StatsRetStat(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
@@ -43,7 +59,7 @@ Stats: Node = {
 Stat: Node = {
     FunctionCall,
     Label,
-    <l:@L> ";" <r:@R>                                    => Node::StatementEmpty(Loc(l, r)),
+    <l:@L> ";" <r:@R>                                    => Node::Empty(Loc(l, r)),
     <l:@L> <n1:VarList> "=" <n2:ExpList> <r:@R>          => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
     <l:@L> "break" <r:@R>                                => Node::Break(Loc(l, r)),
     <l:@L> "goto" <n:Name> <r:@R>                        => Node::GoTo(Loc(l, r), Box::new(n)),
@@ -51,17 +67,24 @@ Stat: Node = {
     <l:@L> "while" <e:OpExp> "do" <n:Block> "end" <r:@R> => Node::While(Loc(l, r), Box::new(e), Box::new(n)),
     <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>   => Node::Repeat(Loc(l, r), Box::new(n), Box::new(e)),
     // if
-    <l:@L> "for" <n:Name> "=" <e1:OpExp> "," <e2:OpExp> "," <e3:OpExp> "do" <b:Block> "end" <r:@R> => Node::ForInt(Loc(l, r), Box::new(n), Box::new(e1), Box::new(e2), Box::new(e3), Box::new(b)),
-    <l:@L> "for" <n:NameList> "in" <e:ExpList> "do" <b:Block> "end" <r:@R> => Node::ForRange(Loc(l, r), Box::new(n), Box::new(e), Box::new(b)),
+    <l:@L> "for" <n:Name> "=" <e1:OpExp> "," <e2:OpExp> "," <e3:OpExp> "do" <b:Block> "end" <r:@R>
+            => Node::ForInt(Loc(l, r), Box::new(n), Box::new(e1), Box::new(e2), Box::new(e3), Box::new(b)),
+    <l:@L> "for" <n:Name> "=" <e1:OpExp> "," <e2:OpExp> <empl:@L> <empr:@R> "do" <b:Block> "end" <r:@R>
+            => Node::ForInt(Loc(l, r), Box::new(n), Box::new(e1), Box::new(e2), Box::new(Node::Empty(Loc(l, r))), Box::new(b)),
+    <l:@L> "for" <n:NameList> "in" <e:ExpList> "do" <b:Block> "end" <r:@R>
+            => Node::ForRange(Loc(l, r), Box::new(n), Box::new(e), Box::new(b)),
+
     // <l:@L> "function" <n1:FuncName> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
     // <l:@L> "local" "function" <n1:FuncName> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
-    <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R> => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+
+    <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R>    => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> "local" <n1:NameList> <empl:@L> <empr:@R> <r:@R> => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
 }
 
 RetStat: Node = {
-    <l:@L> "return" <r:@R> => Node::RetStat(Loc(l, r), Box::new(Node::Empty)),
-    <l:@L> "return" <n:ExpList> <r:@R> => Node::RetStat(Loc(l, r), Box::new(n)),
-    <l:@L> "return" ";" <r:@R> => Node::RetStat(Loc(l, r), Box::new(Node::Empty)),
+    <l:@L> "return" <emp:@L> <r:@R>        => Node::RetStat(Loc(l, r), Box::new(Node::Empty(Loc(emp, r)))),
+    <l:@L> "return" <n:ExpList> <r:@R>     => Node::RetStat(Loc(l, r), Box::new(n)),
+    <l:@L> "return" <emp:@L> ";" <r:@R>    => Node::RetStat(Loc(l, r), Box::new(Node::Empty(Loc(emp, r)))),
     <l:@L> "return" <n:ExpList> ";" <r:@R> => Node::RetStat(Loc(l, r), Box::new(n)),
 }
 
@@ -70,7 +93,7 @@ Label: Node = {
 }
 
 FuncName: Node = {
-    <l:@L> <v:SepVec<Var, ".">> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(Node::Empty)),
+    <l:@L> <v:SepVec<Var, ".">> <r:@R>              => Node::FuncName(Loc(l, r), v, Box::new(Node::Empty(Loc(r, r)))),
     <l:@L> <v:SepVec<Var, ".">> ":" <n:Name> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(n)),
 }
 
@@ -97,11 +120,11 @@ Exp: Node = {
     TableConstructor,
     FunctionDef,
     PrefixExp,
-    <l:@L> "nil" <r:@R>       => Node::Nil(Loc(l, r)),
-    <l:@L> "false" <r:@R>     => Node::False(Loc(l, r)),
-    <l:@L> "true" <r:@R>      => Node::True(Loc(l, r)),
-    <l:@L> "..." <r:@R>       => Node::VarArg(Loc(l, r)),
-    <l:@L> <s:Numeral> <r:@R> => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
+    <l:@L> "nil" <r:@R>             => Node::Nil(Loc(l, r)),
+    <l:@L> "false" <r:@R>           => Node::False(Loc(l, r)),
+    <l:@L> "true" <r:@R>            => Node::True(Loc(l, r)),
+    <l:@L> "..." <r:@R>             => Node::VarArg(Loc(l, r)),
+    <l:@L> <s:Numeral> <r:@R>       => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
     <l:@L> "(" <e:OpExp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
 }
 
@@ -117,8 +140,8 @@ FunctionCall: Node = {
 }
 
 Args: Node = {
-    <l:@L> "(" <e:ExpList> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
-    <l:@L> "(" ")" <r:@R>             => Node::RoundBrackets(Loc(l, r), Box::new(Node::Empty)),
+    <l:@L> "(" <e:ExpList> ")" <r:@R>         => Node::RoundBrackets(Loc(l, r), Box::new(e)),
+    <l:@L> "(" <empl:@L> <empr:@R> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(Node::Empty(Loc(empl, empr)))),
     TableConstructor,
     StringLiteral,
 }
@@ -128,22 +151,32 @@ FunctionDef: Node = {
 }
 
 FuncBody: Node = {
-    <l:@L> "(" <n1:ParList> ")" <n2:Block> "end" <r:@R> => Node::FuncBody(Loc(l, r), Box::new(n1), Box::new(n2)),
-    <l:@L> "(" ")" <n:Block> "end" <r:@R>               => Node::FuncBody(Loc(l, r), Box::new(Node::Empty), Box::new(n)),
+    <l:@L> "(" <n1:ParList> ")" <n2:Block> "end" <r:@R>
+        => Node::FuncBody(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> "(" <empl:@L> <empr:@R> ")" <n:Block> "end" <r:@R>
+        => Node::FuncBody(Loc(l, r), Box::new(Node::Empty(Loc(empl, empr))), Box::new(n)),
+    <l:@L> "(" <n1:ParList> ")" <empl2:@L> <empr2:@R> "end" <r:@R>
+            => Node::FuncBody(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl2, empr2)))),
+    <l:@L> "(" <empl1:@L> <empr1:@R> ")" <empl2:@L> <empr2:@R> "end" <r:@R>
+            => Node::FuncBody(Loc(l, r), Box::new(Node::Empty(Loc(empl1, empr1))), Box::new(Node::Empty(Loc(empl2, empr2)))),
 }
 
 ParList: Node = {
-    <l:@L> <n:NameList> <r:@R>           => Node::ParList(Loc(l, r), Box::new(n), Box::new(Node::Empty)),
-    // <l:@L> <n:NameList> "," "..." <r:@R> => Node::ParList(Loc(l, r), Box::new(n), Box::new(Node::VarArg(Loc(l, r)))),
-    // <l:@L> "..." <r:@R>                  => Node::ParList(Loc(l, r), Box::new(Node::Empty), Box::new(Node::VarArg(Loc(l, r)))),
+    <l:@L> <n:SepVec<Par, ",">> <r:@R> => Node::ParList(Loc(l, r), n),
+}
+
+Par: Node = {
+    <l:@L> <s:LexVariable> <r:@R> => Node::Name(Loc(l, r), s.to_string()),
+    <l:@L> "..." <r:@R>           => Node::VarArg(Loc(l, r)),
 }
 
 TableConstructor: Node = {
-    <l:@L> "{" <e:FieldList> "}" <r:@R> => Node::TableConstructor(Loc(l, r), Box::new(e)),
+    <l:@L> "{" <e:FieldList> "}" <r:@R>       => Node::TableConstructor(Loc(l, r), Box::new(e)),
+    <l:@L> "{" <empl:@L> <empr:@R> "}" <r:@R> => Node::TableConstructor(Loc(l, r), Box::new(Node::Empty(Loc(empl, empr)))),
 }
 
 FieldList: Node = {
-    <l:@L> <v:SepVec<Field, FieldSep>> <r:@R> => Node::Fields(Loc(l, r), v),
+    <l:@L> <v:SepVecEnd<Field, FieldSep>> <r:@R> => Node::Fields(Loc(l, r), v),
 }
 
 Field: Node = {
@@ -202,8 +235,9 @@ Op6: Node = {
     Op7,
 }
 
+// right-associative
 Op7: Node = {
-    <e1:Op7> <l:@L> ".." <r:@R> <e2:Op8> => Node::Concatenation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Op8> <l:@L> ".." <r:@R> <e2:Op7> => Node::Concatenation(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op8,
 }
 
@@ -229,8 +263,9 @@ Op10: Node = {
     Op11,
 }
 
+// right-associative
 Op11: Node = {
-    <e1:Op11> <l:@L> "^" <r:@R> <e2:Exp> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <e1:Exp> <l:@L> "^" <r:@R> <e2:Op11> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
     Exp,
 }
 
@@ -240,7 +275,7 @@ Name: Node = {
 
 StringLiteral: Node = {
     <l:@L> <s:NormalStringLiteral> <r:@R> => Node::NormalStringLiteral(Loc(l, r), s.to_string()),
-    <l:@L> <s:CharStringLiteral> <r:@R> => Node::CharStringLiteral(Loc(l, r), s.to_string()),
+    <l:@L> <s:CharStringLiteral> <r:@R>   => Node::CharStringLiteral(Loc(l, r), s.to_string()),
 }
 
 extern {

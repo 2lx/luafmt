@@ -237,15 +237,12 @@ impl<'input> Lexer<'input> {
         let mut end = start;
         let mut escaped = false;
 
-        while let Some((i, ch)) = self.chars.peek() {
-            end = *i;
-
-            match *ch {
-                '\\' => escaped = true,
-                c@'"' | c@'\'' if !escaped && c == prefix => break,
-                _ => {},
+        while let Some((i, ch)) = self.chars.next() {
+            end = i;
+            if !escaped && ch == prefix {
+                break;
             }
-            self.chars.next();
+            escaped = ch == '\\';
         }
 
         end + 1

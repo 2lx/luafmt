@@ -58,7 +58,7 @@ pub enum Node {
     TableMember(Loc, Box<Node>, Box<Node>),
     ExpList(Loc, Vec<Node>),
     NameList(Loc, Vec<Node>),
-    ParList(Loc, Box<Node>, Box<Node>),
+    ParList(Loc, Vec<Node>),
     VarList(Loc, Vec<Node>),
     FnStaticCall(Loc, Box<Node>, Box<Node>),
     FnMethodCall(Loc, Box<Node>, Box<Node>, Box<Node>),
@@ -68,7 +68,6 @@ pub enum Node {
     FuncDecl(Loc, Box<Node>, Box<Node>),
 
     StatementList(Loc, Vec<Node>),
-    StatementEmpty(Loc),
     DoEnd(Loc, Box<Node>),
     VarsExprs(Loc, Box<Node>, Box<Node>),
     Name(Loc, String),
@@ -82,7 +81,7 @@ pub enum Node {
     RetStat(Loc, Box<Node>),
     StatsRetStat(Loc, Box<Node>, Box<Node>),
 
-    Empty,
+    Empty(Loc),
 }
 
 fn print_node_vec(
@@ -95,6 +94,9 @@ fn print_node_vec(
     if !elems.is_empty() {
         write!(f, "{}", padding)?;
         for elem in &elems[0..elems.len() - 1] {
+            if let Node::Empty(_) = *elem {
+                continue;
+            }
             write!(f, "{}{}{}", elem, sep, ws)?;
         }
         write!(f, "{}{}", elems.last().unwrap(), padding)?;
@@ -160,22 +162,29 @@ impl fmt::Display for Node {
             ExpList(_, exps) => print_node_vec(f, exps, "", ",", " "),
             NameList(_, names) => print_node_vec(f, names, "", ",", " "),
             VarList(_, vars) => print_node_vec(f, vars, "", ",", " "),
-            StatementList(_, stts) => print_node_vec(f, stts, "", ",", " "),
-            StatementEmpty(_) => Ok(()),
+            StatementList(_, stts) => print_node_vec(f, stts, "", ";", " "),
             DoEnd(_, n) => write!(f, "do {} end", n),
             VarsExprs(_, n1, n2) => write!(f, "{} = {}", n1, n2),
 
             FnStaticCall(_, n1, n2) => write!(f, "{}{}", n1, n2),
             FnMethodCall(_, n1, s, n2) => write!(f, "{}:{}{}", n1, s, n2),
-            ParList(_, n1, n2) => write!(f, "{}, {}", n1, n2),
-            FunctionDef(_, n) => write!(f, "function {}", n),
-            FuncBody(_, n1, n2) => write!(f, "({}) {} end", n1, n2),
+            ParList(_, pars) => print_node_vec(f, pars, "", ",", " "),
+            FunctionDef(_, n) => write!(f, "function{}", n),
+            FuncBody(_, n1, n2) => match (&**n1, &**n2) {
+                (Node::Empty(_), Node::Empty(_)) => write!(f, "() end"),
+                (_, Node::Empty(_)) => write!(f, "({}) end", n1),
+                (Node::Empty(_), _) => write!(f, "() {} end", n2),
+                _ => write!(f, "({}) {} end", n1, n2),
+            },
             FuncName(_, names, n) => {
                 print_node_vec(f, names, "", ".", "")?;
                 write!(f, "{}", n)
             }
             FuncDecl(_, n1, n2) => write!(f, "function {} {}", n1, n2),
-            LocalNamesExprs(_, n1, n2) => write!(f, "local {} = {}", n1, n2),
+            LocalNamesExprs(_, n1, n2) => match **n2 {
+                Node::Empty(_) => write!(f, "local {}", n1),
+                _ => write!(f, "local {} = {}", n1, n2),
+            },
 
             Name(_, s) => write!(f, "{}", s),
             Label(_, n) => write!(f, "::{}::", n),
@@ -183,11 +192,20 @@ impl fmt::Display for Node {
             While(_, e, n) => write!(f, "while {} do {} end", e, n),
             Repeat(_, n, e) => write!(f, "repeat {} until {}", n, e),
             ForRange(_, n, e, b) => write!(f, "for {} in {} do {} end", n, e, b),
-            ForInt(_, n, e1, e2, e3, b) => write!(f, "for {} = {}, {}, {} do {} end", n, e1, e2, e3, b),
-            RetStat(_, n) => write!(f, "return {}", n),
-            StatsRetStat(_, n1, n2) => write!(f, "{} {}", n1, n2),
+            ForInt(_, n, e1, e2, e3, b) => match **e3 {
+                Node::Empty(_) => write!(f, "for {} = {}, {} do {} end", n, e1, e2, b),
+                _ => write!(f, "for {} = {}, {}, {} do {} end", n, e1, e2, e3, b),
+            },
+            RetStat(_, n) => match **n {
+                Node::Empty(_) => write!(f, "return"),
+                _ => write!(f, "return {}", n),
+            },
+            StatsRetStat(_, n1, n2) => match **n1 {
+                Node::Empty(_) => write!(f, "{}", n2),
+                _ => write!(f, "{} {}", n1, n2),
+            }
 
-            Empty => Ok(()),
+            Empty(_) => Ok(()),
         }
     }
 }

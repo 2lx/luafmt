@@ -1,4 +1,4 @@
-use std::io::{Read, self};
+use std::io::{self, Read};
 
 mod parser;
 
