@@ -75,16 +75,22 @@ Stats: Node = {
 }
 
 Stat: Node = {
+    <l:@L> ";" <r:@R>                           => Node::Empty(Loc(l, r)),
+    <l:@L> <n1:VarList> "=" <n2:ExpList> <r:@R> => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
     FunctionCall,
     Label,
-    <l:@L> ";" <r:@R>                                    => Node::Empty(Loc(l, r)),
-    <l:@L> <n1:VarList> "=" <n2:ExpList> <r:@R>          => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
-    <l:@L> "break" <r:@R>                                => Node::Break(Loc(l, r)),
-    <l:@L> "goto" <n:Name> <r:@R>                        => Node::GoTo(Loc(l, r), Box::new(n)),
+    <l:@L> "break" <r:@R>         => Node::Break(Loc(l, r)),
+    <l:@L> "goto" <n:Name> <r:@R> => Node::GoTo(Loc(l, r), Box::new(n)),
+
     <l:@L> "do" <n:Block> "end" <r:@R>                   => Node::DoEnd(Loc(l, r), Box::new(n)),
     <l:@L> "while" <e:OpExp> "do" <n:Block> "end" <r:@R> => Node::While(Loc(l, r), Box::new(e), Box::new(n)),
     <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>   => Node::Repeat(Loc(l, r), Box::new(n), Box::new(e)),
-    // if
+
+    <l:@L> "if" <e1:OpExp> "then" <b1:Block> <n1:ElseIfThenVec> <empl:@L> <empr:@R> "end" <r:@R>
+            => Node::IfThenElse(Loc(l, r), Box::new(e1), Box::new(b1), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
+    <l:@L> "if" <e1:OpExp> "then" <b1:Block> <n1:ElseIfThenVec> "else" <b2:Block> <r:@R> "end"
+            => Node::IfThenElse(Loc(l, r), Box::new(e1), Box::new(b1), Box::new(n1), Box::new(b2)),
+
     <l:@L> "for" <n:Name> "=" <e1:OpExp> "," <e2:OpExp> "," <e3:OpExp> "do" <b:Block> "end" <r:@R>
             => Node::ForInt(Loc(l, r), Box::new(n), Box::new(e1), Box::new(e2), Box::new(e3), Box::new(b)),
     <l:@L> "for" <n:Name> "=" <e1:OpExp> "," <e2:OpExp> <empl:@L> <empr:@R> "do" <b:Block> "end" <r:@R>
@@ -92,18 +98,26 @@ Stat: Node = {
     <l:@L> "for" <n:NameList> "in" <e:ExpList> "do" <b:Block> "end" <r:@R>
             => Node::ForRange(Loc(l, r), Box::new(n), Box::new(e), Box::new(b)),
 
-    // <l:@L> "function" <n1:FuncName> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
-    // <l:@L> "local" "function" <n1:FuncName> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> "function" <n1:FuncName> <n2:FuncBody> <r:@R>     => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> "local" "function" <n1:Name> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
 
     <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R>    => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
     <l:@L> "local" <n1:NameList> <empl:@L> <empr:@R> <r:@R> => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
 }
 
+ElseIfThenVec: Node = {
+    <l:@L> <v:SimpleEmptyVec<ElseIfThen>> <r:@R> => Node::ElseIfThenVec(Loc(l, r), v),
+}
+
+ElseIfThen: Node = {
+    <l:@L> "elseif" <e:OpExp> "then" <b:Block> <r:@R> => Node::ElseIfThen(Loc(l, r), Box::new(e), Box::new(b)),
+}
+
 RetStat: Node = {
-    <l:@L> "return" <emp:@L> <r:@R>        => Node::RetStat(Loc(l, r), Box::new(Node::Empty(Loc(emp, r)))),
-    <l:@L> "return" <n:ExpList> <r:@R>     => Node::RetStat(Loc(l, r), Box::new(n)),
-    <l:@L> "return" <emp:@L> ";" <r:@R>    => Node::RetStat(Loc(l, r), Box::new(Node::Empty(Loc(emp, r)))),
-    <l:@L> "return" <n:ExpList> ";" <r:@R> => Node::RetStat(Loc(l, r), Box::new(n)),
+    <l:@L> "return" <emp:@L> <r:@R>                => Node::RetStat(Loc(l, r), Box::new(Node::Empty(Loc(emp, r)))),
+    <l:@L> "return" <n:ExpList> <r:@R>             => Node::RetStat(Loc(l, r), Box::new(n)),
+    <l:@L> "return" <empl:@L> <empr:@R> ";" <r:@R> => Node::RetStat(Loc(l, r), Box::new(Node::Empty(Loc(empl, empr)))),
+    <l:@L> "return" <n:ExpList> ";" <r:@R>         => Node::RetStat(Loc(l, r), Box::new(n)),
 }
 
 Label: Node = {
@@ -111,8 +125,8 @@ Label: Node = {
 }
 
 FuncName: Node = {
-    <l:@L> <v:SepVec<Var, ".">> <r:@R>              => Node::FuncName(Loc(l, r), v, Box::new(Node::Empty(Loc(r, r)))),
-    <l:@L> <v:SepVec<Var, ".">> ":" <n:Name> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(n)),
+    <l:@L> <v:SepVec<Name, ".">> <r:@R>              => Node::FuncName(Loc(l, r), v, Box::new(Node::Empty(Loc(r, r)))),
+    <l:@L> <v:SepVec<Name, ".">> ":" <n:Name> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(n)),
 }
 
 VarList: Node = {
@@ -134,15 +148,15 @@ ExpList: Node = {
 }
 
 Exp: Node = {
+    <l:@L> "nil" <r:@R>       => Node::Nil(Loc(l, r)),
+    <l:@L> "false" <r:@R>     => Node::False(Loc(l, r)),
+    <l:@L> "true" <r:@R>      => Node::True(Loc(l, r)),
+    <l:@L> <s:Numeral> <r:@R> => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
     StringLiteral,
-    TableConstructor,
+    <l:@L> "..." <r:@R> => Node::VarArg(Loc(l, r)),
     FunctionDef,
     PrefixExp,
-    <l:@L> "nil" <r:@R>             => Node::Nil(Loc(l, r)),
-    <l:@L> "false" <r:@R>           => Node::False(Loc(l, r)),
-    <l:@L> "true" <r:@R>            => Node::True(Loc(l, r)),
-    <l:@L> "..." <r:@R>             => Node::VarArg(Loc(l, r)),
-    <l:@L> <s:Numeral> <r:@R>       => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
+    TableConstructor,
     <l:@L> "(" <e:OpExp> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(e)),
 }
 
@@ -177,8 +191,8 @@ ParList: Node = {
 }
 
 Par: Node = {
-    <l:@L> <s:LexVariable> <r:@R> => Node::Name(Loc(l, r), s.to_string()),
-    <l:@L> "..." <r:@R>           => Node::VarArg(Loc(l, r)),
+    Name,
+    <l:@L> "..." <r:@R> => Node::VarArg(Loc(l, r)),
 }
 
 TableConstructor: Node = {
@@ -192,7 +206,7 @@ FieldList: Node = {
 
 Field: Node = {
     <l:@L> "[" <e1:OpExp> "]" "=" <e2:OpExp> <r:@R> => Node::FieldNamedBracket(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <l:@L> <e1:Var> "=" <e2:OpExp> <r:@R>           => Node::FieldNamed(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Name> "=" <e2:OpExp> <r:@R>          => Node::FieldNamed(Loc(l, r), Box::new(e1), Box::new(e2)),
     <l:@L> <e:OpExp> <r:@R>                         => Node::FieldSequential(Loc(l, r), Box::new(e)),
 }
 
@@ -206,77 +220,77 @@ OpExp: Node = {
 }
 
 Op0: Node = {
-    <e1:Op0> <l:@L> "or" <r:@R> <e2:Op1> => Node::LogicalOr(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op0> "or" <e2:Op1> <r:@R> => Node::LogicalOr(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op1,
 }
 
 Op1: Node = {
-    <e1:Op1> <l:@L> "and" <r:@R> <e2:Op2> => Node::LogicalAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op1> "and" <e2:Op2> <r:@R> => Node::LogicalAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op2,
 }
 
 Op2: Node = {
-    <e1:Op2> <l:@L> "==" <r:@R> <e2:Op3> => Node::Equality(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op2> <l:@L> "~=" <r:@R> <e2:Op3> => Node::Inequality(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op2> <l:@L> "<"  <r:@R> <e2:Op3> => Node::LessThan(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op2> <l:@L> ">"  <r:@R> <e2:Op3> => Node::GreaterThan(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op2> <l:@L> "<=" <r:@R> <e2:Op3> => Node::LessOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op2> <l:@L> ">=" <r:@R> <e2:Op3> => Node::GreaterOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op2> "==" <e2:Op3> <r:@R> => Node::Equality(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op2> "~=" <e2:Op3> <r:@R> => Node::Inequality(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op2> "<"  <e2:Op3> <r:@R> => Node::LessThan(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op2> ">"  <e2:Op3> <r:@R> => Node::GreaterThan(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op2> "<=" <e2:Op3> <r:@R> => Node::LessOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op2> ">=" <e2:Op3> <r:@R> => Node::GreaterOrEqual(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op3,
 }
 
 Op3: Node = {
-    <e1:Op3> <l:@L> "|" <r:@R> <e2:Op4> => Node::BitwiseOr(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op3> "|" <e2:Op4> <r:@R> => Node::BitwiseOr(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op4,
 }
 
 Op4: Node = {
-    <e1:Op4> <l:@L> "~" <r:@R> <e2:Op5> => Node::BitwiseXor(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op4> "~" <e2:Op5> <r:@R> => Node::BitwiseXor(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op5,
 }
 
 Op5: Node = {
-    <e1:Op5> <l:@L> "&" <r:@R> <e2:Op6> => Node::BitwiseAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op5> "&" <e2:Op6> <r:@R> => Node::BitwiseAnd(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op6,
 }
 
 Op6: Node = {
-    <e1:Op6> <l:@L> "<<" <r:@R> <e2:Op7> => Node::LeftShift(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op6> <l:@L> ">>" <r:@R> <e2:Op7> => Node::RightShift(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op6> "<<" <e2:Op7> <r:@R> => Node::LeftShift(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op6> ">>" <e2:Op7> <r:@R> => Node::RightShift(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op7,
 }
 
 // right-associative
 Op7: Node = {
-    <e1:Op8> <l:@L> ".." <r:@R> <e2:Op7> => Node::Concatenation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op8> ".." <e2:Op7> <r:@R> => Node::Concatenation(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op8,
 }
 
 Op8: Node = {
-    <e1:Op8> <l:@L> "+" <r:@R> <e2:Op9> => Node::Addition(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op8> <l:@L> "-" <r:@R> <e2:Op9> => Node::Subtraction(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op8> "+" <e2:Op9> <r:@R> => Node::Addition(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op8> "-" <e2:Op9> <r:@R> => Node::Subtraction(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op9,
 }
 
 Op9: Node = {
-    <e1:Op9> <l:@L> "*"  <r:@R> <e2:Op10> => Node::Multiplication(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op9> <l:@L> "/"  <r:@R> <e2:Op10> => Node::Division(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op9> <l:@L> "//" <r:@R> <e2:Op10> => Node::FloorDivision(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <e1:Op9> <l:@L> "%"  <r:@R> <e2:Op10> => Node::Modulo(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op9> "*"  <e2:Op10> <r:@R> => Node::Multiplication(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op9> "/"  <e2:Op10> <r:@R> => Node::Division(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op9> "//" <e2:Op10> <r:@R> => Node::FloorDivision(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Op9> "%"  <e2:Op10> <r:@R> => Node::Modulo(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op10,
 }
 
 Op10: Node = {
-    <l:@L> "not" <r:@R> <e:Op11> => Node::UnaryNot(Loc(l, r), Box::new(e)),
-    <l:@L> "#"   <r:@R> <e:Op11> => Node::UnaryLength(Loc(l, r), Box::new(e)),
-    <l:@L> "-"   <r:@R> <e:Op11> => Node::UnaryMinus(Loc(l, r), Box::new(e)),
-    <l:@L> "~"   <r:@R> <e:Op11> => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
+    <l:@L> "not" <e:Op11> <r:@R> => Node::UnaryNot(Loc(l, r), Box::new(e)),
+    <l:@L> "#"   <e:Op11> <r:@R> => Node::UnaryLength(Loc(l, r), Box::new(e)),
+    <l:@L> "-"   <e:Op11> <r:@R> => Node::UnaryMinus(Loc(l, r), Box::new(e)),
+    <l:@L> "~"   <e:Op11> <r:@R> => Node::UnaryBitwiseXor(Loc(l, r), Box::new(e)),
     Op11,
 }
 
 // right-associative
 Op11: Node = {
-    <e1:Exp> <l:@L> "^" <r:@R> <e2:Op11> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <l:@L> <e1:Exp> "^" <e2:Op11> <r:@R> => Node::Exponentiation(Loc(l, r), Box::new(e1), Box::new(e2)),
     Exp,
 }
 

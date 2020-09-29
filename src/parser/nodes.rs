@@ -78,6 +78,10 @@ pub enum Node {
     ForRange(Loc, Box<Node>, Box<Node>, Box<Node>),
     ForInt(Loc, Box<Node>, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
     LocalNamesExprs(Loc, Box<Node>, Box<Node>),
+    IfThenElse(Loc, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
+    ElseIfThenVec(Loc, Vec<Node>),
+    ElseIfThen(Loc, Box<Node>, Box<Node>),
+
     RetStat(Loc, Box<Node>),
     StatsRetStat(Loc, Box<Node>, Box<Node>),
 
@@ -183,6 +187,16 @@ impl fmt::Display for Node {
                 Node::Empty(_) => write!(f, "local {}", n1),
                 _ => write!(f, "local {} = {}", n1, n2),
             },
+            IfThenElse(_, e1, b1, n, b2) => match (&**n, &**b2) {
+                (Node::ElseIfThenVec(_, v), Node::Empty(_)) if v.is_empty()
+                    => write!(f, "if {} then {} end", e1, b1),
+                (Node::ElseIfThenVec(_, v), _) if v.is_empty()
+                    => write!(f, "if {} then {} else {} end", e1, b1, b2),
+                (_, Node::Empty(_)) => write!(f, "if {} then {} {} end", e1, b1, n),
+                _ => write!(f, "if {} then {} {} else {} end", e1, b1, n, b2),
+            },
+            ElseIfThenVec(_, elems) => print_node_vec(f, elems, "", "", " "),
+            ElseIfThen(_, e, n) => write!(f, "elseif {} then {}", e, n),
 
             Name(_, s) => write!(f, "{}", s),
             Label(_, n) => write!(f, "::{}::", n),
