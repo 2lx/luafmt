@@ -106,13 +106,13 @@ fn test_table() {
     assert!(result.is_ok());
     assert_eq!(&format!("{}", result.unwrap()), "a = { a = (1 + 3) }");
 
-    // let result = parse("a = ({a=3}).a");
-    // assert!(result.is_ok(), "{:?}", result);
-    // assert_eq!(&format!("{}", result.unwrap()), "a = { a = (1 + 3) }");
+    let result = parse("a = ({a=3}).a");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!(&format!("{}", result.unwrap()), "a = ({ a = 3 }).a");
 
-    // let result = parse("(({a={b=2}}).a).b = 4");
-    // assert!(result.is_ok());
-    // assert_eq!(&format!("{}", result.unwrap()), "a = { a = (1 + 3) }");
+    let result = parse("a = (({a={b=2}}).a).b");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "a = (({ a = { b = 2 } }).a).b");
 
     let result = parse("a={1,2,  3; 4, 5;6;7 }");
     assert!(result.is_ok());

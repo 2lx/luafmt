@@ -36,7 +36,7 @@ pub enum Node {
     LogicalAnd(Loc, Box<Node>, Box<Node>),
     LogicalOr(Loc, Box<Node>, Box<Node>),
 
-    Var(Loc, Box<Node>),
+    Var(Loc, Box<Node>, Box<Node>),
     Numeral(Loc, f64),
     RoundBrackets(Loc, Box<Node>),
 
@@ -54,14 +54,15 @@ pub enum Node {
     FieldNamed(Loc, Box<Node>, Box<Node>),
     FieldSequential(Loc, Box<Node>),
 
-    TableIndex(Loc, Box<Node>, Box<Node>),
-    TableMember(Loc, Box<Node>, Box<Node>),
+    TableIndex(Loc, Box<Node>),
+    TableMember(Loc, Box<Node>),
     ExpList(Loc, Vec<Node>),
     NameList(Loc, Vec<Node>),
     ParList(Loc, Vec<Node>),
     VarList(Loc, Vec<Node>),
-    FnStaticCall(Loc, Box<Node>, Box<Node>),
-    FnMethodCall(Loc, Box<Node>, Box<Node>, Box<Node>),
+    VarRoundSuffix(Loc, Box<Node>, Box<Node>),
+    VarSuffixList(Loc, Vec<Node>),
+    FnMethodCall(Loc, Box<Node>, Box<Node>),
     FunctionDef(Loc, Box<Node>),
     FuncBody(Loc, Box<Node>, Box<Node>),
     FuncName(Loc, Vec<Node>, Box<Node>),
@@ -143,7 +144,7 @@ impl fmt::Display for Node {
             LogicalAnd(_, l, r) => write!(f, "{} and {}", l, r),
             LogicalOr(_, l, r) => write!(f, "{} or {}", l, r),
 
-            Var(_, n) => write!(f, "{}", n),
+            Var(_, n1, n2) => write!(f, "{}{}", n1, n2),
             Numeral(_, n) => write!(f, "{}", n),
             RoundBrackets(_, r) => write!(f, "({})", r),
 
@@ -161,8 +162,8 @@ impl fmt::Display for Node {
             FieldNamed(_, e1, e2) => write!(f, "{} = {}", e1, e2),
             FieldSequential(_, e) => write!(f, "{}", e),
 
-            TableIndex(_, e1, e2) => write!(f, "{}[{}]", e1, e2),
-            TableMember(_, e1, s) => write!(f, "{}.{}", e1, s),
+            TableIndex(_, e) => write!(f, "[{}]", e),
+            TableMember(_, n) => write!(f, ".{}", n),
             ExpList(_, exps) => print_node_vec(f, exps, "", ",", " "),
             NameList(_, names) => print_node_vec(f, names, "", ",", " "),
             VarList(_, vars) => print_node_vec(f, vars, "", ",", " "),
@@ -170,8 +171,9 @@ impl fmt::Display for Node {
             DoEnd(_, n) => write!(f, "do {} end", n),
             VarsExprs(_, n1, n2) => write!(f, "{} = {}", n1, n2),
 
-            FnStaticCall(_, n1, n2) => write!(f, "{}{}", n1, n2),
-            FnMethodCall(_, n1, s, n2) => write!(f, "{}:{}{}", n1, s, n2),
+            VarRoundSuffix(_, n1, n2) => write!(f, "({}){}", n1, n2),
+            VarSuffixList(_, suffs) => print_node_vec(f, suffs, "", "", ""),
+            FnMethodCall(_, n1, n2) => write!(f, ":{}{}", n1, n2),
             ParList(_, pars) => print_node_vec(f, pars, "", ",", " "),
             FunctionDef(_, n) => write!(f, "function{}", n),
             FuncBody(_, n1, n2) => match &**n2 {

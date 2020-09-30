@@ -82,16 +82,16 @@ Stats: Node = {
 
 // StatNext: Node = {
 Stat: Node = {
-    <l:@L> ";" <r:@R>              => Node::Empty(Loc(l, r)),
-    <n1:VarList2> "=" <n2:ExpList> => Node::Empty(Loc(0, 0)), // problem
-    FunctionCall2                  => Node::Empty(Loc(0, 0)), // problem
+    <l:@L> ";" <r:@R>                            => Node::Empty(Loc(l, r)),
+    <l:@L> <n1:VarList2> "=" <n2:ExpList> <r:@R> => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)), // problem
+    FunctionCall2, // problem
     Label,
     <l:@L> "break" <r:@R>         => Node::Break(Loc(l, r)),
     <l:@L> "goto" <n:Name> <r:@R> => Node::GoTo(Loc(l, r), Box::new(n)),
 
     <l:@L> "do" <n:Block> "end" <r:@R>                   => Node::DoEnd(Loc(l, r), Box::new(n)),
     <l:@L> "while" <e:OpExp> "do" <n:Block> "end" <r:@R> => Node::While(Loc(l, r), Box::new(e), Box::new(n)),
-     <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>   => Node::Repeat(Loc(l, r), Box::new(n), Box::new(e)), // problem
+    <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>   => Node::Repeat(Loc(l, r), Box::new(n), Box::new(e)), // problem
 
     <l:@L> "if" <e1:OpExp> "then" <b1:Block> <n1:ElseIfThenVec> <empl:@L> <empr:@R> "end" <r:@R>
             => Node::IfThenElse(Loc(l, r), Box::new(e1), Box::new(b1), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
@@ -108,7 +108,7 @@ Stat: Node = {
     <l:@L> "function" <n1:FuncName> <n2:FuncBody> <r:@R>     => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
     <l:@L> "local" "function" <n1:Name> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
 
-     <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R>    => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)), // problem
+    <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R>    => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)), // problem
     <l:@L> "local" <n1:NameList> <empl:@L> <empr:@R> <r:@R> => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
 }
 
@@ -148,11 +148,11 @@ VarList2: Node = {
 // ---------------------------
 
 FunctionCall2: Node = {
-    VarOrExp2  => Node::Empty(Loc(0, 0)),
+    VarOrExp2,
 }
 
 PrefixExp2: Node = {
-    VarOrExp2 => Node::Empty(Loc(0, 0)),
+    VarOrExp2,
 }
 
 VarOrExp2 = {
@@ -160,38 +160,38 @@ VarOrExp2 = {
 }
 
 Var2: Node = {
-    <l:@L> <n:Name> <r:@R>               => Node::Var(Loc(l, r), Box::new(n)),
-    <l:@L> <n:Name> <r:@R> VarSuffixList => Node::Var(Loc(l, r), Box::new(n)),
+    Name,
+    <l:@L> <n1:Name> <n2:VarSuffixList> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
 PrefixExp: Node = {
-    VarOrExp => Node::Empty(Loc(0, 0)),
+    VarOrExp,
 }
 
 FunctionCall: Node = {
-    VarOrExp  => Node::Empty(Loc(0, 0)),
+    VarOrExp,
 }
 
 VarOrExp = {
     Var,
-    "(" OpExp ")" => Node::Empty(Loc(0, 0)),
+    "(" <e:OpExp> ")" => Node::RoundBrackets(Loc(0, 0), Box::new(e)),
 }
 
 Var: Node = {
-    <l:@L> <n:Name> <r:@R>               => Node::Var(Loc(l, r), Box::new(n)),
-    <l:@L> <n:Name> <r:@R> VarSuffixList => Node::Var(Loc(l, r), Box::new(n)),
-    "(" OpExp ")" VarSuffixList          => Node::Empty(Loc(0, 0)),
+    Name,
+    <l:@L> <n1:Name> <n2:VarSuffixList> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
+    "(" <e:OpExp> ")" <n:VarSuffixList>  => Node::VarRoundSuffix(Loc(0, 0), Box::new(e), Box::new(n)),
 }
 
 VarSuffixList: Node = {
-    SimpleVec<VarSuffix> => Node::Empty(Loc(0, 0)),
+    <v:SimpleVec<VarSuffix>> => Node::VarSuffixList(Loc(0, 0), v),
 }
 
 VarSuffix: Node = {
-    "[" OpExp "]"                 => Node::Empty(Loc(0, 0)),
-    "." Name                      => Node::Empty(Loc(0, 0)),
+    "[" <e:OpExp> "]" => Node::TableIndex(Loc(0, 0), Box::new(e)),
+    "." <n:Name>      => Node::TableMember(Loc(0, 0), Box::new(n)),
     Args,
-    ":" Name Args => Node::Empty(Loc(0, 0)),
+    ":" <n1:Name> <n2:Args> => Node::FnMethodCall(Loc(0, 0), Box::new(n1), Box::new(n2)),
 }
 
 // ---------------------------
@@ -212,7 +212,7 @@ Exp: Node = {
     StringLiteral,
     <l:@L> "..." <r:@R> => Node::VarArg(Loc(l, r)),
     FunctionDef,
-    PrefixExp2,
+    PrefixExp,
     TableConstructor,
 }
 
