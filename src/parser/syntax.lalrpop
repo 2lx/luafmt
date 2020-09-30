@@ -6,7 +6,7 @@ grammar<'input>(input: &'input str);
 // templates
 // cannot be empty, no separators
 SimpleVec<T>: Vec<T> = {
-    <v:(<T>)*> <e:T> => {
+    <v:(<T>)*> <e:(<T>)> => {
         let mut v = v;
         v.push(e);
         v
@@ -71,27 +71,36 @@ Block: Node = {
 }
 
 Stats: Node = {
-    <l:@L> <n:SimpleEmptyVec<Stat>> <r:@R> => Node::StatementList(Loc(l, r), n),
+    StatUnsafeBeginEnd <l:@L> <n:SimpleEmptyVec<Stat>> <r:@R> => Node::StatementList(Loc(l, r), n),
+    <l:@L> <n:SimpleEmptyVec<Stat>> <r:@R>                    => Node::StatementList(Loc(l, r), n),
 }
 
-// Stat: Node = {
-//     StatNext FunctionCall => Node::Empty(Loc(0, 0)),
-//     // StatNext <n1:VarList> "=" <n2:ExpList> => Node::Empty(Loc(0, 0)),
-//     StatNext,
-// }
-
-// StatNext: Node = {
 Stat: Node = {
-    <l:@L> ";" <r:@R>                            => Node::Empty(Loc(l, r)),
-    <l:@L> <n1:VarList2> "=" <n2:ExpList> <r:@R> => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)), // problem
-    FunctionCall2, // problem
+    StatSafe,
+    StatUnsafeEnd,
+    StatSafe StatUnsafeBeginEnd  => Node::Empty(Loc(0, 0)),
+}
+
+StatUnsafeBeginEnd: Node = {
+    <l:@L> <n1:VarListAlwaysUnsafe> "=" <n2:ExpList> <r:@R> => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+    FunctionCallAlwayFirstUnsafe,
+}
+
+StatUnsafeEnd: Node = {
+    FunctionCallSafe,
+    <l:@L> <n1:VarListSafe> "=" <n2:ExpList> <r:@R>      => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>   => Node::Repeat(Loc(l, r), Box::new(n), Box::new(e)),
+    <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R> => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+}
+
+StatSafe: Node = {
+    <l:@L> ";" <r:@R> => Node::Empty(Loc(l, r)),
     Label,
     <l:@L> "break" <r:@R>         => Node::Break(Loc(l, r)),
     <l:@L> "goto" <n:Name> <r:@R> => Node::GoTo(Loc(l, r), Box::new(n)),
 
     <l:@L> "do" <n:Block> "end" <r:@R>                   => Node::DoEnd(Loc(l, r), Box::new(n)),
     <l:@L> "while" <e:OpExp> "do" <n:Block> "end" <r:@R> => Node::While(Loc(l, r), Box::new(e), Box::new(n)),
-    <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>   => Node::Repeat(Loc(l, r), Box::new(n), Box::new(e)), // problem
 
     <l:@L> "if" <e1:OpExp> "then" <b1:Block> <n1:ElseIfThenVec> <empl:@L> <empr:@R> "end" <r:@R>
             => Node::IfThenElse(Loc(l, r), Box::new(e1), Box::new(b1), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
@@ -108,7 +117,6 @@ Stat: Node = {
     <l:@L> "function" <n1:FuncName> <n2:FuncBody> <r:@R>     => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
     <l:@L> "local" "function" <n1:Name> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
 
-    <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R>    => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)), // problem
     <l:@L> "local" <n1:NameList> <empl:@L> <empr:@R> <r:@R> => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
 }
 
@@ -136,48 +144,58 @@ FuncName: Node = {
     <l:@L> <v:SepVec<Name, ".">> ":" <n:Name> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(n)),
 }
 
-VarList: Node = {
-    <l:@L> <n:SepVec<Var, ",">> <r:@R> => Node::VarList(Loc(l, r), n),
+VarListAlwaysUnsafe: Node = {
+    VarAlwaysUnsafe,
+    <l:@L> VarAlwaysUnsafe "," <n:SepVec<VarUnsafe, ",">> <r:@R> => Node::VarList(Loc(l, r), n),
 }
 
-VarList2: Node = {
-    <l:@L> <n:SepVec<Var2, ",">> <r:@R> => Node::VarList(Loc(l, r), n),
+VarListUnsafe: Node = {
+    <l:@L> <n:SepVec<VarUnsafe, ",">> <r:@R> => Node::VarList(Loc(l, r), n),
+}
+
+VarListSafe: Node = {
+    <l:@L> <n:SepVec<VarSafe, ",">> <r:@R> => Node::VarList(Loc(l, r), n),
 }
 
 
 // ---------------------------
 
-FunctionCall2: Node = {
-    VarOrExp2,
+FunctionCallSafe: Node = {
+    VarSafe,
 }
 
-PrefixExp2: Node = {
-    VarOrExp2,
+PrefixExpSafe: Node = {
+    VarSafe,
 }
 
-VarOrExp2 = {
-    Var2,
-}
-
-Var2: Node = {
+VarSafe: Node = {
     Name,
     <l:@L> <n1:Name> <n2:VarSuffixList> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
-PrefixExp: Node = {
-    VarOrExp,
+FunctionCallAlwayFirstUnsafe: Node = {
+    "(" <e:OpExp> ")" => Node::RoundBrackets(Loc(0, 0), Box::new(e)),
+    "(" <e:OpExp> ")" <n:VarSuffixList>  => Node::VarRoundSuffix(Loc(0, 0), Box::new(e), Box::new(n)),
 }
 
-FunctionCall: Node = {
-    VarOrExp,
+FunctionCallUnsafe: Node = {
+    VarOrExpUnsafe,
 }
 
-VarOrExp = {
-    Var,
+PrefixExpUnsafe: Node = {
+    VarOrExpUnsafe,
+}
+
+VarOrExpUnsafe: Node = {
+    VarUnsafe,
     "(" <e:OpExp> ")" => Node::RoundBrackets(Loc(0, 0), Box::new(e)),
 }
 
-Var: Node = {
+VarAlwaysUnsafe: Node = {
+    "(" <e:OpExp> ")" <n:VarSuffixList>  => Node::VarRoundSuffix(Loc(0, 0), Box::new(e), Box::new(n)),
+}
+
+VarUnsafe: Node = {
     Name,
     <l:@L> <n1:Name> <n2:VarSuffixList> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
     "(" <e:OpExp> ")" <n:VarSuffixList>  => Node::VarRoundSuffix(Loc(0, 0), Box::new(e), Box::new(n)),
@@ -212,7 +230,7 @@ Exp: Node = {
     StringLiteral,
     <l:@L> "..." <r:@R> => Node::VarArg(Loc(l, r)),
     FunctionDef,
-    PrefixExp,
+    PrefixExpUnsafe,
     TableConstructor,
 }
 

@@ -112,7 +112,10 @@ fn test_table() {
 
     let result = parse("a = (({a={b=2}}).a).b");
     assert!(result.is_ok());
-    assert_eq!(&format!("{}", result.unwrap()), "a = (({ a = { b = 2 } }).a).b");
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "a = (({ a = { b = 2 } }).a).b"
+    );
 
     let result = parse("a={1,2,  3; 4, 5;6;7 }");
     assert!(result.is_ok());
@@ -167,23 +170,32 @@ fn test_function() {
 
     let result = parse("fn_name(a1, a2).field = 3");
     assert!(result.is_ok(), "{:?}", result);
-    assert_eq!( &format!("{}", result.unwrap()), "fn_name(a1, a2).field = 3");
+    assert_eq!(&format!("{}", result.unwrap()), "fn_name(a1, a2).field = 3");
 
     let result = parse("fn_name{a1, a2}.field = fn().f4");
     assert!(result.is_ok());
-    assert_eq!( &format!("{}", result.unwrap()), "fn_name{ a1, a2 }.field = fn().f4");
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "fn_name{ a1, a2 }.field = fn().f4"
+    );
 
     let result = parse("fn()()(fn2('abc'))(1, 2)()");
     assert!(result.is_ok());
-    assert_eq!( &format!("{}", result.unwrap()), "fn()()(fn2('abc'))(1, 2)()");
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "fn()()(fn2('abc'))(1, 2)()"
+    );
 
     let result = parse("a = fn()().field");
     assert!(result.is_ok());
-    assert_eq!( &format!("{}", result.unwrap()), "a = fn()().field");
+    assert_eq!(&format!("{}", result.unwrap()), "a = fn()().field");
 
     let result = parse("a = fn{fn}{fn}(2){fn}.field(3).b");
     assert!(result.is_ok());
-    assert_eq!( &format!("{}", result.unwrap()), "a = fn{ fn }{ fn }(2){ fn }.field(3).b");
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "a = fn{ fn }{ fn }(2){ fn }.field(3).b"
+    );
 
     let result = parse("fn = function(a) return a end");
     assert!(result.is_ok(), "{:?}", result);
@@ -340,6 +352,43 @@ fn test_var() {
         &format!("{}", result.unwrap()),
         "a, b, c = 4, 4 & 1, func(42)"
     );
+}
+
+#[test]
+fn test_round_prefix() {
+    let result = parse("(fn2())()");
+    assert!(result.is_ok(), "{:?}", result);
+    // assert_eq!(&format!("{}", result.unwrap()), "(fn2())()");
+
+    let result = parse("((fn2()))()");
+    assert!(result.is_ok());
+    // assert_eq!(&format!("{}", result.unwrap()), "((fn2()))()");
+
+    let result = parse("((fn2()))(fn2())() fn2().field (fn2())()");
+    assert!(result.is_ok());
+    // assert_eq!(&format!("{}", result.unwrap()), "((fn2()))()");
+
+    let result = parse("a = (((fn2()))())");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
+
+    let result = parse("({ a = 2}).a = 3");
+    assert!(result.is_ok());
+    // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
+
+    let result = parse("(fn()):fl().a = 3");
+    assert!(result.is_ok());
+    // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
+
+    let result = parse("(fn()):fl().a, ({}).f = 3, (3&2)");
+    assert!(result.is_ok());
+    // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
+
+
+    let result = parse("({ a = 2}).a = 3 (fn()):fl().a = 3");
+    assert!(result.is_ok());
+    // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
+
 }
 
 #[test]
