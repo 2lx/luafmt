@@ -147,7 +147,7 @@ fn test_table() {
 #[test]
 fn test_function() {
     let result = parse("fn_name(a1, a2)");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "fn_name(a1, a2)");
 
     let result = parse("fn_name{a1, a2}");
@@ -227,7 +227,7 @@ fn test_stat() {
     assert_eq!(&format!("{}", result.unwrap()), "");
 
     let result = parse("a = 32;;;;;");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = 32; ");
 
     let result = parse(r#"a = "32";;;;b = {3, 4};;;;;c = 45"#);
