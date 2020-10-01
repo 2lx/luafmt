@@ -190,10 +190,12 @@ impl fmt::Display for Node {
                 _ => write!(f, "local {} = {}", n1, n2),
             },
             IfThenElse(_, e1, b1, n, b2) => match (&**n, &**b2) {
-                (Node::ElseIfThenVec(_, v), Node::Empty(_)) if v.is_empty()
-                    => write!(f, "if {} then {} end", e1, b1),
-                (Node::ElseIfThenVec(_, v), _) if v.is_empty()
-                    => write!(f, "if {} then {} else {} end", e1, b1, b2),
+                (Node::ElseIfThenVec(_, v), Node::Empty(_)) if v.is_empty() => {
+                    write!(f, "if {} then {} end", e1, b1)
+                }
+                (Node::ElseIfThenVec(_, v), _) if v.is_empty() => {
+                    write!(f, "if {} then {} else {} end", e1, b1, b2)
+                }
                 (_, Node::Empty(_)) => write!(f, "if {} then {} {} end", e1, b1, n),
                 _ => write!(f, "if {} then {} {} else {} end", e1, b1, n, b2),
             },
@@ -217,7 +219,7 @@ impl fmt::Display for Node {
             StatsRetStat(_, n1, n2) => match **n1 {
                 Node::StatementList(_, ref v) if v.is_empty() => write!(f, "{}", n2),
                 _ => write!(f, "{} {}", n1, n2),
-            }
+            },
 
             Empty(_) => Ok(()),
         }

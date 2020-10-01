@@ -358,15 +358,18 @@ fn test_var() {
 fn test_round_prefix() {
     let result = parse("(fn2())()");
     assert!(result.is_ok(), "{:?}", result);
-    // assert_eq!(&format!("{}", result.unwrap()), "(fn2())()");
+    assert_eq!(&format!("{}", result.unwrap()), "(fn2())()");
 
     let result = parse("((fn2()))()");
     assert!(result.is_ok());
-    // assert_eq!(&format!("{}", result.unwrap()), "((fn2()))()");
+    assert_eq!(&format!("{}", result.unwrap()), "((fn2()))()");
 
     let result = parse("((fn2()))(fn2())() fn2().field (fn2())()");
     assert!(result.is_ok());
-    // assert_eq!(&format!("{}", result.unwrap()), "((fn2()))()");
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "((fn2()))(fn2())(); fn2().field(fn2())()"
+    );
 
     let result = parse("a = (((fn2()))())");
     assert!(result.is_ok());
@@ -374,21 +377,26 @@ fn test_round_prefix() {
 
     let result = parse("({ a = 2}).a = 3");
     assert!(result.is_ok());
-    // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
+    assert_eq!(&format!("{}", result.unwrap()), "({ a = 2 }).a = 3");
 
     let result = parse("(fn()):fl().a = 3");
     assert!(result.is_ok());
-    // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
+    assert_eq!(&format!("{}", result.unwrap()), "(fn()):fl().a = 3");
 
     let result = parse("(fn()):fl().a, ({}).f = 3, (3&2)");
     assert!(result.is_ok());
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "(fn()):fl().a, ({}).f = 3, (3 & 2)"
+    );
+
+    // let result = parse("a = 3 (fn()):fl().a = 3");
+    // assert!(result.is_ok(), "{:?}", result);
     // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
 
-
-    let result = parse("({ a = 2}).a = 3 (fn()):fl().a = 3");
-    assert!(result.is_ok());
+    // let result = parse("({ a = 2}).a = 3 (fn()):fl().a = 3");
+    // assert!(result.is_ok());
     // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
-
 }
 
 #[test]

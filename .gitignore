@@ -2,3 +2,4 @@
 Cargo.lock
 src/parser/syntax.rs
 rusty-tags.vi
+temp/*
