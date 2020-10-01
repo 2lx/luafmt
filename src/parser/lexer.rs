@@ -274,7 +274,21 @@ impl<'input> Iterator for Lexer<'input> {
                 },
 
                 Some((i, '+')) => return Some(Ok((i, Token::OpAddition, i + 1))),
-                Some((i, '-')) => return Some(Ok((i, Token::Minus, i + 1))),
+                Some((i, '-')) => match self.chars.peek() {
+                    Some((_, '-')) => {
+                        // skip one-line comment
+                        self.chars.next();
+
+                        while let Some((_, ch)) = self.chars.peek() {
+                            if *ch == '\n' {
+                                break;
+                            }
+                            self.chars.next();
+                        }
+                        continue
+                    }
+                    _ => return Some(Ok((i, Token::Minus, i + 1))),
+                },
 
                 Some((i, '.')) => match self.chars.peek() {
                     Some((_, '.')) => {
@@ -364,7 +378,7 @@ impl<'input> Iterator for Lexer<'input> {
                     return Some(Ok((i, Token::Numeral(&self.input[i..end]), end)));
                 }
 
-                Some((i, ch)) if ch.is_ascii_alphabetic() => {
+                Some((i, ch)) if ch.is_ascii_alphabetic() || ch == '_' => {
                     let end = self.get_variable_end(i);
                     let variable = &self.input[i..end];
 
