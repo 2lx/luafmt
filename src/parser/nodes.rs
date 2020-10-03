@@ -187,10 +187,13 @@ impl fmt::Display for Node {
             },
             FuncName(_, names, n) => {
                 print_node_vec(f, names, "", ".", "")?;
-                write!(f, "{}", n)
+                match &**n {
+                    Node::Empty(_) => Ok(()),
+                    _ => write!(f, ":{}", n),
+                }
             }
-            FuncDecl(_, n1, n2) => write!(f, "function {} {}", n1, n2),
-            LocalNamesExprs(_, n1, n2) => match **n2 {
+            FuncDecl(_, n1, n2) => write!(f, "function {}{}", n1, n2),
+            LocalNamesExprs(_, n1, n2) => match &**n2 {
                 Node::Empty(_) => write!(f, "local {}", n1),
                 _ => write!(f, "local {} = {}", n1, n2),
             },
@@ -213,15 +216,15 @@ impl fmt::Display for Node {
             While(_, e, n) => write!(f, "while {} do {} end", e, n),
             Repeat(_, n, e) => write!(f, "repeat {} until {}", n, e),
             ForRange(_, n, e, b) => write!(f, "for {} in {} do {} end", n, e, b),
-            ForInt(_, n, e1, e2, e3, b) => match **e3 {
+            ForInt(_, n, e1, e2, e3, b) => match &**e3 {
                 Node::Empty(_) => write!(f, "for {} = {}, {} do {} end", n, e1, e2, b),
                 _ => write!(f, "for {} = {}, {}, {} do {} end", n, e1, e2, e3, b),
             },
-            RetStat(_, n) => match **n {
+            RetStat(_, n) => match &**n {
                 Node::Empty(_) => write!(f, "return"),
                 _ => write!(f, "return {}", n),
             },
-            StatsRetStat(_, n1, n2) => match **n1 {
+            StatsRetStat(_, n1, n2) => match &**n1 {
                 Node::StatementList(_, ref v) if v.is_empty() => write!(f, "{}", n2),
                 _ => write!(f, "{} {}", n1, n2),
             },

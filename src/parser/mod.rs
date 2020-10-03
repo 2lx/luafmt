@@ -16,7 +16,7 @@ pub fn parse(
 #[test]
 fn test_errors() {
     let result = parse("a = 3 + 22 * ? + 65");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
         ParseError::User { error } => (),
@@ -24,13 +24,13 @@ fn test_errors() {
     };
 
     let result = parse("local a = 1--2");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
 
     let result = parse("local a = 1 - - -2");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
 
     let result = parse("1++2");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
         ParseError::UnrecognizedToken {
@@ -41,7 +41,7 @@ fn test_errors() {
     };
 
     let result = parse("1 2");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
         ParseError::UnrecognizedToken {
@@ -52,7 +52,7 @@ fn test_errors() {
     };
 
     let result = parse("1+");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
         ParseError::UnrecognizedToken {
@@ -66,14 +66,14 @@ fn test_errors() {
 #[test]
 fn test_operation() {
     let result = parse("local a = 3 + 22 * -(11 + 65 // 12 << 3 ^ 1) and true or false");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "local a = 3 + 22 * -(11 + 65 // 12 << 3 ^ 1) and true or false"
     );
 
     let result = parse("b, c = -3+-22*-11^d*1+ 65, ((true and 43) or 43) %3 ^2");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "b, c = -3 + -22 * -11 ^ d * 1 + 65, ((true and 43) or 43) % 3 ^ 2"
@@ -83,27 +83,27 @@ fn test_operation() {
 #[test]
 fn test_table() {
     let result = parse("a = { }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = {}");
 
     let result = parse("a = { 1 }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = { 1 }");
 
     let result = parse("a = { a, }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = { a }");
 
     let result = parse("a = { a, b }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = { a, b }");
 
     let result = parse("a = { a, b, }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = { a, b }");
 
     let result = parse("a = { a = (1 + 3), }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = { a = (1 + 3) }");
 
     let result = parse("a = ({a=3}).a");
@@ -111,47 +111,46 @@ fn test_table() {
     assert_eq!(&format!("{}", result.unwrap()), "a = ({ a = 3 }).a");
 
     let result = parse("a = (({a={b=2}}).a).b");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = (({ a = { b = 2 } }).a).b"
     );
 
     let result = parse("a = ({a={b=2}})[\"a\"][\"b\"]");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = ({ a = { b = 2 } })[\"a\"][\"b\"]"
     );
 
-
     let result = parse("a={1,2,  3; 4, 5;6;7 }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = { 1, 2, 3, 4, 5, 6, 7 }"
     );
 
     let result = parse("a = { a = 1, 2, b = 4, 4 }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = { a = 1, 2, b = 4, 4 }"
     );
 
     let result = parse("a = { a = { b = true }, [b] = { a = true } }");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = { a = { b = true }, [b] = { a = true } }"
     );
 
     let result = parse("a = tbl[4 + b]");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = tbl[4 + b]");
 
     let result = parse("a = tbl.field.field2");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = tbl.field.field2");
 }
 
@@ -162,15 +161,15 @@ fn test_function() {
     assert_eq!(&format!("{}", result.unwrap()), "fn_name(a1, a2)");
 
     let result = parse("fn_name{a1, a2}");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "fn_name{ a1, a2 }");
 
     let result = parse("fn_name:method{a1, a2}");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "fn_name:method{ a1, a2 }");
 
     let result = parse("fn_name.field:method{a1, a2}");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "fn_name.field:method{ a1, a2 }"
@@ -181,25 +180,25 @@ fn test_function() {
     assert_eq!(&format!("{}", result.unwrap()), "fn_name(a1, a2).field = 3");
 
     let result = parse("fn_name{a1, a2}.field = fn().f4");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "fn_name{ a1, a2 }.field = fn().f4"
     );
 
     let result = parse("fn()()(fn2('abc'))(1, 2)()");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "fn()()(fn2('abc'))(1, 2)()"
     );
 
     let result = parse("a = fn()().field");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = fn()().field");
 
     let result = parse("a = fn{fn}{fn}(2){fn}.field(3).b");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = fn{ fn }{ fn }(2){ fn }.field(3).b"
@@ -234,16 +233,30 @@ fn test_function() {
     let result = parse("fn = function() end");
     assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "fn = function() end");
+
+    let result = parse("fn_name():method():fn{a1, a2}");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "fn_name():method():fn{ a1, a2 }"
+    );
+
+    let result = parse("function Obj:type() print(str) end");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "function Obj:type() print(str) end"
+    );
 }
 
 #[test]
 fn test_stat() {
     let result = parse(";");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "");
 
     let result = parse(";;;;;");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "");
 
     let result = parse("a = 32;;;;;");
@@ -251,14 +264,14 @@ fn test_stat() {
     assert_eq!(&format!("{}", result.unwrap()), "a = 32; ");
 
     let result = parse(r#"a = "32";;;;b = {3, 4};;;;;c = 45"#);
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = \"32\"; b = { 3, 4 }; c = 45"
     );
 
     let result = parse("a = 3+2; b =12-3; c=-42;");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = 3 + 2; b = 12 - 3; c = -42; "
@@ -272,35 +285,35 @@ fn test_for() {
                             x.fn(a)
                         end"#,
     );
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "for a in pairs(tbl) do x.fn(a) end"
     );
 
     let result = parse("for a = 5, 1, -1 do x.fn(a) end");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "for a = 5, 1, -1 do x.fn(a) end"
     );
 
     let result = parse("for a = 1, 5 do x.fn(a) fn(b + 3) end");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "for a = 1, 5 do x.fn(a); fn(b + 3) end"
     );
 
     let result = parse("while a < 4 do fn(a) fn(b) break end");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "while a < 4 do fn(a); fn(b); break end"
     );
 
     let result = parse("local a, b repeat fn(a) fn(b) until a > b print(a, b)");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "local a, b; repeat fn(a); fn(b) until a > b; print(a, b)"
@@ -326,7 +339,7 @@ fn test_for() {
                           goto lab1
                           return 4, 6"#,
     );
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()),
                "local a, b; for i in ipairs(tbl) do print(i, a); break return end; a, b = b, a; \
                a.b = b; b.a = a; ::lab1::; repeat fn(a); fn(b) return until a > b; print(a, b); goto lab1 return 4, 6");
@@ -335,27 +348,27 @@ fn test_for() {
 #[test]
 fn test_var() {
     let result = parse("local a, b");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "local a, b");
 
     let result = parse("local a, b = 4, 4 & 1");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "local a, b = 4, 4 & 1");
 
     let result = parse("a, b");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
 
     let result = parse("local a, b, ");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
 
     let result = parse("local a, b = ");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
 
     let result = parse("local , a, b");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
 
     let result = parse("a,b,c = 4, 4 & 1, func(42)");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a, b, c = 4, 4 & 1, func(42)"
@@ -369,30 +382,30 @@ fn test_round_prefix() {
     assert_eq!(&format!("{}", result.unwrap()), "(fn2())()");
 
     let result = parse("((fn2()))()");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "((fn2()))()");
 
     let result = parse("((fn2()))(fn2())() fn2().field (fn2())()");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "((fn2()))(fn2())(); fn2().field(fn2())()"
     );
 
     let result = parse("a = (((fn2()))())");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
 
     let result = parse("({ a = 2}).a = 3");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "({ a = 2 }).a = 3");
 
     let result = parse("(fn()):fl().a = 3");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "(fn()):fl().a = 3");
 
     let result = parse("(fn()):fl().a, ({}).f = 3, (3&2)");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "(fn()):fl().a, ({}).f = 3, (3 & 2)"
@@ -403,41 +416,44 @@ fn test_round_prefix() {
     // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
 
     // let result = parse("({ a = 2}).a = 3 (fn()):fl().a = 3");
-    // assert!(result.is_ok());
+    // assert!(result.is_ok(), "{:?}", result);
     // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
 
     let result = parse("local str = ({ a = 3, b = 2 })[param]");
-    assert!(result.is_ok());
-    assert_eq!(&format!("{}", result.unwrap()), "local str = ({ a = 3, b = 2 })[param]");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "local str = ({ a = 3, b = 2 })[param]"
+    );
 
     // let result = parse("local p = 'a' ({ a = fn1, b = fn2 })[p]()");
-    // assert!(result.is_ok());
+    // assert!(result.is_ok(), "{:?}", result);
     // assert_eq!(&format!("{}", result.unwrap()), "local str = ({ a = 3, b = 2 })[param]");
 }
 
 #[test]
 fn test_literal() {
     let result = parse(r#"a = 123"#);
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = 123");
 
     let result = parse(r#"a = 123.124"#);
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), "a = 123.124");
 
     let result = parse(r#"a = "123""#);
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(&format!("{}", result.unwrap()), r#"a = "123""#);
 
     let result = parse(r#"a = "\"12'3'\"344\"""#);
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "a = \"\\\"12'3'\\\"344\\\"\""
     );
 
     let result = parse(r#"a = '"12\'3\'"344"\\\''"#);
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         r#"a = '"12\'3\'"344"\\\''"#
@@ -445,47 +461,50 @@ fn test_literal() {
 
     let result = parse("a = [[line]]");
     assert!(result.is_ok(), "{:?}", result);
-    assert_eq!( &format!("{}", result.unwrap()), "a = [[line]]");
+    assert_eq!(&format!("{}", result.unwrap()), "a = [[line]]");
 
     let result = parse("a = [=[line]=]");
     assert!(result.is_ok(), "{:?}", result);
-    assert_eq!( &format!("{}", result.unwrap()), "a = [=[line]=]");
+    assert_eq!(&format!("{}", result.unwrap()), "a = [=[line]=]");
 
     let result = parse("a = [===[]===]");
     assert!(result.is_ok(), "{:?}", result);
-    assert_eq!( &format!("{}", result.unwrap()), "a = [===[]===]");
+    assert_eq!(&format!("{}", result.unwrap()), "a = [===[]===]");
 
     let result = parse("a = [[]]");
     assert!(result.is_ok(), "{:?}", result);
-    assert_eq!( &format!("{}", result.unwrap()), "a = [[]]");
+    assert_eq!(&format!("{}", result.unwrap()), "a = [[]]");
 
     let result = parse("a = [[\"\n'\"]]");
     assert!(result.is_ok(), "{:?}", result);
-    assert_eq!( &format!("{}", result.unwrap()), "a = [[\"\n'\"]]");
+    assert_eq!(&format!("{}", result.unwrap()), "a = [[\"\n'\"]]");
 
     let result = parse("a = [=[line\nnewline]]\n ]==] \n]===]\n]=]");
     assert!(result.is_ok(), "{:?}", result);
-    assert_eq!( &format!("{}", result.unwrap()), "a = [=[line\nnewline]]\n ]==] \n]===]\n]=]");
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "a = [=[line\nnewline]]\n ]==] \n]===]\n]=]"
+    );
 }
 
 #[test]
 fn test_if() {
     let result = parse("if a + b > 4 then print(a) end");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "if a + b > 4 then print(a) end"
     );
 
     let result = parse("if a + b > 4 then print(a) else print(b) end");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "if a + b > 4 then print(a) else print(b) end"
     );
 
     let result = parse("if a + b > 4 then print(a) elseif a+b<-4 then print(b) end");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "if a + b > 4 then print(a) elseif a + b < -4 then print(b) end"
@@ -493,7 +512,7 @@ fn test_if() {
 
     let result =
         parse("if a + b > 4 then print(a) elseif a+b<-4 then print(b) else print(a+b) end");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "if a + b > 4 then print(a) elseif a + b < -4 then print(b) else print(a + b) end"
@@ -501,26 +520,47 @@ fn test_if() {
 
     let result =
         parse("if a + b > 4 then print(a) elseif a+b<-4 then print(b) elseif a + b == 0 then print(0) else print(a+b) end");
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "if a + b > 4 then print(a) elseif a + b < -4 then print(b) elseif a + b == 0 then print(0) else print(a + b) end"
     );
 
     let result = parse("if a + b > 4 then print(a)");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
 
     let result = parse("if a + b > 4 print(a) end");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
 }
 
 #[test]
 fn test_comment() {
     let result = parse("if a + b > 4 then -- comment \n  print(a) -- comment 2 end ");
-    assert!(result.is_err());
+    assert!(result.is_err(), "{:?}", result);
 
-    let result = parse("if a + b > 4 then -- comment \n  print(a) -- comment 2 \nend ");
-    assert!(result.is_ok());
+    let result = parse("if a + b > 4 then -- comment\n--\n-- \n  print(a) -- comment 2 \nend ");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "if a + b > 4 then print(a) end"
+    );
+
+    let result = parse("if a --[[test]]+ b > --[[\nt\ne\ts\tt\n]] 4 then print(a) end ");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "if a + b > 4 then print(a) end"
+    );
+
+    let result = parse("if a --[=[test]=]+ b > --[===[\ntest\n]]===]4 then print(a) end ");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "if a + b > 4 then print(a) end"
+    );
+
+    let result = parse("if a --[[test\ntest]]+ --[=[sdf]=] --test\n b > --[===[]===]--[[]]--\n--[[]]4--[[]]--\n then print(a) end ");
+    assert!(result.is_ok(), "{:?}", result);
     assert_eq!(
         &format!("{}", result.unwrap()),
         "if a + b > 4 then print(a) end"

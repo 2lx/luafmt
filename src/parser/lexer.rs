@@ -198,74 +198,44 @@ impl<'input> Lexer<'input> {
         }
     }
 
-    fn get_number_end(&mut self, start: usize) -> usize {
-        let mut end = start;
-
-        while let Some((i, ch)) = self.chars.peek() {
-            if !ch.is_ascii_digit() && *ch != '.' {
-                break;
-            }
-            end = *i;
-            self.chars.next();
-        }
-
-        end + 1
-    }
-
-    fn get_variable_end(&mut self, start: usize) -> usize {
-        let mut end = start;
-
-        while let Some((i, ch)) = self.chars.peek() {
-            if !ch.is_ascii_alphabetic() && !ch.is_ascii_digit() && *ch != '_' {
-                break;
-            }
-            end = *i;
-            self.chars.next();
-        }
-
-        end + 1
-    }
-
-    fn get_string_end(&mut self, prefix: char, start: usize) -> usize {
+    fn seek_end_by_predicate(&mut self, start: usize, f: &dyn Fn(char, bool) -> bool) -> usize {
         let mut end = start;
         let mut escaped = false;
 
-        while let Some((i, ch)) = self.chars.next() {
-            end = i;
-            if !escaped && ch == prefix {
+        while let Some(&(i, ch)) = self.chars.peek() {
+            if f(ch, escaped) {
                 break;
             }
+
+            end = i;
+            self.chars.next();
             escaped = ch == '\\';
         }
 
         end + 1
     }
 
-    fn get_oneline_comment_end(&mut self, start: usize) -> usize {
-        let mut end = start;
+    fn get_number_end(&mut self, start: usize) -> usize {
+        self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_digit() && ch != '.')
+    }
 
-        while let Some((i, ch)) = self.chars.next() {
-            end = i;
-            if ch == '\n' {
-                break;
-            }
-        }
-        end + 1
+    fn get_variable_end(&mut self, start: usize) -> usize {
+        self.seek_end_by_predicate(start, &|ch: char, _| {
+            !ch.is_ascii_alphabetic() && !ch.is_ascii_digit() && ch != '_'
+        })
+    }
+
+    fn get_string_end(&mut self, prefix: char, start: usize) -> usize {
+        self.seek_end_by_predicate(start, &|ch: char, escaped: bool| !escaped && ch == prefix)
+    }
+
+    fn get_oneline_comment_end(&mut self, start: usize) -> usize {
+        self.seek_end_by_predicate(start, &|ch: char, _| ch == '\n')
     }
 
     fn get_multiline_string_level(&mut self, start: usize) -> (usize, usize) {
-        let mut end = start;
-        let mut level: usize = 0;
-
-        while let Some(&(i, ch)) = self.chars.peek() {
-            end = i;
-            if ch != '=' {
-                break;
-            }
-            level += 1;
-            self.chars.next();
-        }
-        (end, level)
+        let end = self.seek_end_by_predicate(start, &|ch: char, _| ch != '=');
+        (end, end - 1 - start)
     }
 
     fn get_multiline_string_end(&mut self, level: usize, start: usize) -> usize {
@@ -279,8 +249,7 @@ impl<'input> Lexer<'input> {
 
                 if level == cur_level {
                     match self.chars.peek() {
-                        Some((_, ']')) => {
-                            self.chars.next();
+                        Some(&(_, ']')) => {
                             break;
                         }
                         _ => (),
@@ -291,6 +260,41 @@ impl<'input> Lexer<'input> {
         }
 
         end + 1
+    }
+
+    fn process_comment(&mut self, start: usize) {
+        match self.chars.peek() {
+            Some(&(i, '[')) => {
+                self.chars.next();
+
+                match self.chars.peek() {
+                    Some(&(_, '=')) => {
+                        let (_, level) = self.get_multiline_string_level(i);
+                        match self.chars.peek() {
+                            Some(&(si, '[')) => {
+                                self.chars.next();
+                                self.get_multiline_string_end(level, si + 1);
+                                self.chars.next();
+                            }
+                            _ => {
+                                self.get_oneline_comment_end(i);
+                            }
+                        }
+                    }
+                    Some(&(i, '[')) => {
+                        self.chars.next();
+                        self.get_multiline_string_end(0, i + 1);
+                        self.chars.next();
+                    }
+                    _ => {
+                        self.get_oneline_comment_end(start);
+                    }
+                }
+            }
+            _ => {
+                self.get_oneline_comment_end(start);
+            }
+        }
     }
 }
 
@@ -307,11 +311,10 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some((i, '^')) => return Some(Ok((i, OpExponentiation, i + 1))),
                 Some((i, '#')) => return Some(Ok((i, OpLength, i + 1))),
-
                 Some((i, '*')) => return Some(Ok((i, OpMultiplication, i + 1))),
                 Some((i, '%')) => return Some(Ok((i, OpModulo, i + 1))),
                 Some((i, '/')) => match self.chars.peek() {
-                    Some((_, '/')) => {
+                    Some(&(_, '/')) => {
                         self.chars.next();
                         return Some(Ok((i, OpFloorDivision, i + 2)));
                     }
@@ -320,18 +323,20 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some((i, '+')) => return Some(Ok((i, OpAddition, i + 1))),
                 Some((i, '-')) => match self.chars.peek() {
-                    Some((_, '-')) => {
-                        let _ = self.get_oneline_comment_end(i);
+                    Some(&(_, '-')) => {
+                        self.chars.next();
+                        self.process_comment(i + 2);
+
                         continue;
                     }
                     _ => return Some(Ok((i, Minus, i + 1))),
                 },
 
                 Some((i, '.')) => match self.chars.peek() {
-                    Some((_, '.')) => {
+                    Some(&(_, '.')) => {
                         self.chars.next();
                         match self.chars.peek() {
-                            Some((_, '.')) => {
+                            Some(&(_, '.')) => {
                                 self.chars.next();
                                 return Some(Ok((i, VarArg, i + 3)));
                             }
@@ -342,11 +347,11 @@ impl<'input> Iterator for Lexer<'input> {
                 },
 
                 Some((i, '<')) => match self.chars.peek() {
-                    Some((_, '<')) => {
+                    Some(&(_, '<')) => {
                         self.chars.next();
                         return Some(Ok((i, OpLeftShift, i + 2)));
                     }
-                    Some((_, '=')) => {
+                    Some(&(_, '=')) => {
                         self.chars.next();
                         return Some(Ok((i, OpLessOrEqual, i + 2)));
                     }
@@ -354,11 +359,11 @@ impl<'input> Iterator for Lexer<'input> {
                 },
 
                 Some((i, '>')) => match self.chars.peek() {
-                    Some((_, '>')) => {
+                    Some(&(_, '>')) => {
                         self.chars.next();
                         return Some(Ok((i, OpRightShift, i + 2)));
                     }
-                    Some((_, '=')) => {
+                    Some(&(_, '=')) => {
                         self.chars.next();
                         return Some(Ok((i, OpGreaterOrEqual, i + 2)));
                     }
@@ -367,7 +372,7 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some((i, '&')) => return Some(Ok((i, OpBitwiseAnd, i + 1))),
                 Some((i, '~')) => match self.chars.peek() {
-                    Some((_, '=')) => {
+                    Some(&(_, '=')) => {
                         self.chars.next();
                         return Some(Ok((i, OpInequality, i + 2)));
                     }
@@ -376,7 +381,7 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, '|')) => return Some(Ok((i, OpBitwiseOr, i + 1))),
 
                 Some((i, '=')) => match self.chars.peek() {
-                    Some((_, '=')) => {
+                    Some(&(_, '=')) => {
                         self.chars.next();
                         return Some(Ok((i, OpEquality, i + 2)));
                     }
@@ -386,7 +391,7 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, ';')) => return Some(Ok((i, Semicolon, i + 1))),
                 Some((i, ',')) => return Some(Ok((i, Comma, i + 1))),
                 Some((i, ':')) => match self.chars.peek() {
-                    Some((_, ':')) => {
+                    Some(&(_, ':')) => {
                         self.chars.next();
                         return Some(Ok((i, Label, i + 2)));
                     }
@@ -400,13 +405,14 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some((i, ']')) => return Some(Ok((i, CloseSquareBracket, i + 1))),
                 Some((i, '[')) => match self.chars.peek() {
-                    Some((_, '=')) => {
+                    Some(&(_, '=')) => {
                         let (str_begin, level) = self.get_multiline_string_level(i);
                         match self.chars.peek() {
                             Some(&(si, '[')) => {
                                 self.chars.next();
-
                                 let end = self.get_multiline_string_end(level, si);
+                                self.chars.next();
+
                                 return Some(Ok((
                                     i,
                                     MultilineStringLiteral(
@@ -426,6 +432,8 @@ impl<'input> Iterator for Lexer<'input> {
                         self.chars.next();
                         let str_begin = i + 2;
                         let end = self.get_multiline_string_end(0, i + 1);
+                        self.chars.next();
+
                         return Some(Ok((
                             i,
                             MultilineStringLiteral(0, &self.input[str_begin..end - 1]),
@@ -437,16 +445,14 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some((i, '"')) => {
                     let end = self.get_string_end('"', i);
-                    return Some(Ok((
-                        i,
-                        NormalStringLiteral(&self.input[i + 1..end - 1]),
-                        end,
-                    )));
+                    self.chars.next();
+                    return Some(Ok((i, NormalStringLiteral(&self.input[i + 1..end]), end)));
                 }
 
                 Some((i, '\'')) => {
                     let end = self.get_string_end('\'', i);
-                    return Some(Ok((i, CharStringLiteral(&self.input[i + 1..end - 1]), end)));
+                    self.chars.next();
+                    return Some(Ok((i, CharStringLiteral(&self.input[i + 1..end]), end)));
                 }
 
                 Some((i, ch)) if ch.is_ascii_digit() => {
