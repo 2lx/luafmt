@@ -390,8 +390,9 @@ Name: Node = {
 }
 
 StringLiteral: Node = {
-    <l:@L> <s:NormalStringLiteral> <r:@R> => Node::NormalStringLiteral(Loc(l, r), s.to_string()),
-    <l:@L> <s:CharStringLiteral> <r:@R>   => Node::CharStringLiteral(Loc(l, r), s.to_string()),
+    <l:@L> <s:NormalStringLiteral> <r:@R>    => Node::NormalStringLiteral(Loc(l, r), s.to_string()),
+    <l:@L> <s:CharStringLiteral> <r:@R>      => Node::CharStringLiteral(Loc(l, r), s.to_string()),
+    <l:@L> <v:MultilineStringLiteral> <r:@R> => Node::MultilineStringLiteral(Loc(l, r), v.0, v.1.to_string()),
 }
 
 extern {
@@ -456,9 +457,10 @@ extern {
         "until"    => Token::Until,
         "while"    => Token::While,
 
-        LexVariable         => Token::Variable(<&'input str>),
-        Numeral             => Token::Numeral(<&'input str>),
-        NormalStringLiteral => Token::NormalStringLiteral(<&'input str>),
-        CharStringLiteral   => Token::CharStringLiteral(<&'input str>),
+        LexVariable            => Token::Variable(<&'input str>),
+        Numeral                => Token::Numeral(<&'input str>),
+        NormalStringLiteral    => Token::NormalStringLiteral(<&'input str>),
+        CharStringLiteral      => Token::CharStringLiteral(<&'input str>),
+        MultilineStringLiteral => Token::MultilineStringLiteral(<usize>, <&'input str>),
     }
 }

@@ -47,6 +47,7 @@ pub enum Node {
     Break(Loc),
     NormalStringLiteral(Loc, String),
     CharStringLiteral(Loc, String),
+    MultilineStringLiteral(Loc, usize, String),
 
     TableConstructor(Loc, Box<Node>),
     Fields(Loc, Vec<Node>),
@@ -155,6 +156,10 @@ impl fmt::Display for Node {
             Break(_) => write!(f, "break"),
             NormalStringLiteral(_, s) => write!(f, "\"{}\"", s),
             CharStringLiteral(_, s) => write!(f, "'{}'", s),
+            MultilineStringLiteral(_, level, s) => {
+                let level_str = (0..*level).map(|_| "=").collect::<String>();
+                write!(f, "[{}[{}]{}]", level_str, s, level_str)
+            },
 
             TableConstructor(_, r) => write!(f, "{{{}}}", r),
             Fields(_, fields) => print_node_vec(f, fields, " ", ",", " "),

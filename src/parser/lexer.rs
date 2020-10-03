@@ -7,31 +7,24 @@ pub enum Token<'input> {
     OpExponentiation,
     OpLogicalNot,
     OpLength,
-
     OpMultiplication,
     OpDivision,
     OpFloorDivision,
     OpModulo,
-
     OpAddition,
     Minus,
-
     OpConcatenation,
-
     OpLeftShift,
     OpRightShift,
-
     OpBitwiseAnd,
     Tilde,
     OpBitwiseOr,
-
     OpEquality,
     OpInequality,
     OpLessThan,
     OpGreaterThan,
     OpLessOrEqual,
     OpGreaterOrEqual,
-
     OpLogicalAnd,
     OpLogicalOr,
 
@@ -39,21 +32,20 @@ pub enum Token<'input> {
     Numeral(&'input str),
     NormalStringLiteral(&'input str),
     CharStringLiteral(&'input str),
+    MultilineStringLiteral(usize, &'input str),
 
     Semicolon,
     Comma,
     Colon,
     Label,
-
+    EqualsSign,
+    Period,
     OpenRoundBracket,
     CloseRoundBracket,
     OpenSquareBracket,
     CloseSquareBracket,
     OpenCurlyBracket,
     CloseCurlyBracket,
-
-    EqualsSign,
-    Period,
 
     Break,
     Do,
@@ -79,77 +71,74 @@ pub enum Token<'input> {
 
 impl fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Token::*;
         match self {
-            Token::OpExponentiation => write!(f, "^"),
-            Token::OpLogicalNot => write!(f, "not"),
-            Token::OpLength => write!(f, "#"),
+            OpExponentiation => write!(f, "^"),
+            OpLogicalNot => write!(f, "not"),
+            OpLength => write!(f, "#"),
+            OpMultiplication => write!(f, "*"),
+            OpDivision => write!(f, "/"),
+            OpFloorDivision => write!(f, "//"),
+            OpModulo => write!(f, "%"),
+            OpAddition => write!(f, "+"),
+            Minus => write!(f, "-"),
+            OpConcatenation => write!(f, ".."),
+            OpLeftShift => write!(f, "<<"),
+            OpRightShift => write!(f, ">>"),
+            OpBitwiseAnd => write!(f, "&"),
+            Tilde => write!(f, "~"),
+            OpBitwiseOr => write!(f, "|"),
+            OpEquality => write!(f, "=="),
+            OpInequality => write!(f, "~="),
+            OpLessThan => write!(f, "<"),
+            OpGreaterThan => write!(f, ">"),
+            OpLessOrEqual => write!(f, "<="),
+            OpGreaterOrEqual => write!(f, ">="),
+            OpLogicalAnd => write!(f, "and"),
+            OpLogicalOr => write!(f, "or"),
 
-            Token::OpMultiplication => write!(f, "*"),
-            Token::OpDivision => write!(f, "/"),
-            Token::OpFloorDivision => write!(f, "//"),
-            Token::OpModulo => write!(f, "%"),
+            Variable(s) => write!(f, "\"{}\"", s),
+            Numeral(n) => write!(f, "\"{}\"", n),
+            NormalStringLiteral(s) => write!(f, "\"{}\"", s),
+            CharStringLiteral(s) => write!(f, "'{}'", s),
+            MultilineStringLiteral(level, s) => {
+                let level_str = (0..*level).map(|_| "=").collect::<String>();
+                write!(f, "[{}[{}]{}]", level_str, s, level_str)
+            }
 
-            Token::OpAddition => write!(f, "+"),
-            Token::Minus => write!(f, "-"),
+            Semicolon => write!(f, ";"),
+            Comma => write!(f, ","),
+            Colon => write!(f, ":"),
+            Label => write!(f, "::"),
+            EqualsSign => write!(f, "="),
+            Period => write!(f, "."),
+            OpenRoundBracket => write!(f, "("),
+            CloseRoundBracket => write!(f, ")"),
+            OpenSquareBracket => write!(f, "["),
+            CloseSquareBracket => write!(f, "]"),
+            OpenCurlyBracket => write!(f, "{{"),
+            CloseCurlyBracket => write!(f, "}}"),
 
-            Token::OpConcatenation => write!(f, ".."),
-
-            Token::OpLeftShift => write!(f, "<<"),
-            Token::OpRightShift => write!(f, ">>"),
-
-            Token::OpBitwiseAnd => write!(f, "&"),
-            Token::Tilde => write!(f, "~"),
-            Token::OpBitwiseOr => write!(f, "|"),
-
-            Token::OpEquality => write!(f, "=="),
-            Token::OpInequality => write!(f, "~="),
-            Token::OpLessThan => write!(f, "<"),
-            Token::OpGreaterThan => write!(f, ">"),
-            Token::OpLessOrEqual => write!(f, "<="),
-            Token::OpGreaterOrEqual => write!(f, ">="),
-
-            Token::OpLogicalAnd => write!(f, "and"),
-            Token::OpLogicalOr => write!(f, "or"),
-
-            Token::Semicolon => write!(f, ";"),
-            Token::Comma => write!(f, ","),
-            Token::Colon => write!(f, ":"),
-            Token::Label => write!(f, "::"),
-
-            Token::OpenRoundBracket => write!(f, "("),
-            Token::CloseRoundBracket => write!(f, ")"),
-            Token::OpenSquareBracket => write!(f, "["),
-            Token::CloseSquareBracket => write!(f, "]"),
-            Token::OpenCurlyBracket => write!(f, "{{"),
-            Token::CloseCurlyBracket => write!(f, "}}"),
-
-            Token::Variable(s) => write!(f, "\"{}\"", s),
-            Token::Numeral(n) => write!(f, "\"{}\"", n),
-            Token::NormalStringLiteral(s) => write!(f, "\"{}\"", s),
-            Token::CharStringLiteral(s) => write!(f, "'{}'", s),
-            Token::EqualsSign => write!(f, "="),
-            Token::Period => write!(f, "."),
-
-            Token::Break    => write!(f, "break"),
-            Token::Do       => write!(f, "do"),
-            Token::Else     => write!(f, "else"),
-            Token::ElseIf   => write!(f, "elseif"),
-            Token::End      => write!(f, "end"),
-            Token::False    => write!(f, "false"),
-            Token::For      => write!(f, "for"),
-            Token::Function => write!(f, "function"),
-            Token::GoTo     => write!(f, "goto"),
-            Token::If       => write!(f, "if"),
-            Token::In       => write!(f, "in"),
-            Token::Local    => write!(f, "local"),
-            Token::Nil      => write!(f, "nil"),
-            Token::Repeat   => write!(f, "repeat"),
-            Token::Return   => write!(f, "return"),
-            Token::Then     => write!(f, "then"),
-            Token::True     => write!(f, "true"),
-            Token::Until    => write!(f, "until"),
-            Token::VarArg   => write!(f, "..."),
-            Token::While    => write!(f, "while"),
+            Break => write!(f, "break"),
+            Do => write!(f, "do"),
+            Else => write!(f, "else"),
+            ElseIf => write!(f, "elseif"),
+            End => write!(f, "end"),
+            False => write!(f, "false"),
+            For => write!(f, "for"),
+            Function => write!(f, "function"),
+            GoTo => write!(f, "goto"),
+            If => write!(f, "if"),
+            In => write!(f, "in"),
+            Local => write!(f, "local"),
+            Nil => write!(f, "nil"),
+            Repeat => write!(f, "repeat"),
+            Return => write!(f, "return"),
+            Then => write!(f, "then"),
+            True => write!(f, "true"),
+            Until => write!(f, "until"),
+            VarArg => write!(f, "..."),
+            While => write!(f, "while"),
         }
     }
 }
@@ -182,6 +171,7 @@ static KEYWORDS: phf::Map<&'static str, Token> = phf_map! {
 #[derive(Debug)]
 pub enum LexicalError {
     UnrecognizedSymbol(usize, char),
+    UnexpectedEOF,
 }
 
 impl fmt::Display for LexicalError {
@@ -190,6 +180,7 @@ impl fmt::Display for LexicalError {
             LexicalError::UnrecognizedSymbol(i, ch) => {
                 write!(f, "lexical error: unrecognized symbol '{}' at {}", ch, i)
             }
+            LexicalError::UnexpectedEOF => write!(f, "lexical error: unexpected end of file"),
         }
     }
 }
@@ -209,6 +200,7 @@ impl<'input> Lexer<'input> {
 
     fn get_number_end(&mut self, start: usize) -> usize {
         let mut end = start;
+
         while let Some((i, ch)) = self.chars.peek() {
             if !ch.is_ascii_digit() && *ch != '.' {
                 break;
@@ -222,6 +214,7 @@ impl<'input> Lexer<'input> {
 
     fn get_variable_end(&mut self, start: usize) -> usize {
         let mut end = start;
+
         while let Some((i, ch)) = self.chars.peek() {
             if !ch.is_ascii_alphabetic() && !ch.is_ascii_digit() && *ch != '_' {
                 break;
@@ -247,47 +240,91 @@ impl<'input> Lexer<'input> {
 
         end + 1
     }
+
+    fn get_oneline_comment_end(&mut self, start: usize) -> usize {
+        let mut end = start;
+
+        while let Some((i, ch)) = self.chars.next() {
+            end = i;
+            if ch == '\n' {
+                break;
+            }
+        }
+        end + 1
+    }
+
+    fn get_multiline_string_level(&mut self, start: usize) -> (usize, usize) {
+        let mut end = start;
+        let mut level: usize = 0;
+
+        while let Some(&(i, ch)) = self.chars.peek() {
+            end = i;
+            if ch != '=' {
+                break;
+            }
+            level += 1;
+            self.chars.next();
+        }
+        (end, level)
+    }
+
+    fn get_multiline_string_end(&mut self, level: usize, start: usize) -> usize {
+        let mut end = start;
+        let mut escaped = false;
+
+        while let Some((i, ch)) = self.chars.next() {
+            end = i;
+            if !escaped && ch == ']' {
+                let (_, cur_level) = self.get_multiline_string_level(i);
+
+                if level == cur_level {
+                    match self.chars.peek() {
+                        Some((_, ']')) => {
+                            self.chars.next();
+                            break;
+                        }
+                        _ => (),
+                    }
+                }
+            }
+            escaped = ch == '\\';
+        }
+
+        end + 1
+    }
 }
 
 impl<'input> Iterator for Lexer<'input> {
     type Item = Result<(usize, Token<'input>, usize), LexicalError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        use Token::*;
         loop {
             match self.chars.next() {
                 None => return None, // end of file
 
                 Some((_, ' ')) | Some((_, '\n')) | Some((_, '\r')) | Some((_, '\t')) => continue,
 
-                // operators
-                Some((i, '^')) => return Some(Ok((i, Token::OpExponentiation, i + 1))),
-                Some((i, '#')) => return Some(Ok((i, Token::OpLength, i + 1))),
+                Some((i, '^')) => return Some(Ok((i, OpExponentiation, i + 1))),
+                Some((i, '#')) => return Some(Ok((i, OpLength, i + 1))),
 
-                Some((i, '*')) => return Some(Ok((i, Token::OpMultiplication, i + 1))),
-                Some((i, '%')) => return Some(Ok((i, Token::OpModulo, i + 1))),
+                Some((i, '*')) => return Some(Ok((i, OpMultiplication, i + 1))),
+                Some((i, '%')) => return Some(Ok((i, OpModulo, i + 1))),
                 Some((i, '/')) => match self.chars.peek() {
                     Some((_, '/')) => {
                         self.chars.next();
-                        return Some(Ok((i, Token::OpFloorDivision, i + 2)));
+                        return Some(Ok((i, OpFloorDivision, i + 2)));
                     }
-                    _ => return Some(Ok((i, Token::OpDivision, i + 1))),
+                    _ => return Some(Ok((i, OpDivision, i + 1))),
                 },
 
-                Some((i, '+')) => return Some(Ok((i, Token::OpAddition, i + 1))),
+                Some((i, '+')) => return Some(Ok((i, OpAddition, i + 1))),
                 Some((i, '-')) => match self.chars.peek() {
                     Some((_, '-')) => {
-                        // skip one-line comment
-                        self.chars.next();
-
-                        while let Some((_, ch)) = self.chars.peek() {
-                            if *ch == '\n' {
-                                break;
-                            }
-                            self.chars.next();
-                        }
-                        continue
+                        let _ = self.get_oneline_comment_end(i);
+                        continue;
                     }
-                    _ => return Some(Ok((i, Token::Minus, i + 1))),
+                    _ => return Some(Ok((i, Minus, i + 1))),
                 },
 
                 Some((i, '.')) => match self.chars.peek() {
@@ -296,86 +333,126 @@ impl<'input> Iterator for Lexer<'input> {
                         match self.chars.peek() {
                             Some((_, '.')) => {
                                 self.chars.next();
-                                return Some(Ok((i, Token::VarArg, i + 3)));
-                            },
-                            _ => return Some(Ok((i, Token::OpConcatenation, i + 2))),
+                                return Some(Ok((i, VarArg, i + 3)));
+                            }
+                            _ => return Some(Ok((i, OpConcatenation, i + 2))),
                         }
-                    },
-                    _ => return Some(Ok((i, Token::Period, i + 1))),
+                    }
+                    _ => return Some(Ok((i, Period, i + 1))),
                 },
 
                 Some((i, '<')) => match self.chars.peek() {
                     Some((_, '<')) => {
                         self.chars.next();
-                        return Some(Ok((i, Token::OpLeftShift, i + 2)));
+                        return Some(Ok((i, OpLeftShift, i + 2)));
                     }
                     Some((_, '=')) => {
                         self.chars.next();
-                        return Some(Ok((i, Token::OpLessOrEqual, i + 2)));
+                        return Some(Ok((i, OpLessOrEqual, i + 2)));
                     }
-                    _ => return Some(Ok((i, Token::OpLessThan, i + 1))),
+                    _ => return Some(Ok((i, OpLessThan, i + 1))),
                 },
 
                 Some((i, '>')) => match self.chars.peek() {
                     Some((_, '>')) => {
                         self.chars.next();
-                        return Some(Ok((i, Token::OpRightShift, i + 2)));
+                        return Some(Ok((i, OpRightShift, i + 2)));
                     }
                     Some((_, '=')) => {
                         self.chars.next();
-                        return Some(Ok((i, Token::OpGreaterOrEqual, i + 2)));
+                        return Some(Ok((i, OpGreaterOrEqual, i + 2)));
                     }
-                    _ => return Some(Ok((i, Token::OpGreaterThan, i + 1))),
+                    _ => return Some(Ok((i, OpGreaterThan, i + 1))),
                 },
 
-                Some((i, '&')) => return Some(Ok((i, Token::OpBitwiseAnd, i + 1))),
+                Some((i, '&')) => return Some(Ok((i, OpBitwiseAnd, i + 1))),
                 Some((i, '~')) => match self.chars.peek() {
                     Some((_, '=')) => {
                         self.chars.next();
-                        return Some(Ok((i, Token::OpInequality, i + 2)));
+                        return Some(Ok((i, OpInequality, i + 2)));
                     }
-                    _ => return Some(Ok((i, Token::Tilde, i + 1))),
+                    _ => return Some(Ok((i, Tilde, i + 1))),
                 },
-                Some((i, '|')) => return Some(Ok((i, Token::OpBitwiseOr, i + 1))),
+                Some((i, '|')) => return Some(Ok((i, OpBitwiseOr, i + 1))),
 
                 Some((i, '=')) => match self.chars.peek() {
                     Some((_, '=')) => {
                         self.chars.next();
-                        return Some(Ok((i, Token::OpEquality, i + 2)));
+                        return Some(Ok((i, OpEquality, i + 2)));
                     }
-                    _ => return Some(Ok((i, Token::EqualsSign, i + 1))),
+                    _ => return Some(Ok((i, EqualsSign, i + 1))),
                 },
 
-                Some((i, ';')) => return Some(Ok((i, Token::Semicolon, i + 1))),
-                Some((i, ',')) => return Some(Ok((i, Token::Comma, i + 1))),
+                Some((i, ';')) => return Some(Ok((i, Semicolon, i + 1))),
+                Some((i, ',')) => return Some(Ok((i, Comma, i + 1))),
                 Some((i, ':')) => match self.chars.peek() {
                     Some((_, ':')) => {
                         self.chars.next();
-                        return Some(Ok((i, Token::Label, i + 2)));
+                        return Some(Ok((i, Label, i + 2)));
                     }
-                    _ => return Some(Ok((i, Token::Colon, i + 1))),
+                    _ => return Some(Ok((i, Colon, i + 1))),
                 },
 
-                Some((i, '(')) => return Some(Ok((i, Token::OpenRoundBracket, i + 1))),
-                Some((i, ')')) => return Some(Ok((i, Token::CloseRoundBracket, i + 1))),
-                Some((i, '[')) => return Some(Ok((i, Token::OpenSquareBracket, i + 1))),
-                Some((i, ']')) => return Some(Ok((i, Token::CloseSquareBracket, i + 1))),
-                Some((i, '{')) => return Some(Ok((i, Token::OpenCurlyBracket, i + 1))),
-                Some((i, '}')) => return Some(Ok((i, Token::CloseCurlyBracket, i + 1))),
+                Some((i, '(')) => return Some(Ok((i, OpenRoundBracket, i + 1))),
+                Some((i, ')')) => return Some(Ok((i, CloseRoundBracket, i + 1))),
+                Some((i, '{')) => return Some(Ok((i, OpenCurlyBracket, i + 1))),
+                Some((i, '}')) => return Some(Ok((i, CloseCurlyBracket, i + 1))),
 
-                Some((i, ch)) if ch == '"' => {
+                Some((i, ']')) => return Some(Ok((i, CloseSquareBracket, i + 1))),
+                Some((i, '[')) => match self.chars.peek() {
+                    Some((_, '=')) => {
+                        let (str_begin, level) = self.get_multiline_string_level(i);
+                        match self.chars.peek() {
+                            Some(&(si, '[')) => {
+                                self.chars.next();
+
+                                let end = self.get_multiline_string_end(level, si);
+                                return Some(Ok((
+                                    i,
+                                    MultilineStringLiteral(
+                                        level,
+                                        &self.input[str_begin + 1..end - 1],
+                                    ),
+                                    end,
+                                )));
+                            }
+                            Some((chi, chu)) => {
+                                return Some(Err(LexicalError::UnrecognizedSymbol(*chi, *chu)))
+                            }
+                            None => return Some(Err(LexicalError::UnexpectedEOF)),
+                        }
+                    }
+                    Some((_, '[')) => {
+                        self.chars.next();
+                        let str_begin = i + 2;
+                        let end = self.get_multiline_string_end(0, i + 1);
+                        return Some(Ok((
+                            i,
+                            MultilineStringLiteral(0, &self.input[str_begin..end - 1]),
+                            end,
+                        )));
+                    }
+                    _ => return Some(Ok((i, OpenSquareBracket, i + 1))),
+                },
+
+                Some((i, '"')) => {
                     let end = self.get_string_end('"', i);
-                    return Some(Ok((i, Token::NormalStringLiteral(&self.input[i + 1..end - 1]), end)));
+                    return Some(Ok((
+                        i,
+                        NormalStringLiteral(&self.input[i + 1..end - 1]),
+                        end,
+                    )));
                 }
 
-                Some((i, ch)) if ch == '\'' => {
+                Some((i, '\'')) => {
                     let end = self.get_string_end('\'', i);
-                    return Some(Ok((i, Token::CharStringLiteral(&self.input[i + 1..end - 1]), end)));
+                    return Some(Ok((i, CharStringLiteral(&self.input[i + 1..end - 1]), end)));
                 }
 
                 Some((i, ch)) if ch.is_ascii_digit() => {
+                    // TODO: https://www.lua.org/manual/5.1/manual.html#2.1
                     let end = self.get_number_end(i);
-                    return Some(Ok((i, Token::Numeral(&self.input[i..end]), end)));
+                    return Some(Ok((i, Numeral(&self.input[i..end]), end)));
                 }
 
                 Some((i, ch)) if ch.is_ascii_alphabetic() || ch == '_' => {
@@ -384,7 +461,7 @@ impl<'input> Iterator for Lexer<'input> {
 
                     match KEYWORDS.get(variable) {
                         Some(w) => return Some(Ok((i, *w, end))),
-                        _ => return Some(Ok((i, Token::Variable(&self.input[i..end]), end))),
+                        _ => return Some(Ok((i, Variable(&self.input[i..end]), end))),
                     };
                 }
 

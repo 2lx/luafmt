@@ -26,7 +26,7 @@ fn test_errors() {
     let result = parse("local a = 1--2");
     assert!(result.is_ok());
 
-    let result = parse("local a = 1---2");
+    let result = parse("local a = 1 - - -2");
     assert!(result.is_err());
 
     let result = parse("1++2");
@@ -116,6 +116,14 @@ fn test_table() {
         &format!("{}", result.unwrap()),
         "a = (({ a = { b = 2 } }).a).b"
     );
+
+    let result = parse("a = ({a={b=2}})[\"a\"][\"b\"]");
+    assert!(result.is_ok());
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "a = ({ a = { b = 2 } })[\"a\"][\"b\"]"
+    );
+
 
     let result = parse("a={1,2,  3; 4, 5;6;7 }");
     assert!(result.is_ok());
@@ -397,6 +405,14 @@ fn test_round_prefix() {
     // let result = parse("({ a = 2}).a = 3 (fn()):fl().a = 3");
     // assert!(result.is_ok());
     // assert_eq!(&format!("{}", result.unwrap()), "a = (((fn2()))())");
+
+    let result = parse("local str = ({ a = 3, b = 2 })[param]");
+    assert!(result.is_ok());
+    assert_eq!(&format!("{}", result.unwrap()), "local str = ({ a = 3, b = 2 })[param]");
+
+    // let result = parse("local p = 'a' ({ a = fn1, b = fn2 })[p]()");
+    // assert!(result.is_ok());
+    // assert_eq!(&format!("{}", result.unwrap()), "local str = ({ a = 3, b = 2 })[param]");
 }
 
 #[test]
@@ -426,6 +442,30 @@ fn test_literal() {
         &format!("{}", result.unwrap()),
         r#"a = '"12\'3\'"344"\\\''"#
     );
+
+    let result = parse("a = [[line]]");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "a = [[line]]");
+
+    let result = parse("a = [=[line]=]");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "a = [=[line]=]");
+
+    let result = parse("a = [===[]===]");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "a = [===[]===]");
+
+    let result = parse("a = [[]]");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "a = [[]]");
+
+    let result = parse("a = [[\"\n'\"]]");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "a = [[\"\n'\"]]");
+
+    let result = parse("a = [=[line\nnewline]]\n ]==] \n]===]\n]=]");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "a = [=[line\nnewline]]\n ]==] \n]===]\n]=]");
 }
 
 #[test]
@@ -472,4 +512,17 @@ fn test_if() {
 
     let result = parse("if a + b > 4 print(a) end");
     assert!(result.is_err());
+}
+
+#[test]
+fn test_comment() {
+    let result = parse("if a + b > 4 then -- comment \n  print(a) -- comment 2 end ");
+    assert!(result.is_err());
+
+    let result = parse("if a + b > 4 then -- comment \n  print(a) -- comment 2 \nend ");
+    assert!(result.is_ok());
+    assert_eq!(
+        &format!("{}", result.unwrap()),
+        "if a + b > 4 then print(a) end"
+    );
 }
