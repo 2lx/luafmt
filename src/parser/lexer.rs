@@ -215,8 +215,35 @@ impl<'input> Lexer<'input> {
         end + 1
     }
 
-    fn get_number_end(&mut self, start: usize) -> usize {
-        self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_digit() && ch != '.')
+    fn get_integer_end(&mut self, start: usize) -> usize {
+        self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_digit())
+    }
+
+    fn get_hex_integer_end(&mut self, start: usize) -> usize {
+        self.seek_end_by_predicate(start, &|ch: char, _| {
+            !ch.is_ascii_digit() && !(ch >= 'A' && ch <= 'F') && !(ch >= 'a' && ch <= 'f')
+        })
+    }
+
+    fn get_float_end(&mut self, start: usize) -> usize {
+        let mut end =
+            self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_digit() && ch != '.');
+
+        match self.chars.peek() {
+            Some(&(i, 'e')) | Some(&(i, 'E')) => {
+                self.chars.next();
+                match self.chars.peek() {
+                    Some(&(_, '-')) => {
+                        self.chars.next();
+                    }
+                    _ => {}
+                };
+                end = self.get_integer_end(i);
+            }
+            _ => {}
+        }
+
+        end
     }
 
     fn get_variable_end(&mut self, start: usize) -> usize {
@@ -343,6 +370,10 @@ impl<'input> Iterator for Lexer<'input> {
                             _ => return Some(Ok((i, OpConcatenation, i + 2))),
                         }
                     }
+                    Some(&(_, ch)) if ch.is_ascii_digit() => {
+                        let end = self.get_float_end(i);
+                        return Some(Ok((i, Numeral(&self.input[i..end]), end)));
+                    }
                     _ => return Some(Ok((i, Period, i + 1))),
                 },
 
@@ -455,9 +486,20 @@ impl<'input> Iterator for Lexer<'input> {
                     return Some(Ok((i, CharStringLiteral(&self.input[i + 1..end]), end)));
                 }
 
+                Some((i, '0')) => match self.chars.peek() {
+                    Some(&(_, 'x')) => {
+                        self.chars.next();
+                        let end = self.get_hex_integer_end(i);
+                        return Some(Ok((i, Numeral(&self.input[i..end]), end)));
+                    }
+                    _ => {
+                        let end = self.get_float_end(i);
+                        return Some(Ok((i, Numeral(&self.input[i..end]), end)));
+                    }
+                },
+
                 Some((i, ch)) if ch.is_ascii_digit() => {
-                    // TODO: https://www.lua.org/manual/5.1/manual.html#2.1
-                    let end = self.get_number_end(i);
+                    let end = self.get_float_end(i);
                     return Some(Ok((i, Numeral(&self.input[i..end]), end)));
                 }
 

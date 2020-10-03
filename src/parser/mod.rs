@@ -566,3 +566,60 @@ fn test_comment() {
         "if a + b > 4 then print(a) end"
     );
 }
+
+#[test]
+fn test_numeral() {
+    let result = parse("local a = 0");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = 0");
+
+    let result = parse("local a = -12414341423123");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = -12414341423123");
+
+    let result = parse("local a = -124432423412412432142424124.12423");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = -124432423412412432142424124.12423");
+
+    let result = parse("local a = -124.12423e0");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = -124.12423e0");
+
+    let result = parse("local a = -124.12423E-3 e = 4");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = -124.12423E-3; e = 4");
+
+    let result = parse("local a = .12423E-3 e = 4");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = .12423E-3; e = 4");
+
+    let result = parse("local a = .0 e = 4");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = .0; e = 4");
+
+    let result = parse("local a = 0. e = 4");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = 0.; e = 4");
+
+    let result = parse("local a = 0x123 e = 4");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = 0x123; e = 4");
+
+    let result = parse("local a = 0x123abcdef e = 4");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = 0x123abcdef; e = 4");
+
+    let result = parse("local a = 0x12.4 e = 4");
+    assert!(result.is_err(), "{:?}", result);
+
+    let result = parse("local a = 0x12 e = 4");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = 0x12; e = 4");
+
+    let result = parse("local a = 0x12g e = 4");
+    assert!(result.is_err(), "{:?}", result);
+
+    let result = parse("local a = 0x12e-4 e = 4");
+    assert!(result.is_ok(), "{:?}", result);
+    assert_eq!( &format!("{}", result.unwrap()), "local a = 0x12e - 4; e = 4");
+}

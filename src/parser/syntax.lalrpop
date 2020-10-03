@@ -178,7 +178,7 @@ VarListNoStartPar: Node = {
 }
 
 FunctionCallNoStartsMayEndsPar: Node = {
-    VarNoExp,
+    <l:@L> <n1:Name> <n2:VarSuffixList> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
 PrefixNoEndsPar: Node = {
@@ -254,7 +254,7 @@ Exp: Node = {
     <l:@L> "nil" <r:@R>       => Node::Nil(Loc(l, r)),
     <l:@L> "false" <r:@R>     => Node::False(Loc(l, r)),
     <l:@L> "true" <r:@R>      => Node::True(Loc(l, r)),
-    <l:@L> <s:Numeral> <r:@R> => Node::Numeral(Loc(l, r), s.parse::<f64>().unwrap()),
+    <l:@L> <s:Numeral> <r:@R> => Node::Numeral(Loc(l, r), s.to_string()),
     StringLiteral,
     <l:@L> "..." <r:@R> => Node::VarArg(Loc(l, r)),
     FunctionDef,

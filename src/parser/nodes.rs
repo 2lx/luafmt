@@ -37,7 +37,6 @@ pub enum Node {
     LogicalOr(Loc, Box<Node>, Box<Node>),
 
     Var(Loc, Box<Node>, Box<Node>),
-    Numeral(Loc, f64),
     RoundBrackets(Loc, Box<Node>),
 
     Nil(Loc),
@@ -45,6 +44,7 @@ pub enum Node {
     True(Loc),
     VarArg(Loc),
     Break(Loc),
+    Numeral(Loc, String),
     NormalStringLiteral(Loc, String),
     CharStringLiteral(Loc, String),
     MultilineStringLiteral(Loc, usize, String),
@@ -146,7 +146,6 @@ impl fmt::Display for Node {
             LogicalOr(_, l, r) => write!(f, "{} or {}", l, r),
 
             Var(_, n1, n2) => write!(f, "{}{}", n1, n2),
-            Numeral(_, n) => write!(f, "{}", n),
             RoundBrackets(_, r) => write!(f, "({})", r),
 
             Nil(_) => write!(f, "nil"),
@@ -154,6 +153,7 @@ impl fmt::Display for Node {
             True(_) => write!(f, "true"),
             VarArg(_) => write!(f, "..."),
             Break(_) => write!(f, "break"),
+            Numeral(_, s) => write!(f, "{}", s),
             NormalStringLiteral(_, s) => write!(f, "\"{}\"", s),
             CharStringLiteral(_, s) => write!(f, "'{}'", s),
             MultilineStringLiteral(_, level, s) => {
