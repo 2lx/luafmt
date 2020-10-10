@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::config::{Config, ConfiguredWrite};
 
 #[derive(Debug)]
 pub struct Loc(pub usize, pub usize);
@@ -90,8 +91,17 @@ pub enum Node {
     Empty(Loc),
 }
 
-fn print_node_vec(
-    f: &mut fmt::Formatter,
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let config = Config {
+            indent_width: 0,
+        };
+        self.cfg_write(f, &config)
+    }
+}
+
+fn cfg_write_node_vec(
+    f: &mut dyn fmt::Write,
     elems: &Vec<Node>,
     padding: &str,
     sep: &str,
@@ -110,9 +120,10 @@ fn print_node_vec(
     Ok(())
 }
 
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl ConfiguredWrite for Node {
+    fn cfg_write(&self, f: &mut dyn fmt::Write, _config: &Config) -> fmt::Result {
         use Node::*;
+
         match self {
             Exponentiation(_, l, r) => write!(f, "{} ^ {}", l, r),
             UnaryNot(_, r) => write!(f, "not {}", r),
@@ -159,34 +170,34 @@ impl fmt::Display for Node {
             MultilineStringLiteral(_, level, s) => {
                 let level_str = (0..*level).map(|_| "=").collect::<String>();
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)
-            },
+            }
 
             TableConstructor(_, r) => write!(f, "{{{}}}", r),
-            Fields(_, fields) => print_node_vec(f, fields, " ", ",", " "),
+            Fields(_, fields) => cfg_write_node_vec(f, fields, " ", ",", " "),
             FieldNamedBracket(_, e1, e2) => write!(f, "[{}] = {}", e1, e2),
             FieldNamed(_, e1, e2) => write!(f, "{} = {}", e1, e2),
             FieldSequential(_, e) => write!(f, "{}", e),
 
             TableIndex(_, e) => write!(f, "[{}]", e),
             TableMember(_, n) => write!(f, ".{}", n),
-            ExpList(_, exps) => print_node_vec(f, exps, "", ",", " "),
-            NameList(_, names) => print_node_vec(f, names, "", ",", " "),
-            VarList(_, vars) => print_node_vec(f, vars, "", ",", " "),
-            StatementList(_, stts) => print_node_vec(f, stts, "", ";", " "),
+            ExpList(_, exps) => cfg_write_node_vec(f, exps, "", ",", " "),
+            NameList(_, names) => cfg_write_node_vec(f, names, "", ",", " "),
+            VarList(_, vars) => cfg_write_node_vec(f, vars, "", ",", " "),
+            StatementList(_, stts) => cfg_write_node_vec(f, stts, "", ";", " "),
             DoEnd(_, n) => write!(f, "do {} end", n),
             VarsExprs(_, n1, n2) => write!(f, "{} = {}", n1, n2),
 
             VarRoundSuffix(_, n1, n2) => write!(f, "({}){}", n1, n2),
-            VarSuffixList(_, suffs) => print_node_vec(f, suffs, "", "", ""),
+            VarSuffixList(_, suffs) => cfg_write_node_vec(f, suffs, "", "", ""),
             FnMethodCall(_, n1, n2) => write!(f, ":{}{}", n1, n2),
-            ParList(_, pars) => print_node_vec(f, pars, "", ",", " "),
+            ParList(_, pars) => cfg_write_node_vec(f, pars, "", ",", " "),
             FunctionDef(_, n) => write!(f, "function{}", n),
             FuncBody(_, n1, n2) => match &**n2 {
                 Node::StatementList(_, v2) if v2.is_empty() => write!(f, "({}) end", n1),
                 _ => write!(f, "({}) {} end", n1, n2),
             },
             FuncName(_, names, n) => {
-                print_node_vec(f, names, "", ".", "")?;
+                cfg_write_node_vec(f, names, "", ".", "")?;
                 match &**n {
                     Node::Empty(_) => Ok(()),
                     _ => write!(f, ":{}", n),
@@ -207,7 +218,7 @@ impl fmt::Display for Node {
                 (_, Node::Empty(_)) => write!(f, "if {} then {} {} end", e1, b1, n),
                 _ => write!(f, "if {} then {} {} else {} end", e1, b1, n, b2),
             },
-            ElseIfThenVec(_, elems) => print_node_vec(f, elems, "", "", " "),
+            ElseIfThenVec(_, elems) => cfg_write_node_vec(f, elems, "", "", " "),
             ElseIfThen(_, e, n) => write!(f, "elseif {} then {}", e, n),
 
             Name(_, s) => write!(f, "{}", s),
