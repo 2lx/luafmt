@@ -1,5 +1,7 @@
 use std::fmt;
+
 use crate::config::{Config, ConfiguredWrite};
+use crate::{cfg_write, cfg_write_helper};
 
 #[derive(Debug)]
 pub struct Loc(pub usize, pub usize);
@@ -93,15 +95,14 @@ pub enum Node {
 
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let config = Config {
-            indent_width: 0,
-        };
-        self.cfg_write(f, &config)
+        let config = Config { indent_width: 0 };
+        cfg_write!(f, &config, self)
     }
 }
 
 fn cfg_write_node_vec(
     f: &mut dyn fmt::Write,
+    cfg: &Config,
     elems: &Vec<Node>,
     padding: &str,
     sep: &str,
@@ -113,57 +114,61 @@ fn cfg_write_node_vec(
             if let Node::Empty(_) = *elem {
                 continue;
             }
-            write!(f, "{}{}{}", elem, sep, ws)?;
+            cfg_write!(f, cfg, elem)?;
+            write!(f, "{}{}", sep, ws)?;
         }
-        write!(f, "{}{}", elems.last().unwrap(), padding)?;
+        cfg_write!(f, cfg, elems.last().unwrap())?;
+        write!(f, "{}", padding)?;
     }
     Ok(())
 }
 
 impl ConfiguredWrite for Node {
-    fn cfg_write(&self, f: &mut dyn fmt::Write, _config: &Config) -> fmt::Result {
+    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config) -> fmt::Result {
         use Node::*;
 
         match self {
-            Exponentiation(_, l, r) => write!(f, "{} ^ {}", l, r),
-            UnaryNot(_, r) => write!(f, "not {}", r),
-            UnaryMinus(_, r) => write!(f, "-{}", r),
-            UnaryLength(_, r) => write!(f, "#{}", r),
-            UnaryBitwiseXor(_, r) => write!(f, "~{}", r),
+            Exponentiation(_, l, r) => cfg_write!(f, cfg, l, " ^ ", r),
+            UnaryNot(_, r) => cfg_write!(f, cfg, "not ", r),
+            UnaryMinus(_, r) => cfg_write!(f, cfg, "-", r),
+            UnaryLength(_, r) => cfg_write!(f, cfg, "#", r),
+            UnaryBitwiseXor(_, r) => cfg_write!(f, cfg, "~", r),
 
-            Multiplication(_, l, r) => write!(f, "{} * {}", l, r),
-            Division(_, l, r) => write!(f, "{} / {}", l, r),
-            FloorDivision(_, l, r) => write!(f, "{} // {}", l, r),
-            Modulo(_, l, r) => write!(f, "{} % {}", l, r),
+            Multiplication(_, l, r) => cfg_write!(f, cfg, l, " * ", r),
+            Division(_, l, r) => cfg_write!(f, cfg, l, " / ", r),
+            FloorDivision(_, l, r) => cfg_write!(f, cfg, l, " // ", r),
+            Modulo(_, l, r) => cfg_write!(f, cfg, l, " % ", r),
 
-            Addition(_, l, r) => write!(f, "{} + {}", l, r),
-            Subtraction(_, l, r) => write!(f, "{} - {}", l, r),
-            Concatenation(_, l, r) => write!(f, "{} .. {}", l, r),
-            LeftShift(_, l, r) => write!(f, "{} << {}", l, r),
-            RightShift(_, l, r) => write!(f, "{} >> {}", l, r),
+            Addition(_, l, r) => cfg_write!(f, cfg, l, " + ", r),
+            Subtraction(_, l, r) => cfg_write!(f, cfg, l, " - ", r),
+            Concatenation(_, l, r) => cfg_write!(f, cfg, l, " .. ", r),
+            LeftShift(_, l, r) => cfg_write!(f, cfg, l, " << ", r),
+            RightShift(_, l, r) => cfg_write!(f, cfg, l, " >> ", r),
 
-            BitwiseAnd(_, l, r) => write!(f, "{} & {}", l, r),
-            BitwiseXor(_, l, r) => write!(f, "{} ~ {}", l, r),
-            BitwiseOr(_, l, r) => write!(f, "{} | {}", l, r),
+            BitwiseAnd(_, l, r) => cfg_write!(f, cfg, l, " & ", r),
+            BitwiseXor(_, l, r) => cfg_write!(f, cfg, l, " ~ ", r),
+            BitwiseOr(_, l, r) => cfg_write!(f, cfg, l, " | ", r),
 
-            Equality(_, l, r) => write!(f, "{} == {}", l, r),
-            Inequality(_, l, r) => write!(f, "{} ~= {}", l, r),
-            LessThan(_, l, r) => write!(f, "{} < {}", l, r),
-            GreaterThan(_, l, r) => write!(f, "{} > {}", l, r),
-            LessOrEqual(_, l, r) => write!(f, "{} <= {}", l, r),
-            GreaterOrEqual(_, l, r) => write!(f, "{} >= {}", l, r),
+            Equality(_, l, r) => cfg_write!(f, cfg, l, " == ", r),
+            Inequality(_, l, r) => cfg_write!(f, cfg, l, " ~= ", r),
+            LessThan(_, l, r) => cfg_write!(f, cfg, l, " < ", r),
+            GreaterThan(_, l, r) => cfg_write!(f, cfg, l, " > ", r),
+            LessOrEqual(_, l, r) => cfg_write!(f, cfg, l, " <= ", r),
+            GreaterOrEqual(_, l, r) => cfg_write!(f, cfg, l, " >= ", r),
 
-            LogicalAnd(_, l, r) => write!(f, "{} and {}", l, r),
-            LogicalOr(_, l, r) => write!(f, "{} or {}", l, r),
+            LogicalAnd(_, l, r) => cfg_write!(f, cfg, l, " and ", r),
+            LogicalOr(_, l, r) => cfg_write!(f, cfg, l, " or ", r),
 
-            Var(_, n1, n2) => write!(f, "{}{}", n1, n2),
-            RoundBrackets(_, r) => write!(f, "({})", r),
+            Var(_, n1, n2) => cfg_write!(f, cfg, n1, n2),
+            RoundBrackets(_, r) => cfg_write!(f, cfg, "(", r, ")"),
 
             Nil(_) => write!(f, "nil"),
             False(_) => write!(f, "false"),
             True(_) => write!(f, "true"),
             VarArg(_) => write!(f, "..."),
             Break(_) => write!(f, "break"),
+
+            // literals
             Numeral(_, s) => write!(f, "{}", s),
             NormalStringLiteral(_, s) => write!(f, "\"{}\"", s),
             CharStringLiteral(_, s) => write!(f, "'{}'", s),
@@ -172,72 +177,76 @@ impl ConfiguredWrite for Node {
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)
             }
 
-            TableConstructor(_, r) => write!(f, "{{{}}}", r),
-            Fields(_, fields) => cfg_write_node_vec(f, fields, " ", ",", " "),
-            FieldNamedBracket(_, e1, e2) => write!(f, "[{}] = {}", e1, e2),
-            FieldNamed(_, e1, e2) => write!(f, "{} = {}", e1, e2),
-            FieldSequential(_, e) => write!(f, "{}", e),
+            TableConstructor(_, r) => cfg_write!(f, cfg, "{{", r, "}}"),
+            Fields(_, fields) => cfg_write_node_vec(f, cfg, fields, " ", ",", " "),
+            FieldNamedBracket(_, e1, e2) => cfg_write!(f, cfg, "[", e1, "] = ", e2),
+            FieldNamed(_, e1, e2) => cfg_write!(f, cfg, e1, " = ", e2),
+            FieldSequential(_, e) => cfg_write!(f, cfg, e),
 
-            TableIndex(_, e) => write!(f, "[{}]", e),
-            TableMember(_, n) => write!(f, ".{}", n),
-            ExpList(_, exps) => cfg_write_node_vec(f, exps, "", ",", " "),
-            NameList(_, names) => cfg_write_node_vec(f, names, "", ",", " "),
-            VarList(_, vars) => cfg_write_node_vec(f, vars, "", ",", " "),
-            StatementList(_, stts) => cfg_write_node_vec(f, stts, "", ";", " "),
-            DoEnd(_, n) => write!(f, "do {} end", n),
-            VarsExprs(_, n1, n2) => write!(f, "{} = {}", n1, n2),
+            TableIndex(_, e) => cfg_write!(f, cfg, "[", e, "]"),
+            TableMember(_, n) => cfg_write!(f, cfg, ".", n),
+            ExpList(_, exps) => cfg_write_node_vec(f, cfg, exps, "", ",", " "),
+            NameList(_, names) => cfg_write_node_vec(f, cfg, names, "", ",", " "),
+            VarList(_, vars) => cfg_write_node_vec(f, cfg, vars, "", ",", " "),
+            StatementList(_, stts) => cfg_write_node_vec(f, cfg, stts, "", ";", " "),
+            DoEnd(_, n) => cfg_write!(f, cfg, "do ", n, " end"),
+            VarsExprs(_, n1, n2) => cfg_write!(f, cfg, n1, " = ", n2),
 
-            VarRoundSuffix(_, n1, n2) => write!(f, "({}){}", n1, n2),
-            VarSuffixList(_, suffs) => cfg_write_node_vec(f, suffs, "", "", ""),
-            FnMethodCall(_, n1, n2) => write!(f, ":{}{}", n1, n2),
-            ParList(_, pars) => cfg_write_node_vec(f, pars, "", ",", " "),
-            FunctionDef(_, n) => write!(f, "function{}", n),
+            VarRoundSuffix(_, n1, n2) => cfg_write!(f, cfg, "(", n1, ")", n2),
+            VarSuffixList(_, suffs) => cfg_write_node_vec(f, cfg, suffs, "", "", ""),
+            FnMethodCall(_, n1, n2) => cfg_write!(f, cfg, ":", n1, n2),
+            ParList(_, pars) => cfg_write_node_vec(f, cfg, pars, "", ",", " "),
+            FunctionDef(_, n) => cfg_write!(f, cfg, "function", n),
             FuncBody(_, n1, n2) => match &**n2 {
-                Node::StatementList(_, v2) if v2.is_empty() => write!(f, "({}) end", n1),
-                _ => write!(f, "({}) {} end", n1, n2),
+                Node::StatementList(_, v2) if v2.is_empty() => cfg_write!(f, cfg, "(", n1, ") end"),
+                _ => cfg_write!(f, cfg, "(", n1, ") ", n2, " end"),
             },
             FuncName(_, names, n) => {
-                cfg_write_node_vec(f, names, "", ".", "")?;
+                cfg_write_node_vec(f, cfg, names, "", ".", "")?;
                 match &**n {
                     Node::Empty(_) => Ok(()),
-                    _ => write!(f, ":{}", n),
+                    _ => cfg_write!(f, cfg, ":", n),
                 }
             }
-            FuncDecl(_, n1, n2) => write!(f, "function {}{}", n1, n2),
+            FuncDecl(_, n1, n2) => cfg_write!(f, cfg, "function ", n1, n2),
             LocalNamesExprs(_, n1, n2) => match &**n2 {
-                Node::Empty(_) => write!(f, "local {}", n1),
-                _ => write!(f, "local {} = {}", n1, n2),
+                Node::Empty(_) => cfg_write!(f, cfg, "local ", n1),
+                _ => cfg_write!(f, cfg, "local ", n1, " = ", n2),
             },
             IfThenElse(_, e1, b1, n, b2) => match (&**n, &**b2) {
                 (Node::ElseIfThenVec(_, v), Node::Empty(_)) if v.is_empty() => {
-                    write!(f, "if {} then {} end", e1, b1)
+                    cfg_write!(f, cfg, "if ", e1, " then ", b1, " end")
                 }
                 (Node::ElseIfThenVec(_, v), _) if v.is_empty() => {
-                    write!(f, "if {} then {} else {} end", e1, b1, b2)
+                    cfg_write!(f, cfg, "if ", e1, " then ", b1, " else ", b2, " end")
                 }
-                (_, Node::Empty(_)) => write!(f, "if {} then {} {} end", e1, b1, n),
-                _ => write!(f, "if {} then {} {} else {} end", e1, b1, n, b2),
+                (_, Node::Empty(_)) => cfg_write!(f, cfg, "if ", e1, " then ", b1, " ", n, " end"),
+                _ => cfg_write!(f, cfg, "if ", e1, " then ", b1, " ", n, " else ", b2, " end"),
             },
-            ElseIfThenVec(_, elems) => cfg_write_node_vec(f, elems, "", "", " "),
-            ElseIfThen(_, e, n) => write!(f, "elseif {} then {}", e, n),
+            ElseIfThenVec(_, elems) => cfg_write_node_vec(f, cfg, elems, "", "", " "),
+            ElseIfThen(_, e, n) => cfg_write!(f, cfg, "elseif ", e, " then ", n),
 
             Name(_, s) => write!(f, "{}", s),
-            Label(_, n) => write!(f, "::{}::", n),
-            GoTo(_, n) => write!(f, "goto {}", n),
-            While(_, e, n) => write!(f, "while {} do {} end", e, n),
-            Repeat(_, n, e) => write!(f, "repeat {} until {}", n, e),
-            ForRange(_, n, e, b) => write!(f, "for {} in {} do {} end", n, e, b),
+            Label(_, n) => cfg_write!(f, cfg, "::", n, "::"),
+            GoTo(_, n) => cfg_write!(f, cfg, "goto ", n),
+            While(_, e, n) => cfg_write!(f, cfg, "while ", e, " do ", n, " end"),
+            Repeat(_, n, e) => cfg_write!(f, cfg, "repeat ", n, " until ", e),
+            ForRange(_, n, e, b) => cfg_write!(f, cfg, "for ", n, " in ", e, " do ", b, " end"),
             ForInt(_, n, e1, e2, e3, b) => match &**e3 {
-                Node::Empty(_) => write!(f, "for {} = {}, {} do {} end", n, e1, e2, b),
-                _ => write!(f, "for {} = {}, {}, {} do {} end", n, e1, e2, e3, b),
+                Node::Empty(_) => {
+                    cfg_write!(f, cfg, "for ", n, " = ", e1, ", ", e2, " do ", b, " end")
+                }
+                _ => {
+                    cfg_write!(f, cfg, "for ", n, " = ", e1, ", ", e2, ", ", e3, " do ", b, " end")
+                }
             },
             RetStat(_, n) => match &**n {
                 Node::Empty(_) => write!(f, "return"),
-                _ => write!(f, "return {}", n),
+                _ => cfg_write!(f, cfg, "return ", n),
             },
             StatsRetStat(_, n1, n2) => match &**n1 {
-                Node::StatementList(_, ref v) if v.is_empty() => write!(f, "{}", n2),
-                _ => write!(f, "{} {}", n1, n2),
+                Node::StatementList(_, ref v) if v.is_empty() => cfg_write!(f, cfg, n2),
+                _ => cfg_write!(f, cfg, n1, " ", n2),
             },
 
             Empty(_) => Ok(()),

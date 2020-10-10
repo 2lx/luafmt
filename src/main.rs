@@ -22,7 +22,7 @@ fn main() -> Result<(), std::io::Error> {
     match parser::parse(&buffer) {
         Ok(result) => {
             let mut output = String::new();
-            match result.cfg_write(&mut output, &config) {
+            match result.configured_write(&mut output, &config) {
                 Err(_) => println!("An error occured while formatting: {:?}", result),
                 _ => println!("{}", output),
             };
