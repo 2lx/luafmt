@@ -1,7 +1,7 @@
 use std::io::{self, Read};
 
-mod parser;
 mod config;
+mod parser;
 use config::ConfiguredWrite;
 
 fn read_input() -> Result<String, std::io::Error> {
@@ -14,10 +14,7 @@ fn read_input() -> Result<String, std::io::Error> {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let config = config::Config {
-        indent_width: 4,
-        keep_comments: true,
-    };
+    let config = config::Config { indent_width: 4, keep_comments: true };
     let buffer = read_input()?;
 
     match parser::parse(&buffer) {

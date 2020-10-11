@@ -47,15 +47,18 @@ SepEmptyVec<T, C>: Vec<T> = {
 };
 
 // cannot be empty, may have a separator at the end
-SepVecEnd<T, C>: Vec<T> = {
-    <e:T> C? => {
+SepVecEnd<T, C>: Vec<(Loc, T, Loc)> = {
+    <e:T> <l2:@R> <r2:@L> C? => {
         let mut v = Vec::new();
-        v.push(e);
+        v.push((Loc(0, 0), e, Loc(l2, r2)));
         v
     },
-    <e:T> <v:(C <T>)+> C? => {
+    <e:T> <l1:@R> <r1:@L> C <l2:@R> <r2:@L> <v:SepVecEnd<T, C>> => {
         let mut v = v;
-        v.insert(0, e);
+        if !v.is_empty() {
+            v[0].0 = Loc(l2, r2);
+        }
+        v.insert(0, (Loc(0, 0), e, Loc(l1, r1)));
         v
     },
 };
@@ -287,17 +290,21 @@ Par: Node = {
 }
 
 TableConstructor: Node = {
-    <l:@L> "{" <e:FieldList> "}" <r:@R>       => Node::TableConstructor(Loc(l, r), Box::new(e)),
-    <l:@L> "{" <empl:@L> <empr:@R> "}" <r:@R> => Node::TableConstructor(Loc(l, r), Box::new(Node::Empty(Loc(empl, empr)))),
+    <ls:@L> "{" <l1:@R> <r1:@L> <e:FieldList> <l2:@R> <r2:@L> "}" <rs:@R>
+        => Node::TableConstructor(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
+    <ls:@L> "{" <l1:@R> <r1:@L> "}" <rs:@R>
+        => Node::TableConstructor(Loc(ls, rs), [Loc(l1, r1), Loc(0, 0)], Box::new(Node::Empty(Loc(l1, r1)))),
 }
 
 FieldList: Node = {
-    <l:@L> <v:SepVecEnd<Field, FieldSep>> <r:@R> => Node::Fields(Loc(l, r), v),
+    <ls:@L> <v:SepVecEnd<Field, FieldSep>> <rs:@R> => Node::Fields(Loc(ls, rs), v),
 }
 
 Field: Node = {
-    <l:@L> "[" <e1:OpExp> "]" "=" <e2:OpExp> <r:@R> => Node::FieldNamedBracket(Loc(l, r), Box::new(e1), Box::new(e2)),
-    <l:@L> <e1:Name> "=" <e2:OpExp> <r:@R>          => Node::FieldNamed(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <ls:@L> "[" <l1:@R> <r1:@L> <e1:OpExp> <l2:@R> <r2:@L> "]" <l3:@R> <r3:@L> "=" <l4:@R> <r4:@L> <e2:OpExp> <rs:@R>
+        => Node::FieldNamedBracket(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4)], Box::new(e1), Box::new(e2)),
+    <ls:@L> <e1:Name> <l1:@R> <r1:@L> "=" <l2:@R> <r2:@L> <e2:OpExp> <rs:@R>
+        => Node::FieldNamed(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
     <l:@L> <e:OpExp> <r:@R>                         => Node::FieldSequential(Loc(l, r), Box::new(e)),
 }
 

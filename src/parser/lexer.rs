@@ -192,10 +192,7 @@ pub struct Lexer<'input> {
 
 impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
-        Lexer {
-            chars: input.char_indices().peekable(),
-            input,
-        }
+        Lexer { chars: input.char_indices().peekable(), input }
     }
 
     fn seek_end_by_predicate(&mut self, start: usize, f: &dyn Fn(char, bool) -> bool) -> usize {
@@ -226,8 +223,7 @@ impl<'input> Lexer<'input> {
     }
 
     fn get_float_end(&mut self, start: usize) -> usize {
-        let mut end =
-            self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_digit() && ch != '.');
+        let mut end = self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_digit() && ch != '.');
 
         match self.chars.peek() {
             Some(&(i, 'e')) | Some(&(i, 'E')) => {
@@ -247,9 +243,7 @@ impl<'input> Lexer<'input> {
     }
 
     fn get_variable_end(&mut self, start: usize) -> usize {
-        self.seek_end_by_predicate(start, &|ch: char, _| {
-            !ch.is_ascii_alphabetic() && !ch.is_ascii_digit() && ch != '_'
-        })
+        self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_alphabetic() && !ch.is_ascii_digit() && ch != '_')
     }
 
     fn get_string_end(&mut self, prefix: char, start: usize) -> usize {
@@ -446,16 +440,11 @@ impl<'input> Iterator for Lexer<'input> {
 
                                 return Some(Ok((
                                     i,
-                                    MultilineStringLiteral(
-                                        level,
-                                        &self.input[str_begin + 1..end - 1],
-                                    ),
+                                    MultilineStringLiteral(level, &self.input[str_begin + 1..end - 1]),
                                     end,
                                 )));
                             }
-                            Some((chi, chu)) => {
-                                return Some(Err(LexicalError::UnrecognizedSymbol(*chi, *chu)))
-                            }
+                            Some((chi, chu)) => return Some(Err(LexicalError::UnrecognizedSymbol(*chi, *chu))),
                             None => return Some(Err(LexicalError::UnexpectedEOF)),
                         }
                     }
@@ -465,11 +454,7 @@ impl<'input> Iterator for Lexer<'input> {
                         let end = self.get_multiline_string_end(0, i + 1);
                         self.chars.next();
 
-                        return Some(Ok((
-                            i,
-                            MultilineStringLiteral(0, &self.input[str_begin..end - 1]),
-                            end,
-                        )));
+                        return Some(Ok((i, MultilineStringLiteral(0, &self.input[str_begin..end - 1]), end + 1)));
                     }
                     _ => return Some(Ok((i, OpenSquareBracket, i + 1))),
                 },
@@ -477,13 +462,13 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, '"')) => {
                     let end = self.get_string_end('"', i);
                     self.chars.next();
-                    return Some(Ok((i, NormalStringLiteral(&self.input[i + 1..end]), end)));
+                    return Some(Ok((i, NormalStringLiteral(&self.input[i + 1..end]), end + 1)));
                 }
 
                 Some((i, '\'')) => {
                     let end = self.get_string_end('\'', i);
                     self.chars.next();
-                    return Some(Ok((i, CharStringLiteral(&self.input[i + 1..end]), end)));
+                    return Some(Ok((i, CharStringLiteral(&self.input[i + 1..end]), end + 1)));
                 }
 
                 Some((i, '0')) => match self.chars.peek() {

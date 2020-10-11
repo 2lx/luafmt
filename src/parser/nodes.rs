@@ -61,10 +61,10 @@ pub enum Node {
     CharStringLiteral(Loc, String),
     MultilineStringLiteral(Loc, usize, String),
 
-    TableConstructor(Loc, Box<Node>),
-    Fields(Loc, Vec<Node>),
-    FieldNamedBracket(Loc, Box<Node>, Box<Node>),
-    FieldNamed(Loc, Box<Node>, Box<Node>),
+    TableConstructor(Loc, [Loc; 2], Box<Node>),
+    Fields(Loc, Vec<(Loc, Node, Loc)>),
+    FieldNamedBracket(Loc, [Loc; 4], Box<Node>, Box<Node>),
+    FieldNamed(Loc, [Loc; 2], Box<Node>, Box<Node>),
     FieldSequential(Loc, Box<Node>),
 
     TableIndex(Loc, Box<Node>),
@@ -126,6 +126,32 @@ fn cfg_write_node_vec(
     Ok(())
 }
 
+fn cfg_write_node_vec_locs(
+    f: &mut dyn fmt::Write,
+    cfg: &Config,
+    buf: &str,
+    elems: &Vec<(Loc, Node, Loc)>,
+    padding: &str,
+    sep: &str,
+    ws: &str,
+) -> Result<(), core::fmt::Error> {
+    if !elems.is_empty() {
+        write!(f, "{}", padding)?;
+        for elem in &elems[0..elems.len() - 1] {
+            if let Node::Empty(_) = elem.1 {
+                continue;
+            }
+            cfg_write!(f, cfg, buf, (elem.0), (elem.1), (elem.2))?;
+            write!(f, "{}{}", sep, ws)?;
+        }
+        let last = &elems[elems.len() - 1];
+        cfg_write!(f, cfg, buf, (last.0), (last.1), (last.2))?;
+        write!(f, "{}", padding)?;
+    }
+    Ok(())
+}
+
+
 impl ConfiguredWrite for Node {
     fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str) -> fmt::Result {
         use Node::*;
@@ -180,10 +206,12 @@ impl ConfiguredWrite for Node {
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)
             }
 
-            TableConstructor(_, r) => cfg_write!(f, cfg, buf, "{{", r, "}}"),
-            Fields(_, fields) => cfg_write_node_vec(f, cfg, buf, fields, " ", ",", " "),
-            FieldNamedBracket(_, e1, e2) => cfg_write!(f, cfg, buf, "[", e1, "] = ", e2),
-            FieldNamed(_, e1, e2) => cfg_write!(f, cfg, buf, e1, " = ", e2),
+            TableConstructor(_, locs, r) => cfg_write!(f, cfg, buf, "{{", (locs[0]), r, (locs[1]), "}}"),
+            Fields(_, fields) => cfg_write_node_vec_locs(f, cfg, buf, fields, " ", ",", " "),
+            FieldNamedBracket(_, locs, e1, e2) => {
+                cfg_write!(f, cfg, buf, "[", (locs[0]), e1, (locs[1]), "]", (locs[2]), " = ", (locs[3]), e2)
+            }
+            FieldNamed(_, locs, e1, e2) => cfg_write!(f, cfg, buf, e1, (locs[0]), " = ", (locs[1]), e2),
             FieldSequential(_, e) => cfg_write!(f, cfg, buf, e),
 
             TableIndex(_, e) => cfg_write!(f, cfg, buf, "[", e, "]"),

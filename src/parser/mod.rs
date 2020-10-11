@@ -13,10 +13,7 @@ pub fn parse(src: &str) -> Result<nodes::Node, ParseError<usize, lexer::Token, l
 }
 
 #[allow(dead_code)]
-static TEST_CONFIG: Config = Config {
-    indent_width: 4,
-    keep_comments: false,
-};
+static TEST_CONFIG: Config = Config { indent_width: 4, keep_comments: false };
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
@@ -46,11 +43,8 @@ fn ts(source: &'static str) -> Result<String, TestError> {
 }
 
 #[allow(dead_code)]
-fn ts_comments(source: &'static str) -> Result<String, TestError> {
-    let cfg = Config {
-        indent_width: 4,
-        keep_comments: true,
-    };
+fn tsc(source: &'static str) -> Result<String, TestError> {
+    let cfg = Config { indent_width: 4, keep_comments: true };
     ts_base(source, &cfg)
 }
 
@@ -68,10 +62,7 @@ fn test_errors() {
     assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
-        ParseError::UnrecognizedToken {
-            token: (l, token, r),
-            expected,
-        } => (),
+        ParseError::UnrecognizedToken { token: (l, token, r), expected } => (),
         _ => assert!(false, "wrong error type"),
     };
 
@@ -79,10 +70,7 @@ fn test_errors() {
     assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
-        ParseError::UnrecognizedToken {
-            token: (_, _, _),
-            expected,
-        } => (),
+        ParseError::UnrecognizedToken { token: (_, _, _), expected } => (),
         _ => assert!(false, "wrong error type"),
     };
 
@@ -90,10 +78,7 @@ fn test_errors() {
     assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
-        ParseError::UnrecognizedToken {
-            token: (_, _, _),
-            expected,
-        } => (),
+        ParseError::UnrecognizedToken { token: (_, _, _), expected } => (),
         _ => assert!(false, "wrong error type"),
     };
 }
@@ -124,22 +109,10 @@ fn test_table() {
     assert_eq!(ts("a = { a, b, }"), Ok("a = { a, b }".to_string()));
     assert_eq!(ts("a = { a = (1 + 3), }"), Ok("a = { a = (1 + 3) }".to_string()));
     assert_eq!(ts("a = ({a=3}).a"), Ok("a = ({ a = 3 }).a".to_string()));
-    assert_eq!(
-        ts("a = (({a={b=2}}).a).b"),
-        Ok("a = (({ a = { b = 2 } }).a).b".to_string())
-    );
-    assert_eq!(
-        ts("a = ({a={b=2}})[\"a\"][\"b\"]"),
-        Ok("a = ({ a = { b = 2 } })[\"a\"][\"b\"]".to_string())
-    );
-    assert_eq!(
-        ts("a={1,2,  3; 4, 5;6;7 }"),
-        Ok("a = { 1, 2, 3, 4, 5, 6, 7 }".to_string())
-    );
-    assert_eq!(
-        ts("a = { a = 1, 2, b = 4, 4 }"),
-        Ok("a = { a = 1, 2, b = 4, 4 }".to_string())
-    );
+    assert_eq!(ts("a = (({a={b=2}}).a).b"), Ok("a = (({ a = { b = 2 } }).a).b".to_string()));
+    assert_eq!(ts("a = ({a={b=2}})[\"a\"][\"b\"]"), Ok("a = ({ a = { b = 2 } })[\"a\"][\"b\"]".to_string()));
+    assert_eq!(ts("a={1,2,  3; 4, 5;6;7 }"), Ok("a = { 1, 2, 3, 4, 5, 6, 7 }".to_string()));
+    assert_eq!(ts("a = { a = 1, 2, b = 4, 4 }"), Ok("a = { a = 1, 2, b = 4, 4 }".to_string()));
     assert_eq!(
         ts("a = { a = { b = true }, [b] = { a = true } }"),
         Ok("a = { a = { b = true }, [b] = { a = true } }".to_string())
@@ -153,53 +126,23 @@ fn test_function() {
     assert_eq!(ts("fn_name(a1, a2)"), Ok("fn_name(a1, a2)".to_string()));
     assert_eq!(ts("fn_name{a1, a2}"), Ok("fn_name{ a1, a2 }".to_string()));
     assert_eq!(ts("fn_name:method{a1, a2}"), Ok("fn_name:method{ a1, a2 }".to_string()));
-    assert_eq!(
-        ts("fn_name.field:method{a1, a2}"),
-        Ok("fn_name.field:method{ a1, a2 }".to_string())
-    );
-    assert_eq!(
-        ts("fn_name(a1, a2).field = 3"),
-        Ok("fn_name(a1, a2).field = 3".to_string())
-    );
-    assert_eq!(
-        ts("fn_name{a1, a2}.field = fn().f4"),
-        Ok("fn_name{ a1, a2 }.field = fn().f4".to_string())
-    );
-    assert_eq!(
-        ts("fn()()(fn2('abc'))(1, 2)()"),
-        Ok("fn()()(fn2('abc'))(1, 2)()".to_string())
-    );
+    assert_eq!(ts("fn_name.field:method{a1, a2}"), Ok("fn_name.field:method{ a1, a2 }".to_string()));
+    assert_eq!(ts("fn_name(a1, a2).field = 3"), Ok("fn_name(a1, a2).field = 3".to_string()));
+    assert_eq!(ts("fn_name{a1, a2}.field = fn().f4"), Ok("fn_name{ a1, a2 }.field = fn().f4".to_string()));
+    assert_eq!(ts("fn()()(fn2('abc'))(1, 2)()"), Ok("fn()()(fn2('abc'))(1, 2)()".to_string()));
     assert_eq!(ts("a = fn()().field"), Ok("a = fn()().field".to_string()));
-    assert_eq!(
-        ts("a = fn{fn}{fn}(2){fn}.field(3).b"),
-        Ok("a = fn{ fn }{ fn }(2){ fn }.field(3).b".to_string())
-    );
+    assert_eq!(ts("a = fn{fn}{fn}(2){fn}.field(3).b"), Ok("a = fn{ fn }{ fn }(2){ fn }.field(3).b".to_string()));
 
     // RetStat
-    assert_eq!(
-        ts("fn = function(a) return a end"),
-        Ok("fn = function(a) return a end".to_string())
-    );
-    assert_eq!(
-        ts("fn = function() return end"),
-        Ok("fn = function() return end".to_string())
-    );
-    assert_eq!(
-        ts("fn = function(a, b) return a, b end"),
-        Ok("fn = function(a, b) return a, b end".to_string())
-    );
+    assert_eq!(ts("fn = function(a) return a end"), Ok("fn = function(a) return a end".to_string()));
+    assert_eq!(ts("fn = function() return end"), Ok("fn = function() return end".to_string()));
+    assert_eq!(ts("fn = function(a, b) return a, b end"), Ok("fn = function(a, b) return a, b end".to_string()));
 
     // no RetStat
     assert_eq!(ts("fn = function(a, b) end"), Ok("fn = function(a, b) end".to_string()));
     assert_eq!(ts("fn = function() end"), Ok("fn = function() end".to_string()));
-    assert_eq!(
-        ts("fn_name():method():fn{a1, a2}"),
-        Ok("fn_name():method():fn{ a1, a2 }".to_string())
-    );
-    assert_eq!(
-        ts("function Obj:type() print(str) end"),
-        Ok("function Obj:type() print(str) end".to_string())
-    );
+    assert_eq!(ts("fn_name():method():fn{a1, a2}"), Ok("fn_name():method():fn{ a1, a2 }".to_string()));
+    assert_eq!(ts("function Obj:type() print(str) end"), Ok("function Obj:type() print(str) end".to_string()));
 }
 
 #[test]
@@ -207,14 +150,8 @@ fn test_stat() {
     assert_eq!(ts(";"), Ok("".to_string()));
     assert_eq!(ts(";;;;;;;"), Ok("".to_string()));
     assert_eq!(ts("a = 32;;;;;;;"), Ok("a = 32; ".to_string()));
-    assert_eq!(
-        ts(r#"a = "32";;;;b = {3, 4};;;;;c = 45"#),
-        Ok("a = \"32\"; b = { 3, 4 }; c = 45".to_string())
-    );
-    assert_eq!(
-        ts("a = 3+2; b =12-3; c=-42;"),
-        Ok("a = 3 + 2; b = 12 - 3; c = -42; ".to_string())
-    );
+    assert_eq!(ts(r#"a = "32";;;;b = {3, 4};;;;;c = 45"#), Ok("a = \"32\"; b = { 3, 4 }; c = 45".to_string()));
+    assert_eq!(ts("a = 3+2; b =12-3; c=-42;"), Ok("a = 3 + 2; b = 12 - 3; c = -42; ".to_string()));
 }
 
 #[test]
@@ -225,18 +162,9 @@ fn test_for() {
                         end"#),
         Ok("for a in pairs(tbl) do x.fn(a) end".to_string())
     );
-    assert_eq!(
-        ts("for a = 5, 1, -1 do x.fn(a) end"),
-        Ok("for a = 5, 1, -1 do x.fn(a) end".to_string())
-    );
-    assert_eq!(
-        ts("for a = 1, 5 do x.fn(a) fn(b + 3) end"),
-        Ok("for a = 1, 5 do x.fn(a); fn(b + 3) end".to_string())
-    );
-    assert_eq!(
-        ts("while a < 4 do fn(a) fn(b) break end"),
-        Ok("while a < 4 do fn(a); fn(b); break end".to_string())
-    );
+    assert_eq!(ts("for a = 5, 1, -1 do x.fn(a) end"), Ok("for a = 5, 1, -1 do x.fn(a) end".to_string()));
+    assert_eq!(ts("for a = 1, 5 do x.fn(a) fn(b + 3) end"), Ok("for a = 1, 5 do x.fn(a); fn(b + 3) end".to_string()));
+    assert_eq!(ts("while a < 4 do fn(a) fn(b) break end"), Ok("while a < 4 do fn(a); fn(b); break end".to_string()));
     assert_eq!(
         ts("local a, b repeat fn(a) fn(b) until a > b print(a, b)"),
         Ok("local a, b; repeat fn(a); fn(b) until a > b; print(a, b)".to_string())
@@ -260,11 +188,9 @@ fn test_for() {
   print(a, b)
   goto lab1
   return 4, 6"#),
-        Ok(
-            "local a, b; for i in ipairs(tbl) do print(i, a); break return end; a, b = b, a; \
+        Ok("local a, b; for i in ipairs(tbl) do print(i, a); break return end; a, b = b, a; \
                a.b = b; b.a = a; ::lab1::; repeat fn(a); fn(b) return until a > b; print(a, b); goto lab1 return 4, 6"
-                .to_string()
-        )
+            .to_string())
     );
 }
 
@@ -276,10 +202,7 @@ fn test_var() {
     assert_eq!(ts("local a, b = 3, 4"), Ok("local a, b = 3, 4".to_string()));
     assert_eq!(ts("local a, b, "), Err(TestError::ErrorWhileParsing));
     assert_eq!(ts("local , a, b"), Err(TestError::ErrorWhileParsing));
-    assert_eq!(
-        ts("a,b,c = 4, 4 & 1, func(42)"),
-        Ok("a, b, c = 4, 4 & 1, func(42)".to_string())
-    );
+    assert_eq!(ts("a,b,c = 4, 4 & 1, func(42)"), Ok("a, b, c = 4, 4 & 1, func(42)".to_string()));
 }
 
 #[test]
@@ -293,14 +216,8 @@ fn test_round_prefix() {
     assert_eq!(ts("a = (((fn2()))())"), Ok("a = (((fn2()))())".to_string()));
     assert_eq!(ts("({ a = 2}).a = 3"), Ok("({ a = 2 }).a = 3".to_string()));
     assert_eq!(ts("(fn()):fl().a = 3"), Ok("(fn()):fl().a = 3".to_string()));
-    assert_eq!(
-        ts("(fn()):fl().a, ({}).f = 3, (3&2)"),
-        Ok("(fn()):fl().a, ({}).f = 3, (3 & 2)".to_string())
-    );
-    assert_eq!(
-        ts("local str = ({ a = 3, b = 2 })[param]"),
-        Ok("local str = ({ a = 3, b = 2 })[param]".to_string())
-    );
+    assert_eq!(ts("(fn()):fl().a, ({}).f = 3, (3&2)"), Ok("(fn()):fl().a, ({}).f = 3, (3 & 2)".to_string()));
+    assert_eq!(ts("local str = ({ a = 3, b = 2 })[param]"), Ok("local str = ({ a = 3, b = 2 })[param]".to_string()));
     // assert_eq!(
     //     ts("a = 3 (fn()):fl().a = 3"),
     //     Ok("a = 3 (fn()):fl().a = 3".to_string())
@@ -320,14 +237,8 @@ fn test_literal() {
     assert_eq!(ts(r#"a = 123"#), Ok("a = 123".to_string()));
     assert_eq!(ts(r#"a = 123.124"#), Ok("a = 123.124".to_string()));
     assert_eq!(ts(r#"a = "123""#), Ok(r#"a = "123""#.to_string()));
-    assert_eq!(
-        ts(r#"a = "\"12'3'\"344\"""#),
-        Ok("a = \"\\\"12'3'\\\"344\\\"\"".to_string())
-    );
-    assert_eq!(
-        ts(r#"a = '"12\'3\'"344"\\\''"#),
-        Ok(r#"a = '"12\'3\'"344"\\\''"#.to_string())
-    );
+    assert_eq!(ts(r#"a = "\"12'3'\"344\"""#), Ok("a = \"\\\"12'3'\\\"344\\\"\"".to_string()));
+    assert_eq!(ts(r#"a = '"12\'3\'"344"\\\''"#), Ok(r#"a = '"12\'3\'"344"\\\''"#.to_string()));
     assert_eq!(ts("a = [[line]]"), Ok("a = [[line]]".to_string()));
     assert_eq!(ts("a = [=[line]=]"), Ok("a = [=[line]=]".to_string()));
     assert_eq!(ts("a = [===[]===]"), Ok("a = [===[]===]".to_string()));
@@ -341,10 +252,7 @@ fn test_literal() {
 
 #[test]
 fn test_if() {
-    assert_eq!(
-        ts("if a + b > 4 then print(a) end"),
-        Ok("if a + b > 4 then print(a) end".to_string())
-    );
+    assert_eq!(ts("if a + b > 4 then print(a) end"), Ok("if a + b > 4 then print(a) end".to_string()));
     assert_eq!(
         ts("if a + b > 4 then print(a) else print(b) end"),
         Ok("if a + b > 4 then print(a) else print(b) end".to_string())
@@ -367,10 +275,7 @@ fn test_if() {
 
 #[test]
 fn test_cut_comment() {
-    assert_eq!(
-        ts("if a + b > 4 then -- comment \n  print(a) -- comment 2 end "),
-        Err(TestError::ErrorWhileParsing)
-    );
+    assert_eq!(ts("if a + b > 4 then -- comment \n  print(a) -- comment 2 end "), Err(TestError::ErrorWhileParsing));
     assert_eq!(
         ts("if a + b > 4 then -- comment\n--\n-- \n  print(a) -- comment 2 \nend "),
         Ok("if a + b > 4 then print(a) end".to_string())
@@ -392,139 +297,74 @@ fn test_cut_comment() {
 #[test]
 fn test_numeral() {
     assert_eq!(ts("local a = 0"), Ok("local a = 0".to_string()));
-    assert_eq!(
-        ts("local a = -12414341423123"),
-        Ok("local a = -12414341423123".to_string())
-    );
+    assert_eq!(ts("local a = -12414341423123"), Ok("local a = -12414341423123".to_string()));
     assert_eq!(
         ts("local a = -124432423412412432142424124.12423"),
         Ok("local a = -124432423412412432142424124.12423".to_string())
     );
     assert_eq!(ts("local a = -124.12423e0"), Ok("local a = -124.12423e0".to_string()));
-    assert_eq!(
-        ts("local a = -124.12423E-3 e = 4"),
-        Ok("local a = -124.12423E-3; e = 4".to_string())
-    );
-    assert_eq!(
-        ts("local a = .12423E-3 e = 4"),
-        Ok("local a = .12423E-3; e = 4".to_string())
-    );
+    assert_eq!(ts("local a = -124.12423E-3 e = 4"), Ok("local a = -124.12423E-3; e = 4".to_string()));
+    assert_eq!(ts("local a = .12423E-3 e = 4"), Ok("local a = .12423E-3; e = 4".to_string()));
     assert_eq!(ts("local a = .0 e = 4"), Ok("local a = .0; e = 4".to_string()));
     assert_eq!(ts("local a = 0. e = 4"), Ok("local a = 0.; e = 4".to_string()));
     assert_eq!(ts("local a = 0x123 e = 4"), Ok("local a = 0x123; e = 4".to_string()));
-    assert_eq!(
-        ts("local a = 0x123abcdef e = 4"),
-        Ok("local a = 0x123abcdef; e = 4".to_string())
-    );
+    assert_eq!(ts("local a = 0x123abcdef e = 4"), Ok("local a = 0x123abcdef; e = 4".to_string()));
     assert_eq!(ts("local a = 0x12.4 e = 4"), Err(TestError::ErrorWhileParsing));
     assert_eq!(ts("local a = 0x12 e = 4"), Ok("local a = 0x12; e = 4".to_string()));
     assert_eq!(ts("local a = 0x12g e = 4"), Err(TestError::ErrorWhileParsing));
-    assert_eq!(
-        ts("local a = 0x12e-4 e = 4"),
-        Ok("local a = 0x12e - 4; e = 4".to_string())
-    );
+    assert_eq!(ts("local a = 0x12e-4 e = 4"), Ok("local a = 0x12e - 4; e = 4".to_string()));
 }
 
 #[test]
 fn test_keep_comments_op() {
+    assert_eq!(tsc("c = a  --\n  +   --[[]]   b"), Ok("c = a --\n +  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  -   --[[]]   b"), Ok("c = a --\n -  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  or   --[[]]   b"), Ok("c = a --\n or  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  and   --[[]]   b"), Ok("c = a --\n and  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ==  --[[]] b"), Ok("c = a --\n ==  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ~=  --[[]] b"), Ok("c = a --\n ~=  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  >=  --[[]] b"), Ok("c = a --\n >=  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  <=  --[[]] b"), Ok("c = a --\n <=  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  <  --[[]] b"), Ok("c = a --\n <  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  >  --[[]] b"), Ok("c = a --\n >  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  |  --[[]] b"), Ok("c = a --\n |  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ~  --[[]] b"), Ok("c = a --\n ~  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  &  --[[]] b"), Ok("c = a --\n &  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  >>  --[[]] b"), Ok("c = a --\n >>  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  <<  --[[]] b"), Ok("c = a --\n <<  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ..  --[[]] b"), Ok("c = a --\n ..  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  *  --[[]] b"), Ok("c = a --\n *  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  /  --[[]] b"), Ok("c = a --\n /  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  //  --[[]] b"), Ok("c = a --\n //  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  %  --[[]] b"), Ok("c = a --\n %  --[[]]b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ^  --[[]] b"), Ok("c = a --\n ^  --[[]]b".to_string()));
+    assert_eq!(tsc("c = not  --\n  b"), Ok("c = not  --\nb".to_string()));
+    assert_eq!(tsc("c = -  --\n  b"), Ok("c = - --\nb".to_string()));
+    assert_eq!(tsc("c = #  --\n  b"), Ok("c = # --\nb".to_string()));
+    assert_eq!(tsc("c = ~  --\n  b"), Ok("c = ~ --\nb".to_string()));
+}
+
+#[test]
+fn test_keep_comments_other() {
+    assert_eq!(tsc("t = { a --\n  =  --[[]]  3}"), Ok("t = { a --\n =  --[[]]3 }".to_string()));
     assert_eq!(
-        ts_comments("if a  --\n  +   --[[]]   b > 4 then print(a) end "),
-        Ok("if a --\n +  --[[]]b > 4 then print(a) end".to_string())
+        tsc("t = { [ --c1\n a --[[c2]]] --c3\n= --c4\n 3}"),
+        Ok("t = { [ --c1\na --[[c2]]] --c3\n =  --c4\n3 }".to_string())
     );
     assert_eq!(
-        ts_comments("if a  --\n  -   --[[]]   b > 4 then print(a) end "),
-        Ok("if a --\n -  --[[]]b > 4 then print(a) end".to_string())
+        tsc("t = { [ --c1\n 'a' --[[c2]]] --c3\n= --c4\n 3}"),
+        Ok("t = { [ --c1\n'a' --[[c2]]] --c3\n =  --c4\n3 }".to_string())
     );
     assert_eq!(
-        ts_comments("if a  --\n  or   --[[]]   b > 4 then print(a) end "),
-        Ok("if a --\n or  --[[]]b > 4 then print(a) end".to_string())
+        tsc("t = { [ --c1\n \"a\" --[[c2]]] --c3\n= --c4\n 3}"),
+        Ok("t = { [ --c1\n\"a\" --[[c2]]] --c3\n =  --c4\n3 }".to_string())
     );
     assert_eq!(
-        ts_comments("if a  --\n  and   --[[]]   b > 4 then print(a) end "),
-        Ok("if a --\n and  --[[]]b > 4 then print(a) end".to_string())
+        tsc("t = { [ --c1\n [[a]] --[[c2]]] --c3\n= --c4\n 3}"),
+        Ok("t = { [ --c1\n[[a]] --[[c2]]] --c3\n =  --c4\n3 }".to_string())
     );
     assert_eq!(
-        ts_comments("if a  --\n  ==  --[[]] b then print(a) end "),
-        Ok("if a --\n ==  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  ~=  --[[]] b then print(a) end "),
-        Ok("if a --\n ~=  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  >=  --[[]] b then print(a) end "),
-        Ok("if a --\n >=  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  <=  --[[]] b then print(a) end "),
-        Ok("if a --\n <=  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  <  --[[]] b then print(a) end "),
-        Ok("if a --\n <  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  >  --[[]] b then print(a) end "),
-        Ok("if a --\n >  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  |  --[[]] b then print(a) end "),
-        Ok("if a --\n |  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  ~  --[[]] b then print(a) end "),
-        Ok("if a --\n ~  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  &  --[[]] b then print(a) end "),
-        Ok("if a --\n &  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  >>  --[[]] b then print(a) end "),
-        Ok("if a --\n >>  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  <<  --[[]] b then print(a) end "),
-        Ok("if a --\n <<  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  ..  --[[]] b then print(a) end "),
-        Ok("if a --\n ..  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  *  --[[]] b then print(a) end "),
-        Ok("if a --\n *  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  /  --[[]] b then print(a) end "),
-        Ok("if a --\n /  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  //  --[[]] b then print(a) end "),
-        Ok("if a --\n //  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  %  --[[]] b then print(a) end "),
-        Ok("if a --\n %  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if a  --\n  ^  --[[]] b then print(a) end "),
-        Ok("if a --\n ^  --[[]]b then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if not  --\n  b then print(a) end "),
-        Ok("if not  --\nb then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if -  --\n  b then print(a) end "),
-        Ok("if - --\nb then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if #  --\n  b then print(a) end "),
-        Ok("if # --\nb then print(a) end".to_string())
-    );
-    assert_eq!(
-        ts_comments("if ~  --\n  b then print(a) end "),
-        Ok("if ~ --\nb then print(a) end".to_string())
+        tsc("t = { --0\n a = 1 --1\n, --2\n b = 2 --3\n, --4\n c = 3 --5\n, --6\n d = 4 --7\n, --8\n e = 5 --9\n, --10\n }"),
+        Ok("t = { --0\n a = 1 --1\n,  --2\nb = 2 --3\n,  --4\nc = 3 --5\n,  --6\nd = 4 --7\n,  --8\ne = 5 --9\n  --10\n}".to_string())
     );
 }
