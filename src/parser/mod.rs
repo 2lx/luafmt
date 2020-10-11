@@ -426,9 +426,105 @@ fn test_numeral() {
 }
 
 #[test]
-fn test_keep_comments() {
+fn test_keep_comments_op() {
     assert_eq!(
-        ts_comments("if a --comment1\n + --[[comment2]] b > 4 then print(a) end "),
-        Ok("if a--comment1\n + --[[comment2]]b > 4 then print(a) end".to_string())
+        ts_comments("if a  --\n  +   --[[]]   b > 4 then print(a) end "),
+        Ok("if a --\n +  --[[]]b > 4 then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  -   --[[]]   b > 4 then print(a) end "),
+        Ok("if a --\n -  --[[]]b > 4 then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  or   --[[]]   b > 4 then print(a) end "),
+        Ok("if a --\n or  --[[]]b > 4 then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  and   --[[]]   b > 4 then print(a) end "),
+        Ok("if a --\n and  --[[]]b > 4 then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  ==  --[[]] b then print(a) end "),
+        Ok("if a --\n ==  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  ~=  --[[]] b then print(a) end "),
+        Ok("if a --\n ~=  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  >=  --[[]] b then print(a) end "),
+        Ok("if a --\n >=  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  <=  --[[]] b then print(a) end "),
+        Ok("if a --\n <=  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  <  --[[]] b then print(a) end "),
+        Ok("if a --\n <  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  >  --[[]] b then print(a) end "),
+        Ok("if a --\n >  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  |  --[[]] b then print(a) end "),
+        Ok("if a --\n |  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  ~  --[[]] b then print(a) end "),
+        Ok("if a --\n ~  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  &  --[[]] b then print(a) end "),
+        Ok("if a --\n &  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  >>  --[[]] b then print(a) end "),
+        Ok("if a --\n >>  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  <<  --[[]] b then print(a) end "),
+        Ok("if a --\n <<  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  ..  --[[]] b then print(a) end "),
+        Ok("if a --\n ..  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  *  --[[]] b then print(a) end "),
+        Ok("if a --\n *  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  /  --[[]] b then print(a) end "),
+        Ok("if a --\n /  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  //  --[[]] b then print(a) end "),
+        Ok("if a --\n //  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  %  --[[]] b then print(a) end "),
+        Ok("if a --\n %  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if a  --\n  ^  --[[]] b then print(a) end "),
+        Ok("if a --\n ^  --[[]]b then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if not  --\n  b then print(a) end "),
+        Ok("if not  --\nb then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if -  --\n  b then print(a) end "),
+        Ok("if - --\nb then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if #  --\n  b then print(a) end "),
+        Ok("if # --\nb then print(a) end".to_string())
+    );
+    assert_eq!(
+        ts_comments("if ~  --\n  b then print(a) end "),
+        Ok("if ~ --\nb then print(a) end".to_string())
     );
 }
