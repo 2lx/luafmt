@@ -358,7 +358,8 @@ Op7<T>: Node = {
 }
 
 Op8<T>: Node = {
-    <l:@L> <e1:Op8<T>> "+" <e2:Op9<T>> <r:@R> => Node::Addition(Loc(l, r), Box::new(e1), Box::new(e2)),
+    <ls:@L> <e1:Op8<T>> <l1:@R> <r1:@L> "+" <l2:@R> <r2:@L> <e2:Op9<T>> <rs:@R>
+        => Node::Addition(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
     <l:@L> <e1:Op8<T>> "-" <e2:Op9<T>> <r:@R> => Node::Subtraction(Loc(l, r), Box::new(e1), Box::new(e2)),
     Op9<T>,
 }

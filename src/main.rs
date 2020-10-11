@@ -16,13 +16,14 @@ fn read_input() -> Result<String, std::io::Error> {
 fn main() -> Result<(), std::io::Error> {
     let config = config::Config {
         indent_width: 4,
+        keep_comments: true,
     };
     let buffer = read_input()?;
 
     match parser::parse(&buffer) {
         Ok(result) => {
             let mut output = String::new();
-            match result.configured_write(&mut output, &config) {
+            match result.configured_write(&mut output, &config, &buffer) {
                 Err(_) => println!("An error occured while formatting: {:?}", result),
                 _ => println!("{}", output),
             };
