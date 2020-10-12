@@ -293,7 +293,7 @@ TableConstructor: Node = {
     <ls:@L> "{" <l1:@R> <r1:@L> <e:FieldList> <l2:@R> <r2:@L> "}" <rs:@R>
         => Node::TableConstructor(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
     <ls:@L> "{" <l1:@R> <r1:@L> "}" <rs:@R>
-        => Node::TableConstructor(Loc(ls, rs), [Loc(l1, r1), Loc(0, 0)], Box::new(Node::Empty(Loc(l1, r1)))),
+        => Node::TableConstructorEmpty(Loc(ls, rs), [Loc(l1, r1)]),
 }
 
 FieldList: Node = {

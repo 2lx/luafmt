@@ -366,6 +366,6 @@ fn test_keep_comments_other() {
     );
     assert_eq!(
         tsc("t = { --0\n a = 1 --1\n, --2\n b = 2 --3\n, --4\n c = 3 --5\n, --6\n d = 4 --7\n, --8\n e = 5 --9\n, --10\n }"),
-        Ok("t = { --0\n a = 1 --1\n,  --2\nb = 2 --3\n,  --4\nc = 3 --5\n,  --6\nd = 4 --7\n,  --8\ne = 5 --9\n  --10\n}".to_string())
+        Ok("t = { --0\na = 1 --1\n,  --2\nb = 2 --3\n,  --4\nc = 3 --5\n,  --6\nd = 4 --7\n,  --8\ne = 5 --9\n --10\n}".to_string())
     );
 }

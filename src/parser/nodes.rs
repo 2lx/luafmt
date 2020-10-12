@@ -62,6 +62,7 @@ pub enum Node {
     MultilineStringLiteral(Loc, usize, String),
 
     TableConstructor(Loc, [Loc; 2], Box<Node>),
+    TableConstructorEmpty(Loc, [Loc; 1]),
     Fields(Loc, Vec<(Loc, Node, Loc)>),
     FieldNamedBracket(Loc, [Loc; 4], Box<Node>, Box<Node>),
     FieldNamed(Loc, [Loc; 2], Box<Node>, Box<Node>),
@@ -107,12 +108,10 @@ fn cfg_write_node_vec(
     cfg: &Config,
     buf: &str,
     elems: &Vec<Node>,
-    padding: &str,
     sep: &str,
     ws: &str,
 ) -> Result<(), core::fmt::Error> {
     if !elems.is_empty() {
-        write!(f, "{}", padding)?;
         for elem in &elems[0..elems.len() - 1] {
             if let Node::Empty(_) = *elem {
                 continue;
@@ -121,7 +120,6 @@ fn cfg_write_node_vec(
             write!(f, "{}{}", sep, ws)?;
         }
         cfg_write!(f, cfg, buf, (elems.last().unwrap()))?;
-        write!(f, "{}", padding)?;
     }
     Ok(())
 }
@@ -131,12 +129,10 @@ fn cfg_write_node_vec_locs(
     cfg: &Config,
     buf: &str,
     elems: &Vec<(Loc, Node, Loc)>,
-    padding: &str,
     sep: &str,
     ws: &str,
 ) -> Result<(), core::fmt::Error> {
     if !elems.is_empty() {
-        write!(f, "{}", padding)?;
         for elem in &elems[0..elems.len() - 1] {
             if let Node::Empty(_) = elem.1 {
                 continue;
@@ -146,7 +142,6 @@ fn cfg_write_node_vec_locs(
         }
         let last = &elems[elems.len() - 1];
         cfg_write!(f, cfg, buf, LocOpt(&last.0, ""), last.1, LocOpt(&last.2, ""))?;
-        write!(f, "{}", padding)?;
     }
     Ok(())
 }
@@ -182,9 +177,10 @@ impl ConfiguredWrite for Node {
             }
 
             TableConstructor(_, locs, r) => {
-                cfg_write!(f, cfg, buf, "{{", LocOpt(&locs[0], ""), r, LocOpt(&locs[1], ""), "}}")
+                cfg_write!(f, cfg, buf, "{{", LocOpt(&locs[0], " "), r, LocOpt(&locs[1], " "), "}}")
             }
-            Fields(_, fields) => cfg_write_node_vec_locs(f, cfg, buf, fields, " ", ",", " "),
+            TableConstructorEmpty(_, locs) => cfg_write!(f, cfg, buf, "{{", LocOpt(&locs[0], ""), "}}"),
+            Fields(_, fields) => cfg_write_node_vec_locs(f, cfg, buf, fields, ",", " "),
             FieldNamedBracket(_, locs, e1, e2) => {
                 cfg_write!(f, cfg, buf, "[", LocOpt(&locs[0], ""), e1, LocOpt(&locs[1], ""), "]", LocOpt(&locs[2], " "),
                            "=", LocOpt(&locs[3], " "), e2)
@@ -196,24 +192,24 @@ impl ConfiguredWrite for Node {
 
             TableIndex(_, e) => cfg_write!(f, cfg, buf, "[", e, "]"),
             TableMember(_, n) => cfg_write!(f, cfg, buf, ".", n),
-            ExpList(_, exps) => cfg_write_node_vec(f, cfg, buf, exps, "", ",", " "),
-            NameList(_, names) => cfg_write_node_vec(f, cfg, buf, names, "", ",", " "),
-            VarList(_, vars) => cfg_write_node_vec(f, cfg, buf, vars, "", ",", " "),
-            StatementList(_, stts) => cfg_write_node_vec(f, cfg, buf, stts, "", ";", " "),
+            ExpList(_, exps) => cfg_write_node_vec(f, cfg, buf, exps, ",", " "),
+            NameList(_, names) => cfg_write_node_vec(f, cfg, buf, names, ",", " "),
+            VarList(_, vars) => cfg_write_node_vec(f, cfg, buf, vars, ",", " "),
+            StatementList(_, stts) => cfg_write_node_vec(f, cfg, buf, stts, ";", " "),
             DoEnd(_, n) => cfg_write!(f, cfg, buf, "do ", n, " end"),
             VarsExprs(_, n1, n2) => cfg_write!(f, cfg, buf, n1, " = ", n2),
 
             VarRoundSuffix(_, n1, n2) => cfg_write!(f, cfg, buf, "(", n1, ")", n2),
-            VarSuffixList(_, suffs) => cfg_write_node_vec(f, cfg, buf, suffs, "", "", ""),
+            VarSuffixList(_, suffs) => cfg_write_node_vec(f, cfg, buf, suffs, "", ""),
             FnMethodCall(_, n1, n2) => cfg_write!(f, cfg, buf, ":", n1, n2),
-            ParList(_, pars) => cfg_write_node_vec(f, cfg, buf, pars, "", ",", " "),
+            ParList(_, pars) => cfg_write_node_vec(f, cfg, buf, pars, ",", " "),
             FunctionDef(_, n) => cfg_write!(f, cfg, buf, "function", n),
             FuncBody(_, n1, n2) => match &**n2 {
                 Node::StatementList(_, v2) if v2.is_empty() => cfg_write!(f, cfg, buf, "(", n1, ") end"),
                 _ => cfg_write!(f, cfg, buf, "(", n1, ") ", n2, " end"),
             },
             FuncName(_, names, n) => {
-                cfg_write_node_vec(f, cfg, buf, names, "", ".", "")?;
+                cfg_write_node_vec(f, cfg, buf, names, ".", "")?;
                 match &**n {
                     Node::Empty(_) => Ok(()),
                     _ => cfg_write!(f, cfg, buf, ":", n),
@@ -234,7 +230,7 @@ impl ConfiguredWrite for Node {
                 (_, Node::Empty(_)) => cfg_write!(f, cfg, buf, "if ", e1, " then ", b1, " ", n, " end"),
                 _ => cfg_write!(f, cfg, buf, "if ", e1, " then ", b1, " ", n, " else ", b2, " end"),
             },
-            ElseIfThenVec(_, elems) => cfg_write_node_vec(f, cfg, buf, elems, "", "", " "),
+            ElseIfThenVec(_, elems) => cfg_write_node_vec(f, cfg, buf, elems, "", " "),
             ElseIfThen(_, e, n) => cfg_write!(f, cfg, buf, "elseif ", e, " then ", n),
 
             Name(_, s) => write!(f, "{}", s),
