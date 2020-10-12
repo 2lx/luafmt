@@ -141,10 +141,20 @@ StatNoPar: Node = {
     <l:@L> "do" <n:Block> "end" <r:@R>                   => Node::DoEnd(Loc(l, r), Box::new(n)),
     <l:@L> "while" <e:OpExp> "do" <n:Block> "end" <r:@R> => Node::While(Loc(l, r), Box::new(e), Box::new(n)),
 
-    <l:@L> "if" <e1:OpExp> "then" <b1:Block> <n1:ElseIfThenVec> <empl:@L> <empr:@R> "end" <r:@R>
-            => Node::IfThenElse(Loc(l, r), Box::new(e1), Box::new(b1), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
-    <l:@L> "if" <e1:OpExp> "then" <b1:Block> <n1:ElseIfThenVec> "else" <b2:Block> <r:@R> "end"
-            => Node::IfThenElse(Loc(l, r), Box::new(e1), Box::new(b1), Box::new(n1), Box::new(b2)),
+    <ls:@L> "if" <l1:@R> <r1:@L> <e1:OpExp> <l2:@R> <r2:@L> "then" <l3:@R> <r3:@L> <b1:Block> <l4:@R> <r4:@L> "end" <rs:@R>
+        => Node::IfThen(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4)], Box::new(e1), Box::new(b1)),
+    <ls:@L> "if" <l1:@R> <r1:@L> <e1:OpExp> <l2:@R> <r2:@L> "then" <l3:@R> <r3:@L> <b1:Block> <l4:@R> <r4:@L>
+            "else" <l5:@R> <r5:@L> <b2:Block> <l6:@R> <r6:@L> "end" <rs:@R>
+        => Node::IfThenElse(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4), Loc(l5, r5), Loc(l6, r6)],
+                            Box::new(e1), Box::new(b1), Box::new(b2)),
+    <ls:@L> "if" <l1:@R> <r1:@L> <e1:OpExp> <l2:@R> <r2:@L> "then" <l3:@R> <r3:@L> <b1:Block> <l4:@R> <r4:@L>
+            <n:ElseIfThenVec> <l5:@R> <r5:@L> "end" <rs:@R>
+        => Node::IfThenElseIf(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4), Loc(l5, r5)],
+                              Box::new(e1), Box::new(b1), Box::new(n)),
+    <ls:@L> "if" <l1:@R> <r1:@L> <e1:OpExp> <l2:@R> <r2:@L> "then" <l3:@R> <r3:@L> <b1:Block> <l4:@R> <r4:@L>
+            <n:ElseIfThenVec> <l5:@R> <r5:@L> "else" <l6:@R> <r6:@L> <b2:Block> <l7:@R> <r7:@L> "end" <rs:@R>
+        => Node::IfThenElseIfElse(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4), Loc(l5, r5),
+                                  Loc(l6, r6), Loc(l7, r7)], Box::new(e1), Box::new(b1), Box::new(n), Box::new(b2)),
 
     <l:@L> "for" <n:Name> "=" <e1:OpExp> "," <e2:OpExp> "," <e3:OpExp> "do" <b:Block> "end" <r:@R>
             => Node::ForInt(Loc(l, r), Box::new(n), Box::new(e1), Box::new(e2), Box::new(e3), Box::new(b)),
@@ -156,15 +166,17 @@ StatNoPar: Node = {
     <l:@L> "function" <n1:FuncName> <n2:FuncBody> <r:@R>     => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
     <l:@L> "local" "function" <n1:Name> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
 
-    <l:@L> "local" <n1:NameList> <empl:@L> <empr:@R> <r:@R> => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
+    <l:@L> "local" <n1:NameList> <empl:@L> <empr:@R> <r:@R>
+        => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
 }
 
 ElseIfThenVec: Node = {
-    <ls:@L> <v:TEmptyList<ElseIfThen>> <rs:@R> => Node::ElseIfThenVec(Loc(ls, rs), v),
+    <ls:@L> <v:TList<ElseIfThen>> <rs:@R> => Node::ElseIfThenVec(Loc(ls, rs), v),
 }
 
 ElseIfThen: Node = {
-    <l:@L> "elseif" <e:OpExp> "then" <b:Block> <r:@R> => Node::ElseIfThen(Loc(l, r), Box::new(e), Box::new(b)),
+    <ls:@L> "elseif" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> "then" <l3:@R> <r3:@L> <b:Block> <rs:@R>
+        => Node::ElseIfThen(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(e), Box::new(b)),
 }
 
 RetStat: Node = {

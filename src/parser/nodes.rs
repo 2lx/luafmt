@@ -95,9 +95,13 @@ pub enum Node {
     ForRange(Loc, Box<Node>, Box<Node>, Box<Node>),
     ForInt(Loc, Box<Node>, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
     LocalNamesExprs(Loc, Box<Node>, Box<Node>),
-    IfThenElse(Loc, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
+
+    IfThen(Loc, [Loc; 4], Box<Node>, Box<Node>),
+    IfThenElse(Loc, [Loc; 6], Box<Node>, Box<Node>, Box<Node>),
+    IfThenElseIf(Loc, [Loc; 5], Box<Node>, Box<Node>, Box<Node>),
+    IfThenElseIfElse(Loc, [Loc; 7], Box<Node>, Box<Node>, Box<Node>, Box<Node>),
     ElseIfThenVec(Loc, Vec<(Loc, Node)>),
-    ElseIfThen(Loc, Box<Node>, Box<Node>),
+    ElseIfThen(Loc, [Loc; 3], Box<Node>, Box<Node>),
 
     RetStatNone(Loc),
     RetStatExpr(Loc, [Loc; 1], Box<Node>),
@@ -232,18 +236,30 @@ impl ConfiguredWrite for Node {
                 Node::Empty(_) => cfg_write!(f, cfg, buf, "local ", n1),
                 _ => cfg_write!(f, cfg, buf, "local ", n1, " = ", n2),
             },
-            IfThenElse(_, e1, b1, n, b2) => match (&**n, &**b2) {
-                (Node::ElseIfThenVec(_, v), Node::Empty(_)) if v.is_empty() => {
-                    cfg_write!(f, cfg, buf, "if ", e1, " then ", b1, " end")
-                }
-                (Node::ElseIfThenVec(_, v), _) if v.is_empty() => {
-                    cfg_write!(f, cfg, buf, "if ", e1, " then ", b1, " else ", b2, " end")
-                }
-                (_, Node::Empty(_)) => cfg_write!(f, cfg, buf, "if ", e1, " then ", b1, " ", n, " end"),
-                _ => cfg_write!(f, cfg, buf, "if ", e1, " then ", b1, " ", n, " else ", b2, " end"),
-            },
+
+            IfThen(_, locs, e1, b1) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), "end")
+            }
+            IfThenElse(_, locs, e1, b1, b2) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), "else", LocOpt(&locs[4], " "), b2,
+                           LocOpt(&locs[5], " "), "end")
+            }
+            IfThenElseIf(_, locs, e1, b1, n) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), n, LocOpt(&locs[4], " "), "end")
+            }
+            IfThenElseIfElse(_, locs, e1, b1, n, b2) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), n, LocOpt(&locs[4], " "), "else",
+                           LocOpt(&locs[5], " "), b2, LocOpt(&locs[6], " "), "end")
+            }
             ElseIfThenVec(_, elems) => cfg_write_node_vec_locs(f, cfg, buf, elems, " "),
-            ElseIfThen(_, e, n) => cfg_write!(f, cfg, buf, "elseif ", e, " then ", n),
+            ElseIfThen(_, locs, e, n) => {
+                cfg_write!(f, cfg, buf, "elseif", LocOpt(&locs[0], " "), e, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), n)
+            }
 
             Name(_, s) => write!(f, "{}", s),
             Label(_, locs, n) => cfg_write!(f, cfg, buf, "::", LocOpt(&locs[0], ""), n, LocOpt(&locs[1], ""), "::"),

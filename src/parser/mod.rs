@@ -218,6 +218,7 @@ fn test_round_prefix() {
     assert_eq!(ts("(fn()):fl().a = 3"), Ok("(fn()):fl().a = 3".to_string()));
     assert_eq!(ts("(fn()):fl().a, ({}).f = 3, (3&2)"), Ok("(fn()):fl().a, ({}).f = 3, (3 & 2)".to_string()));
     assert_eq!(ts("local str = ({ a = 3, b = 2 })[param]"), Ok("local str = ({ a = 3, b = 2 })[param]".to_string()));
+
     // assert_eq!(ts("a = 3 (fn()):fl().a = 3"), Ok("a = 3 (fn()):fl().a = 3".to_string()));
     // assert_eq!(ts("({ a = 2}).a = 3 (fn()):fl().a = 3"), Ok("({ a = 2}).a = 3 (fn()):fl().a = 3".to_string()));
     // assert_eq!(
@@ -437,5 +438,27 @@ fn test_keep_comments_other() {
     assert_eq!(
         tsc("({})[a]--1\n() --2\n break --3\n ({})--4\n[1]"),
         Ok("({})[a] --1\n() --2\nbreak --3\n({}) --4\n[1]".to_string())
+    );
+
+    // If Then ElseIf Else End
+    assert_eq!(
+        tsc(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] else--[[13]] print(0) --[[14]]end"#),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] elseif --[[5]] a < 3 --[[6]] then --[[7]] print(2) --[[8]]
+elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] else --[[13]] print(0) --[[14]] end"#.to_string())
+    );
+    assert_eq!(
+        tsc(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] else--[[13]] print(0) --[[14]]end"#),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] else --[[13]] print(0) --[[14]] end"#.to_string())
+    );
+    assert_eq!(
+        tsc(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] end"#),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] elseif --[[5]] a < 3 --[[6]] then --[[7]] print(2) --[[8]]
+elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#.to_string())
+    );
+    assert_eq!(
+        tsc(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] end"#),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] end"#.to_string())
     );
 }
