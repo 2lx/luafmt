@@ -19,11 +19,16 @@ TList<T>: Vec<(Loc, T)> = {
 }
 
 // can be empty, no separators
-TEmptyList<T>: Vec<T> = {
+TEmptyList<T>: Vec<(Loc, T)> = {
     => Vec::new(),
-    <v:(<T>)*> <e:T> => {
+    <e:T> => {
+        let mut v = Vec::new();
+        v.push((Loc(0, 0), e));
+        v
+    },
+    <v:TList<T>> <l1:@R> <r1:@L> <e:T> => {
         let mut v = v;
-        v.push(e);
+        v.push((Loc(l1, r1), e));
         v
     },
 }
@@ -92,22 +97,25 @@ Block: Node = {
 }
 
 Stats: Node = {
-    <l:@L> <n1:StatStartsMayEndsPar> <v:TEmptyList<Stat>> <r:@R> => {
+    <ls:@L> <n:StatStartsMayEndsPar> <l1:@R> <r1:@L> <v:TEmptyList<Stat>> <rs:@R> => {
         let mut v = v;
-        v.insert(0, n1);
-        Node::StatementList(Loc(l, r), v)
+        if !v.is_empty() {
+            v[0].0 = Loc(l1, r1);
+        }
+        v.insert(0, (Loc(0, 0), n));
+        Node::StatementList(Loc(ls, rs), v)
     },
-    <l:@L> <n:TEmptyList<Stat>> <r:@R> => Node::StatementList(Loc(l, r), n),
+    <ls:@L> <v:TEmptyList<Stat>> <rs:@R> => Node::StatementList(Loc(ls, rs), v),
 }
 
 Stat: Node = {
-    StatNoExp,
+    StatNoPar,
     StatMayEndsPar,
-    <l:@L> <s1:StatNoExp> <s2:StatStartsMayEndsPar> <r:@R> => {
+    <ls:@L> <n1:StatNoPar> <l1:@R> <r1:@L> <n2:StatStartsMayEndsPar> <rs:@R> => {
         let mut v = Vec::new();
-        v.push(s1);
-        v.push(s2);
-        Node::StatementList(Loc(l, r), v)
+        v.push((Loc(0, 0), n1));
+        v.push((Loc(l1, r1), n2));
+        Node::StatementList(Loc(ls, rs), v)
     },
 }
 
@@ -123,10 +131,10 @@ StatMayEndsPar: Node = {
     <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R>  => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
 }
 
-StatNoExp: Node = {
-    <l:@L> ";" <r:@R> => Node::Empty(Loc(l, r)),
+StatNoPar: Node = {
+    <ls:@L> ";" <rs:@R> => Node::Empty(Loc(ls, rs)),
     Label,
-    <l:@L> "break" <r:@R>         => Node::Break(Loc(l, r)),
+    <ls:@L> "break" <rs:@R> => Node::Break(Loc(ls, rs)),
     <ls:@L> "goto" <l1:@R> <r1:@L> <n:Name> <rs:@R>
         => Node::GoTo(Loc(ls, rs), [Loc(l1, r1)], Box::new(n)),
 
@@ -152,7 +160,7 @@ StatNoExp: Node = {
 }
 
 ElseIfThenVec: Node = {
-    <l:@L> <v:TEmptyList<ElseIfThen>> <r:@R> => Node::ElseIfThenVec(Loc(l, r), v),
+    <ls:@L> <v:TEmptyList<ElseIfThen>> <rs:@R> => Node::ElseIfThenVec(Loc(ls, rs), v),
 }
 
 ElseIfThen: Node = {

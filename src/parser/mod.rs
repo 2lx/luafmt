@@ -149,9 +149,9 @@ fn test_function() {
 fn test_stat() {
     assert_eq!(ts(";"), Ok("".to_string()));
     assert_eq!(ts(";;;;;;;"), Ok("".to_string()));
-    assert_eq!(ts("a = 32;;;;;;;"), Ok("a = 32; ".to_string()));
-    assert_eq!(ts(r#"a = "32";;;;b = {3, 4};;;;;c = 45"#), Ok("a = \"32\"; b = { 3, 4 }; c = 45".to_string()));
-    assert_eq!(ts("a = 3+2; b =12-3; c=-42;"), Ok("a = 3 + 2; b = 12 - 3; c = -42; ".to_string()));
+    assert_eq!(ts("a = 32;;;;;;;"), Ok("a = 32".to_string()));
+    assert_eq!(ts(r#"a = "32";;;;b = {3, 4};;;;;c = 45"#), Ok("a = \"32\" b = { 3, 4 } c = 45".to_string()));
+    assert_eq!(ts("a = 3+2; b =12-3; c=-42;"), Ok("a = 3 + 2 b = 12 - 3 c = -42".to_string()));
 }
 
 #[test]
@@ -163,11 +163,11 @@ fn test_for() {
         Ok("for a in pairs(tbl) do x.fn(a) end".to_string())
     );
     assert_eq!(ts("for a = 5, 1, -1 do x.fn(a) end"), Ok("for a = 5, 1, -1 do x.fn(a) end".to_string()));
-    assert_eq!(ts("for a = 1, 5 do x.fn(a) fn(b + 3) end"), Ok("for a = 1, 5 do x.fn(a); fn(b + 3) end".to_string()));
-    assert_eq!(ts("while a < 4 do fn(a) fn(b) break end"), Ok("while a < 4 do fn(a); fn(b); break end".to_string()));
+    assert_eq!(ts("for a = 1, 5 do x.fn(a) fn(b + 3) end"), Ok("for a = 1, 5 do x.fn(a) fn(b + 3) end".to_string()));
+    assert_eq!(ts("while a < 4 do fn(a) fn(b); break end"), Ok("while a < 4 do fn(a) fn(b) break end".to_string()));
     assert_eq!(
         ts("local a, b repeat fn(a) fn(b) until a > b print(a, b)"),
-        Ok("local a, b; repeat fn(a); fn(b) until a > b; print(a, b)".to_string())
+        Ok("local a, b repeat fn(a) fn(b) until a > b print(a, b)".to_string())
     );
     assert_eq!(
         ts(r#"local a, b
@@ -188,8 +188,8 @@ fn test_for() {
   print(a, b)
   goto lab1
   return 4, 6"#),
-        Ok("local a, b; for i in ipairs(tbl) do print(i, a); break return; end; a, b = b, a; \
-               a.b = b; b.a = a; ::lab1::; repeat fn(a); fn(b) return until a > b; print(a, b); goto lab1 return 4, 6"
+        Ok("local a, b for i in ipairs(tbl) do print(i, a) break return; end a, b = b, a \
+               a.b = b b.a = a ::lab1:: repeat fn(a) fn(b) return until a > b print(a, b) goto lab1 return 4, 6"
             .to_string())
     );
 }
@@ -211,21 +211,15 @@ fn test_round_prefix() {
     assert_eq!(ts("((fn2()))()"), Ok("((fn2()))()".to_string()));
     assert_eq!(
         ts("((fn2()))(fn2())() fn2().field (fn2())()"),
-        Ok("((fn2()))(fn2())(); fn2().field(fn2())()".to_string())
+        Ok("((fn2()))(fn2())() fn2().field(fn2())()".to_string())
     );
     assert_eq!(ts("a = (((fn2()))())"), Ok("a = (((fn2()))())".to_string()));
     assert_eq!(ts("({ a = 2}).a = 3"), Ok("({ a = 2 }).a = 3".to_string()));
     assert_eq!(ts("(fn()):fl().a = 3"), Ok("(fn()):fl().a = 3".to_string()));
     assert_eq!(ts("(fn()):fl().a, ({}).f = 3, (3&2)"), Ok("(fn()):fl().a, ({}).f = 3, (3 & 2)".to_string()));
     assert_eq!(ts("local str = ({ a = 3, b = 2 })[param]"), Ok("local str = ({ a = 3, b = 2 })[param]".to_string()));
-    // assert_eq!(
-    //     ts("a = 3 (fn()):fl().a = 3"),
-    //     Ok("a = 3 (fn()):fl().a = 3".to_string())
-    // );
-    // assert_eq!(
-    //     ts("({ a = 2}).a = 3 (fn()):fl().a = 3"),
-    //     Ok("({ a = 2}).a = 3 (fn()):fl().a = 3".to_string())
-    // );
+    // assert_eq!(ts("a = 3 (fn()):fl().a = 3"), Ok("a = 3 (fn()):fl().a = 3".to_string()));
+    // assert_eq!(ts("({ a = 2}).a = 3 (fn()):fl().a = 3"), Ok("({ a = 2}).a = 3 (fn()):fl().a = 3".to_string()));
     // assert_eq!(
     //     ts("local p = 'a' ({ a = fn1, b = fn2 })[p]()"),
     //     Ok("local p = 'a' ({ a = fn1, b = fn2 })[p]()".to_string())
@@ -303,16 +297,16 @@ fn test_numeral() {
         Ok("local a = -124432423412412432142424124.12423".to_string())
     );
     assert_eq!(ts("local a = -124.12423e0"), Ok("local a = -124.12423e0".to_string()));
-    assert_eq!(ts("local a = -124.12423E-3 e = 4"), Ok("local a = -124.12423E-3; e = 4".to_string()));
-    assert_eq!(ts("local a = .12423E-3 e = 4"), Ok("local a = .12423E-3; e = 4".to_string()));
-    assert_eq!(ts("local a = .0 e = 4"), Ok("local a = .0; e = 4".to_string()));
-    assert_eq!(ts("local a = 0. e = 4"), Ok("local a = 0.; e = 4".to_string()));
-    assert_eq!(ts("local a = 0x123 e = 4"), Ok("local a = 0x123; e = 4".to_string()));
-    assert_eq!(ts("local a = 0x123abcdef e = 4"), Ok("local a = 0x123abcdef; e = 4".to_string()));
+    assert_eq!(ts("local a = -124.12423E-3 e = 4"), Ok("local a = -124.12423E-3 e = 4".to_string()));
+    assert_eq!(ts("local a = .12423E-3 e = 4"), Ok("local a = .12423E-3 e = 4".to_string()));
+    assert_eq!(ts("local a = .0 e = 4"), Ok("local a = .0 e = 4".to_string()));
+    assert_eq!(ts("local a = 0. e = 4"), Ok("local a = 0. e = 4".to_string()));
+    assert_eq!(ts("local a = 0x123 e = 4"), Ok("local a = 0x123 e = 4".to_string()));
+    assert_eq!(ts("local a = 0x123abcdef e = 4"), Ok("local a = 0x123abcdef e = 4".to_string()));
     assert_eq!(ts("local a = 0x12.4 e = 4"), Err(TestError::ErrorWhileParsing));
-    assert_eq!(ts("local a = 0x12 e = 4"), Ok("local a = 0x12; e = 4".to_string()));
+    assert_eq!(ts("local a = 0x12 e = 4"), Ok("local a = 0x12 e = 4".to_string()));
     assert_eq!(ts("local a = 0x12g e = 4"), Err(TestError::ErrorWhileParsing));
-    assert_eq!(ts("local a = 0x12e-4 e = 4"), Ok("local a = 0x12e - 4; e = 4".to_string()));
+    assert_eq!(ts("local a = 0x12e-4 e = 4"), Ok("local a = 0x12e - 4 e = 4".to_string()));
 }
 
 #[test]
@@ -418,16 +412,30 @@ fn test_keep_comments_other() {
     // Label
     assert_eq!(
         tsc("::--1\nlabel1--[[2]]:: goto--[[3]]label1"),
-        Ok(":: --1\nlabel1 --[[2]] ::; goto --[[3]] label1".to_string())
+        Ok(":: --1\nlabel1 --[[2]] :: goto --[[3]] label1".to_string())
+    );
+    assert_eq!(tsc("::label1:: goto label1"), Ok("::label1:: goto label1".to_string()));
+
+    // StatRetStat
+    assert_eq!(tsc("a = b; return"), Ok("a = b return".to_string()));
+    assert_eq!(tsc("a = b; --[[1]] return"), Ok("a = b --[[1]] return".to_string()));
+    assert_eq!(tsc("a = b; --[[1]] return--2\n;"), Ok("a = b --[[1]] return --2\n;".to_string()));
+    assert_eq!(
+        tsc("a = b; --[[1]] return--2\n2--[[3]],--[[4]]3"),
+        Ok("a = b --[[1]] return --2\n2 --[[3]] , --[[4]] 3".to_string())
     );
     assert_eq!(
-        tsc("::label1:: goto label1"),
-        Ok("::label1::; goto label1".to_string())
+        tsc("a = b; --[[1]] return--2\n2--[[3]],--[[4]]3--5\n;"),
+        Ok("a = b --[[1]] return --2\n2 --[[3]] , --[[4]] 3 --5\n;".to_string())
     );
 
-    // RetStat
+    // ParStats
     assert_eq!(
-        tsc("a = b; return"),
-        Ok("a = b; return".to_string())
+        tsc("a = ({})[a]--1\n() --2\n break --3\n ({})--4\n[1]"),
+        Ok("a = ({})[a] --1\n() --2\nbreak --3\n({}) --4\n[1]".to_string())
+    );
+    assert_eq!(
+        tsc("({})[a]--1\n() --2\n break --3\n ({})--4\n[1]"),
+        Ok("({})[a] --1\n() --2\nbreak --3\n({}) --4\n[1]".to_string())
     );
 }

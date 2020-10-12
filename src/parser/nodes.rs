@@ -84,7 +84,7 @@ pub enum Node {
     FuncNameSelf(Loc, [Loc; 2], Vec<(Loc, Node, Loc)>, Box<Node>),
     FuncDecl(Loc, Box<Node>, Box<Node>),
 
-    StatementList(Loc, Vec<Node>),
+    StatementList(Loc, Vec<(Loc, Node)>),
     DoEnd(Loc, Box<Node>),
     VarsExprs(Loc, Box<Node>, Box<Node>),
     Name(Loc, String),
@@ -96,7 +96,7 @@ pub enum Node {
     ForInt(Loc, Box<Node>, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
     LocalNamesExprs(Loc, Box<Node>, Box<Node>),
     IfThenElse(Loc, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
-    ElseIfThenVec(Loc, Vec<Node>),
+    ElseIfThenVec(Loc, Vec<(Loc, Node)>),
     ElseIfThen(Loc, Box<Node>, Box<Node>),
 
     RetStatNone(Loc),
@@ -106,27 +106,6 @@ pub enum Node {
     StatsRetStat(Loc, [Loc; 1], Box<Node>, Box<Node>),
 
     Empty(Loc),
-}
-
-fn cfg_write_node_vec(
-    f: &mut dyn fmt::Write,
-    cfg: &Config,
-    buf: &str,
-    elems: &Vec<Node>,
-    sep: &str,
-    ws: &str,
-) -> Result<(), core::fmt::Error> {
-    if !elems.is_empty() {
-        for elem in &elems[0..elems.len() - 1] {
-            if let Node::Empty(_) = *elem {
-                continue;
-            }
-            cfg_write!(f, cfg, buf, elem)?;
-            write!(f, "{}{}", sep, ws)?;
-        }
-        cfg_write!(f, cfg, buf, (elems.last().unwrap()))?;
-    }
-    Ok(())
 }
 
 fn cfg_write_node_vec_locs_sep(
@@ -159,11 +138,16 @@ fn cfg_write_node_vec_locs(
     elems: &Vec<(Loc, Node)>,
     ws: &'static str,
 ) -> Result<(), core::fmt::Error> {
-    for elem in elems {
-        if let Node::Empty(_) = elem.1 {
-            continue;
+    if !elems.is_empty() {
+        let first = &elems[0];
+        cfg_write!(f, cfg, buf, LocOpt(&first.0, ""), first.1)?;
+
+        for elem in &elems[1..elems.len()] {
+            if let Node::Empty(_) = elem.1 {
+                continue;
+            }
+            cfg_write!(f, cfg, buf, LocOpt(&elem.0, ws), elem.1)?;
         }
-        cfg_write!(f, cfg, buf, LocOpt(&elem.0, ws), elem.1)?;
     }
     Ok(())
 }
@@ -217,7 +201,7 @@ impl ConfiguredWrite for Node {
             ExpList(_, exps) => cfg_write_node_vec_locs_sep(f, cfg, buf, exps, ",", " "),
             NameList(_, names) => cfg_write_node_vec_locs_sep(f, cfg, buf, names, ",", " "),
             VarList(_, vars) => cfg_write_node_vec_locs_sep(f, cfg, buf, vars, ",", " "),
-            StatementList(_, stts) => cfg_write_node_vec(f, cfg, buf, stts, ";", " "),
+            StatementList(_, stts) => cfg_write_node_vec_locs(f, cfg, buf, stts, " "),
             DoEnd(_, n) => cfg_write!(f, cfg, buf, "do ", n, " end"),
             VarsExprs(_, n1, n2) => cfg_write!(f, cfg, buf, n1, " = ", n2),
 
@@ -258,7 +242,7 @@ impl ConfiguredWrite for Node {
                 (_, Node::Empty(_)) => cfg_write!(f, cfg, buf, "if ", e1, " then ", b1, " ", n, " end"),
                 _ => cfg_write!(f, cfg, buf, "if ", e1, " then ", b1, " ", n, " else ", b2, " end"),
             },
-            ElseIfThenVec(_, elems) => cfg_write_node_vec(f, cfg, buf, elems, "", " "),
+            ElseIfThenVec(_, elems) => cfg_write_node_vec_locs(f, cfg, buf, elems, " "),
             ElseIfThen(_, e, n) => cfg_write!(f, cfg, buf, "elseif ", e, " then ", n),
 
             Name(_, s) => write!(f, "{}", s),
