@@ -188,7 +188,7 @@ fn test_for() {
   print(a, b)
   goto lab1
   return 4, 6"#),
-        Ok("local a, b; for i in ipairs(tbl) do print(i, a); break return end; a, b = b, a; \
+        Ok("local a, b; for i in ipairs(tbl) do print(i, a); break return; end; a, b = b, a; \
                a.b = b; b.a = a; ::lab1::; repeat fn(a); fn(b) return until a > b; print(a, b); goto lab1 return 4, 6"
             .to_string())
     );
@@ -382,18 +382,12 @@ fn test_keep_comments_other() {
     );
 
     // FunctionCall
-    assert_eq!(
-        tsc("local a = fn--[[1]](--[[2]])"),
-        Ok("local a = fn --[[1]] ( --[[2]] )".to_string())
-    );
+    assert_eq!(tsc("local a = fn--[[1]](--[[2]])"), Ok("local a = fn --[[1]] ( --[[2]] )".to_string()));
     assert_eq!(
         tsc("local a = fn--[[1]](--2\na --[[3]],--[[4]]b--5\n, --6\nc--[[7]])"),
         Ok("local a = fn --[[1]] ( --2\na --[[3]] , --[[4]] b --5\n, --6\nc --[[7]] )".to_string())
     );
-    assert_eq!(
-        tsc("local a = (--1\nfn--[[2]])(--[[3]])"),
-        Ok("local a = ( --1\nfn --[[2]] )( --[[3]] )".to_string())
-    );
+    assert_eq!(tsc("local a = (--1\nfn--[[2]])(--[[3]])"), Ok("local a = ( --1\nfn --[[2]] )( --[[3]] )".to_string()));
     assert_eq!(
         tsc("local a = (--1\nfn--[[2]])(  --3\n a --[[4]])"),
         Ok("local a = ( --1\nfn --[[2]] )( --3\na --[[4]] )".to_string())
@@ -411,7 +405,7 @@ fn test_keep_comments_other() {
         Ok("local a = ( --1\nfn --[[2]] . --[[7]] fld1 --8\n. --9\nfld2 --[[10]] : --11\nfnname( --5\n4 --[[6]] ))( --3\na --[[4]] )".to_string())
     );
 
-    //PrefixExp
+    // PrefixExp
     assert_eq!(
         tsc("local a = (--1\n{--[[2]]}--[[3]])--4\n[--5\n'a'--[=[6]=]]"),
         Ok("local a = ( --1\n{ --[[2]] } --[[3]] ) --4\n[ --5\n'a' --[=[6]=] ]".to_string())
@@ -419,5 +413,21 @@ fn test_keep_comments_other() {
     assert_eq!(
         tsc("(--1\n{--[[2]]}--[[3]])--4\n[--5\n'a'--[=[6]=]]--7\n(--8\n)"),
         Ok("( --1\n{ --[[2]] } --[[3]] ) --4\n[ --5\n'a' --[=[6]=] ] --7\n( --8\n)".to_string())
+    );
+
+    // Label
+    assert_eq!(
+        tsc("::--1\nlabel1--[[2]]:: goto--[[3]]label1"),
+        Ok(":: --1\nlabel1 --[[2]] ::; goto --[[3]] label1".to_string())
+    );
+    assert_eq!(
+        tsc("::label1:: goto label1"),
+        Ok("::label1::; goto label1".to_string())
+    );
+
+    // RetStat
+    assert_eq!(
+        tsc("a = b; return"),
+        Ok("a = b; return".to_string())
     );
 }

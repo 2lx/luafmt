@@ -88,8 +88,8 @@ pub enum Node {
     DoEnd(Loc, Box<Node>),
     VarsExprs(Loc, Box<Node>, Box<Node>),
     Name(Loc, String),
-    Label(Loc, Box<Node>),
-    GoTo(Loc, Box<Node>),
+    Label(Loc, [Loc; 2], Box<Node>),
+    GoTo(Loc, [Loc; 1], Box<Node>),
     While(Loc, Box<Node>, Box<Node>),
     Repeat(Loc, Box<Node>, Box<Node>),
     ForRange(Loc, Box<Node>, Box<Node>, Box<Node>),
@@ -99,8 +99,11 @@ pub enum Node {
     ElseIfThenVec(Loc, Vec<Node>),
     ElseIfThen(Loc, Box<Node>, Box<Node>),
 
-    RetStat(Loc, Box<Node>),
-    StatsRetStat(Loc, Box<Node>, Box<Node>),
+    RetStatNone(Loc),
+    RetStatExpr(Loc, [Loc; 1], Box<Node>),
+    RetStatNoneComma(Loc, [Loc; 1]),
+    RetStatExprComma(Loc, [Loc; 2], Box<Node>),
+    StatsRetStat(Loc, [Loc; 1], Box<Node>, Box<Node>),
 
     Empty(Loc),
 }
@@ -259,8 +262,8 @@ impl ConfiguredWrite for Node {
             ElseIfThen(_, e, n) => cfg_write!(f, cfg, buf, "elseif ", e, " then ", n),
 
             Name(_, s) => write!(f, "{}", s),
-            Label(_, n) => cfg_write!(f, cfg, buf, "::", n, "::"),
-            GoTo(_, n) => cfg_write!(f, cfg, buf, "goto ", n),
+            Label(_, locs, n) => cfg_write!(f, cfg, buf, "::", LocOpt(&locs[0], ""), n, LocOpt(&locs[1], ""), "::"),
+            GoTo(_, locs, n) => cfg_write!(f, cfg, buf, "goto", LocOpt(&locs[0], " "), n),
             While(_, e, n) => cfg_write!(f, cfg, buf, "while ", e, " do ", n, " end"),
             Repeat(_, n, e) => cfg_write!(f, cfg, buf, "repeat ", n, " until ", e),
             ForRange(_, n, e, b) => cfg_write!(f, cfg, buf, "for ", n, " in ", e, " do ", b, " end"),
@@ -268,13 +271,14 @@ impl ConfiguredWrite for Node {
                 Node::Empty(_) => cfg_write!(f, cfg, buf, "for ", n, " = ", e1, ", ", e2, " do ", b, " end"),
                 _ => cfg_write!(f, cfg, buf, "for ", n, " = ", e1, ", ", e2, ", ", e3, " do ", b, " end"),
             },
-            RetStat(_, n) => match &**n {
-                Node::Empty(_) => write!(f, "return"),
-                _ => cfg_write!(f, cfg, buf, "return ", n),
-            },
-            StatsRetStat(_, n1, n2) => match &**n1 {
-                Node::StatementList(_, ref v) if v.is_empty() => cfg_write!(f, cfg, buf, n2),
-                _ => cfg_write!(f, cfg, buf, n1, " ", n2),
+
+            RetStatNone(_) => write!(f, "return"),
+            RetStatExpr(_, locs, n) => cfg_write!(f, cfg, buf, "return", LocOpt(&locs[0], " "), n),
+            RetStatNoneComma(_, locs) => cfg_write!(f, cfg, buf, "return", LocOpt(&locs[0], ""), ";"),
+            RetStatExprComma(_, locs, n) => cfg_write!(f, cfg, buf, "return", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], ""), ";"),
+            StatsRetStat(_, locs, n1, n2) => match &**n1 {
+                Node::StatementList(_, ref v) if v.is_empty() => cfg_write!(f, cfg, buf, LocOpt(&locs[0], ""), n2),
+                _ => cfg_write!(f, cfg, buf, n1, LocOpt(&locs[0], " "), n2),
             },
 
             Empty(_) => Ok(()),

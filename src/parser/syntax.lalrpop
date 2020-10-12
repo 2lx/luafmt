@@ -87,7 +87,8 @@ pub Chunk: Node = {
 
 Block: Node = {
     Stats,
-    <l:@L> <n1:Stats> <n2:RetStat> <r:@R> => Node::StatsRetStat(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> <n1:Stats> <l1:@R> <r1:@L> <n2:RetStat> <rs:@R>
+        => Node::StatsRetStat(Loc(ls, rs), [Loc(l1, r1)], Box::new(n1), Box::new(n2)),
 }
 
 Stats: Node = {
@@ -126,7 +127,8 @@ StatNoExp: Node = {
     <l:@L> ";" <r:@R> => Node::Empty(Loc(l, r)),
     Label,
     <l:@L> "break" <r:@R>         => Node::Break(Loc(l, r)),
-    <l:@L> "goto" <n:Name> <r:@R> => Node::GoTo(Loc(l, r), Box::new(n)),
+    <ls:@L> "goto" <l1:@R> <r1:@L> <n:Name> <rs:@R>
+        => Node::GoTo(Loc(ls, rs), [Loc(l1, r1)], Box::new(n)),
 
     <l:@L> "do" <n:Block> "end" <r:@R>                   => Node::DoEnd(Loc(l, r), Box::new(n)),
     <l:@L> "while" <e:OpExp> "do" <n:Block> "end" <r:@R> => Node::While(Loc(l, r), Box::new(e), Box::new(n)),
@@ -158,14 +160,19 @@ ElseIfThen: Node = {
 }
 
 RetStat: Node = {
-    <l:@L> "return" <emp:@L> <r:@R>                => Node::RetStat(Loc(l, r), Box::new(Node::Empty(Loc(emp, r)))),
-    <l:@L> "return" <n:ExpList> <r:@R>             => Node::RetStat(Loc(l, r), Box::new(n)),
-    <l:@L> "return" <empl:@L> <empr:@R> ";" <r:@R> => Node::RetStat(Loc(l, r), Box::new(Node::Empty(Loc(empl, empr)))),
-    <l:@L> "return" <n:ExpList> ";" <r:@R>         => Node::RetStat(Loc(l, r), Box::new(n)),
+    <ls:@L> "return" <rs:@R>
+        => Node::RetStatNone(Loc(ls, rs)),
+    <ls:@L> "return" <l1:@R> <r1:@L> <n:ExpList> <rs:@R>
+        => Node::RetStatExpr(Loc(ls, rs), [Loc(l1, r1)], Box::new(n)),
+    <ls:@L> "return" <l1:@R> <r1:@L> ";" <rs:@R>
+        => Node::RetStatNoneComma(Loc(ls, rs), [Loc(l1, r1)]),
+    <ls:@L> "return" <l1:@R> <r1:@L> <n:ExpList> <l2:@R> <r2:@L> ";" <rs:@R>
+        => Node::RetStatExprComma(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(n)),
 }
 
 Label: Node = {
-    <l:@L> "::" <n:Name> "::" <r:@R> => Node::Label(Loc(l, r), Box::new(n)),
+    <ls:@L> "::" <l1:@R> <r1:@L> <n:Name> <l2:@R> <r2:@L> "::" <rs:@R>
+        => Node::Label(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(n)),
 }
 
 FuncName: Node = {
@@ -175,7 +182,7 @@ FuncName: Node = {
         => Node::FuncNameSelf(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], v, Box::new(n)),
 }
 
-// ---------------------------
+// additional rules
 
 VarListStartsPar: Node = {
     VarExp,
@@ -190,10 +197,10 @@ VarListStartsPar: Node = {
 }
 
 VarListNoStartPar: Node = {
-    <l:@L> <n:VarNoExp> <r:@R> => {
+    <ls:@L> <n:VarNoExp> <rs:@R> => {
         let mut v = Vec::new();
         v.push((Loc(0, 0), n, Loc(0, 0)));
-        Node::VarList(Loc(l, r), v)
+        Node::VarList(Loc(ls, rs), v)
     },
     <ls:@L> <n:VarNoExp> <l1:@R> <r1:@L> "," <l2:@R> <r2:@L> <v:TSepList<VarMayExp, ",">> <rs:@R> => {
         let mut v = v;
@@ -282,7 +289,7 @@ VarSuffix: Node = {
         => Node::FnMethodCall(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(n1), Box::new(n2)),
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
+// common rules
 
 NameList: Node = {
     <ls:@L> <v:TSepList<Name, ",">> <rs:@R> => Node::NameList(Loc(ls, rs), v),
