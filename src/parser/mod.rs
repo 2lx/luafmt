@@ -347,6 +347,8 @@ fn test_keep_comments_op() {
 
 #[test]
 fn test_keep_comments_other() {
+    // TableConstructor
+    assert_eq!(tsc("t={--\n}"), Ok("t = { --\n}".to_string()));
     assert_eq!(tsc("t = { a --\n  =  --[[]]  3}"), Ok("t = { a --\n= --[[]] 3 }".to_string()));
     assert_eq!(
         tsc("t = { [ --c1\n a --[[c2]]] --c3\n= --c4\n 3}"),
@@ -366,14 +368,56 @@ fn test_keep_comments_other() {
     );
     assert_eq!(
         tsc("t = { --0\n a = 1 --1\n, --2\n b = 2 --3\n, --4\n c = 3 --5\n, --6\n d = 4 --7\n, --8\n e = 5 --9\n, --10\n }"),
-        Ok("t = { --0\na = 1 --1\n,  --2\nb = 2 --3\n,  --4\nc = 3 --5\n,  --6\nd = 4 --7\n,  --8\ne = 5 --9\n --10\n}".to_string())
+        Ok("t = { --0\na = 1 --1\n, --2\nb = 2 --3\n, --4\nc = 3 --5\n, --6\nd = 4 --7\n, --8\ne = 5 --9\n --10\n}".to_string())
     );
+
+    // FunctionDef
     assert_eq!(
         tsc("fn = function --1\n( --[[2]]a --3\n  , --4\n b--[[5]] ,--6\n c --[[7]])--8\nend"),
-        Ok("fn = function --1\n( --[[2]] a --3\n,  --4\nb --[[5]] ,  --6\nc --[[7]] ) --8\nend".to_string())
+        Ok("fn = function --1\n( --[[2]] a --3\n, --4\nb --[[5]] , --6\nc --[[7]] ) --8\nend".to_string())
     );
     assert_eq!(
         tsc("fn = function --1\n( --[==[2]==]a --3\n  , --4\n b--[[5]] ,--6\n c --[[7]])--[=[8]=]print(a) --[[9]]end"),
-        Ok("fn = function --1\n( --[==[2]==] a --3\n,  --4\nb --[[5]] ,  --6\nc --[[7]] ) --[=[8]=] print(a) --[[9]] end".to_string())
+        Ok("fn = function --1\n( --[==[2]==] a --3\n, --4\nb --[[5]] , --6\nc --[[7]] ) --[=[8]=] print(a) --[[9]] end".to_string())
+    );
+
+    // FunctionCall
+    assert_eq!(
+        tsc("local a = fn--[[1]](--[[2]])"),
+        Ok("local a = fn --[[1]] ( --[[2]] )".to_string())
+    );
+    assert_eq!(
+        tsc("local a = fn--[[1]](--2\na --[[3]],--[[4]]b--5\n, --6\nc--[[7]])"),
+        Ok("local a = fn --[[1]] ( --2\na --[[3]] , --[[4]] b --5\n, --6\nc --[[7]] )".to_string())
+    );
+    assert_eq!(
+        tsc("local a = (--1\nfn--[[2]])(--[[3]])"),
+        Ok("local a = ( --1\nfn --[[2]] )( --[[3]] )".to_string())
+    );
+    assert_eq!(
+        tsc("local a = (--1\nfn--[[2]])(  --3\n a --[[4]])"),
+        Ok("local a = ( --1\nfn --[[2]] )( --3\na --[[4]] )".to_string())
+    );
+    assert_eq!(
+        tsc("local a = (--1\nfn--[[2]]  (--5\n  ))(  --3\n a --[[4]])"),
+        Ok("local a = ( --1\nfn --[[2]] ( --5\n))( --3\na --[[4]] )".to_string())
+    );
+    assert_eq!(
+        tsc("local a = (--1\nfn--[[2]]  (--5\n  4 --[[6]]))(  --3\n a --[[4]])"),
+        Ok("local a = ( --1\nfn --[[2]] ( --5\n4 --[[6]] ))( --3\na --[[4]] )".to_string())
+    );
+    assert_eq!(
+        tsc("local a = (--1\nfn--[[2]].--[[7]]fld1--8\n.--9\nfld2--[[10]]:--11\nfnname (--5\n  4 --[[6]]))(  --3\n a --[[4]])"),
+        Ok("local a = ( --1\nfn --[[2]] . --[[7]] fld1 --8\n. --9\nfld2 --[[10]] : --11\nfnname( --5\n4 --[[6]] ))( --3\na --[[4]] )".to_string())
+    );
+
+    //PrefixExp
+    assert_eq!(
+        tsc("local a = (--1\n{--[[2]]}--[[3]])--4\n[--5\n'a'--[=[6]=]]"),
+        Ok("local a = ( --1\n{ --[[2]] } --[[3]] ) --4\n[ --5\n'a' --[=[6]=] ]".to_string())
+    );
+    assert_eq!(
+        tsc("(--1\n{--[[2]]}--[[3]])--4\n[--5\n'a'--[=[6]=]]--7\n(--8\n)"),
+        Ok("( --1\n{ --[[2]] } --[[3]] ) --4\n[ --5\n'a' --[=[6]=] ] --7\n( --8\n)".to_string())
     );
 }

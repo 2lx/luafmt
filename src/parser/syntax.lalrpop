@@ -5,13 +5,19 @@ grammar<'input>(input: &'input str);
 
 // templates
 // cannot be empty, no separators
-TList<T>: Vec<T> = {
-    <v:(<T>)*> <e:(<T>)> => {
+TList<T>: Vec<(Loc, T)> = {
+    <e:T> => {
+        let mut v = Vec::new();
+        v.push((Loc(0, 0), e));
+        v
+    },
+    <v:TList<T>> <l1:@R> <r1:@L> <e:T> => {
         let mut v = v;
-        v.push(e);
+        v.push((Loc(l1, r1), e));
         v
     },
 }
+
 // can be empty, no separators
 TEmptyList<T>: Vec<T> = {
     => Vec::new(),
@@ -23,15 +29,18 @@ TEmptyList<T>: Vec<T> = {
 }
 
 // cannot be empty, no separator at the end
-TSepList<T, C>: Vec<T> = {
+TSepList<T, C>: Vec<(Loc, T, Loc)> = {
     <e:T> => {
         let mut v = Vec::new();
-        v.push(e);
+        v.push((Loc(0, 0), e, Loc(0, 0)));
         v
     },
-    <e:T> <v:(C <T>)+> => {
+    <e:T> <l1:@R> <r1:@L> C <l2:@R> <r2:@L> <v:TSepList<T, C>> => {
         let mut v = v;
-        v.insert(0, e);
+        if !v.is_empty() {
+            v[0].0 = Loc(l2, r2);
+        }
+        v.insert(0, (Loc(0, 0), e, Loc(l1, r1)));
         v
     }
 };
@@ -160,36 +169,45 @@ Label: Node = {
 }
 
 FuncName: Node = {
-    <l:@L> <v:TSepList<Name, ".">> <r:@R>              => Node::FuncName(Loc(l, r), v, Box::new(Node::Empty(Loc(r, r)))),
-    <l:@L> <v:TSepList<Name, ".">> ":" <n:Name> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(n)),
+    <ls:@L> <v:TSepList<Name, ".">> <rs:@R>
+        => Node::FuncName(Loc(ls, rs), v),
+    <ls:@L> <v:TSepList<Name, ".">> <l1:@R> <r1:@L> ":" <l2:@R> <r2:@L> <n:Name> <rs:@R>
+        => Node::FuncNameSelf(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], v, Box::new(n)),
 }
 
 // ---------------------------
 
 VarListStartsPar: Node = {
     VarExp,
-    <l:@L> <n1:VarExp> "," <v:TSepList<VarMayExp, ",">> <r:@R> => {
+    <ls:@L> <n:VarExp> <l1:@R> <r1:@L> "," <l2:@R> <r2:@L> <v:TSepList<VarMayExp, ",">> <rs:@R> => {
         let mut v = v;
-        v.insert(0, n1);
-        Node::VarList(Loc(l, r), v)
+        if !v.is_empty() {
+            v[0].0 = Loc(l2, r2);
+        }
+        v.insert(0, (Loc(0, 0), n, Loc(l1, r1)));
+        Node::VarList(Loc(ls, rs), v)
     },
 }
 
 VarListNoStartPar: Node = {
     <l:@L> <n:VarNoExp> <r:@R> => {
         let mut v = Vec::new();
-        v.push(n);
+        v.push((Loc(0, 0), n, Loc(0, 0)));
         Node::VarList(Loc(l, r), v)
     },
-    <l:@L> <n:VarNoExp> "," <v:TSepList<VarMayExp, ",">> <r:@R> => {
+    <ls:@L> <n:VarNoExp> <l1:@R> <r1:@L> "," <l2:@R> <r2:@L> <v:TSepList<VarMayExp, ",">> <rs:@R> => {
         let mut v = v;
-        v.insert(0, n);
-        Node::VarList(Loc(l, r), v)
+        if !v.is_empty() {
+            v[0].0 = Loc(l2, r2);
+        }
+        v.insert(0, (Loc(0, 0), n, Loc(l1, r1)));
+        Node::VarList(Loc(ls, rs), v)
     }
 }
 
 FunctionCallNoStartsMayEndsPar: Node = {
-    <l:@L> <n1:Name> <n2:VarSuffixList> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> <n1:Name> <l1:@R> <r1:@L> <n2:VarSuffixList> <rs:@R>
+        => Node::Var(Loc(ls, rs), [Loc(l1, r1)], Box::new(n1), Box::new(n2)),
 }
 
 PrefixNoEndsPar: Node = {
@@ -198,84 +216,99 @@ PrefixNoEndsPar: Node = {
 
 VarNoPar: Node = {
     Name,
-    <l:@L> <n1:Name> <n2:VarSuffixListNoEndPar> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> <n1:Name> <l1:@R> <r1:@L> <n2:VarSuffixListNoEndPar> <rs:@R>
+        => Node::Var(Loc(ls, rs), [Loc(l1, r1)], Box::new(n1), Box::new(n2)),
 }
 
 VarNoExp: Node = {
     Name,
-    <l:@L> <n1:Name> <n2:VarSuffixList> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> <n1:Name> <l1:@R> <r1:@L> <n2:VarSuffixList> <rs:@R>
+        => Node::Var(Loc(ls, rs), [Loc(l1, r1)], Box::new(n1), Box::new(n2)),
 }
 
 FunctionCallStartsMayEndsPar: Node = {
-    "(" <e:OpExp> ")"                   => Node::RoundBrackets(Loc(0, 0), Box::new(e)),
-    "(" <e:OpExp> ")" <n:VarSuffixList> => Node::VarRoundSuffix(Loc(0, 0), Box::new(e), Box::new(n)),
+    <ls:@L> "(" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> ")" <rs:@R>
+        => Node::RoundBrackets(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
+    <ls:@L> "(" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> ")" <l3:@R> <r3:@L> <n:VarSuffixList> <rs:@R>
+        => Node::VarRoundSuffix(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(e), Box::new(n)),
 }
 
 PrefixMayStartsMayEndsPar: Node = {
     VarMayExp,
-    "(" <e:OpExp> ")" => Node::RoundBrackets(Loc(0, 0), Box::new(e)),
+    <ls:@L> "(" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> ")" <rs:@R>
+        => Node::RoundBrackets(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
 }
 
 VarExp: Node = {
-    "(" <e:OpExp> ")" <n:VarSuffixList>  => Node::VarRoundSuffix(Loc(0, 0), Box::new(e), Box::new(n)),
+    <ls:@L> "(" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> ")" <l3:@R> <r3:@L> <n:VarSuffixList> <rs:@R>
+        => Node::VarRoundSuffix(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(e), Box::new(n)),
 }
 
 VarMayExp: Node = {
     Name,
-    <l:@L> <n1:Name> <n2:VarSuffixList> <r:@R> => Node::Var(Loc(l, r), Box::new(n1), Box::new(n2)),
-    "(" <e:OpExp> ")" <n:VarSuffixList>        => Node::VarRoundSuffix(Loc(0, 0), Box::new(e), Box::new(n)),
+    <ls:@L> <n1:Name> <l1:@R> <r1:@L> <n2:VarSuffixList> <rs:@R>
+        => Node::Var(Loc(ls, rs), [Loc(l1, r1)], Box::new(n1), Box::new(n2)),
+    <ls:@L> "(" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> ")" <l3:@R> <r3:@L> <n:VarSuffixList> <rs:@R>
+        => Node::VarRoundSuffix(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(e), Box::new(n)),
 }
 
 VarSuffixList: Node = {
-    <v:TList<VarSuffix>> => Node::VarSuffixList(Loc(0, 0), v),
+    <ls:@L> <v:TList<VarSuffix>> <rs:@R> => Node::VarSuffixList(Loc(ls, rs), v),
 }
 
 VarSuffixListNoEndPar: Node = {
     VarSuffixNoEndPar,
-    <v:TList<VarSuffix>> <n:VarSuffixNoEndPar> => {
+    <ls:@L> <v:TList<VarSuffix>> <l1:@R> <r1:@L> <n:VarSuffixNoEndPar> <rs:@R> => {
         let mut v = v;
-        v.push(n);
-        Node::VarSuffixList(Loc(0, 0), v)
+        v.push((Loc(l1, r1), n));
+        Node::VarSuffixList(Loc(ls, rs), v)
     },
 }
 
 VarSuffixNoEndPar: Node = {
-    "[" <e:OpExp> "]" => Node::TableIndex(Loc(0, 0), Box::new(e)),
-    "." <n:Name>      => Node::TableMember(Loc(0, 0), Box::new(n)),
+    <ls:@L> "[" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> "]" <rs:@R>
+        => Node::TableIndex(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
+    <ls:@L> "." <l1:@R> <r1:@L> <n:Name> <rs:@R>
+        => Node::TableMember(Loc(ls, rs), [Loc(l1, r1)], Box::new(n)),
 }
 
 VarSuffix: Node = {
-    "[" <e:OpExp> "]" => Node::TableIndex(Loc(0, 0), Box::new(e)),
-    "." <n:Name>      => Node::TableMember(Loc(0, 0), Box::new(n)),
     Args,
-    ":" <n1:Name> <n2:Args> => Node::FnMethodCall(Loc(0, 0), Box::new(n1), Box::new(n2)),
+    <ls:@L> "[" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> "]" <rs:@R>
+        => Node::TableIndex(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
+    <ls:@L> "." <l1:@R> <r1:@L> <n:Name> <rs:@R>
+        => Node::TableMember(Loc(ls, rs), [Loc(l1, r1)], Box::new(n)),
+    <ls:@L> ":" <l1:@R> <r1:@L> <n1:Name> <l2:@R> <r2:@L> <n2:Args> <rs:@R>
+        => Node::FnMethodCall(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(n1), Box::new(n2)),
 }
 
-// ---------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 NameList: Node = {
-    <l:@L> <n:TSepList<Name, ",">> <r:@R> => Node::NameList(Loc(l, r), n),
+    <ls:@L> <v:TSepList<Name, ",">> <rs:@R> => Node::NameList(Loc(ls, rs), v),
 }
 
 ExpList: Node = {
-    <l:@L> <n:TSepList<OpExp, ",">> <r:@R> => Node::ExpList(Loc(l, r), n),
+    <ls:@L> <v:TSepList<OpExp, ",">> <rs:@R> => Node::ExpList(Loc(ls, rs), v),
 }
 
 Exp: Node = {
-    <l:@L> "nil" <r:@R>       => Node::Nil(Loc(l, r)),
-    <l:@L> "false" <r:@R>     => Node::False(Loc(l, r)),
-    <l:@L> "true" <r:@R>      => Node::True(Loc(l, r)),
-    <l:@L> <s:Numeral> <r:@R> => Node::Numeral(Loc(l, r), s.to_string()),
+    <ls:@L> "nil" <rs:@R>       => Node::Nil(Loc(ls, rs)),
+    <ls:@L> "false" <rs:@R>     => Node::False(Loc(ls, rs)),
+    <ls:@L> "true" <rs:@R>      => Node::True(Loc(ls, rs)),
+    <ls:@L> <s:Numeral> <rs:@R> => Node::Numeral(Loc(ls, rs), s.to_string()),
     StringLiteral,
-    <l:@L> "..." <r:@R> => Node::VarArg(Loc(l, r)),
+    <ls:@L> "..." <rs:@R> => Node::VarArg(Loc(ls, rs)),
     FunctionDef,
     PrefixMayStartsMayEndsPar,
     TableConstructor,
 }
 
 Args: Node = {
-    <l:@L> "(" <e:ExpList> ")" <r:@R>         => Node::RoundBrackets(Loc(l, r), Box::new(e)),
-    <l:@L> "(" <empl:@L> <empr:@R> ")" <r:@R> => Node::RoundBrackets(Loc(l, r), Box::new(Node::Empty(Loc(empl, empr)))),
+    <ls:@L> "(" <l1:@R> <r1:@L> <e:ExpList> <l2:@R> <r2:@L> ")" <rs:@R>
+        => Node::RoundBrackets(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
+    <ls:@L> "(" <l1:@R> <r1:@L> ")" <rs:@R>
+        => Node::RoundBracketsEmpty(Loc(ls, rs), [Loc(l1, r1)]),
     TableConstructor,
     StringLiteral,
 }
