@@ -82,7 +82,8 @@ pub enum Node {
     FuncBody(Loc, [Loc; 4], Box<Node>, Box<Node>),
     FuncName(Loc, Vec<(Loc, Node, Loc)>),
     FuncNameSelf(Loc, [Loc; 2], Vec<(Loc, Node, Loc)>, Box<Node>),
-    FuncDecl(Loc, Box<Node>, Box<Node>),
+    FuncDecl(Loc, [Loc; 2], Box<Node>, Box<Node>),
+    LocalFuncDecl(Loc, [Loc; 3], Box<Node>, Box<Node>),
 
     StatementList(Loc, Vec<(Loc, Node)>),
     DoEnd(Loc, Box<Node>),
@@ -94,7 +95,8 @@ pub enum Node {
     Repeat(Loc, Box<Node>, Box<Node>),
     ForRange(Loc, Box<Node>, Box<Node>, Box<Node>),
     ForInt(Loc, Box<Node>, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
-    LocalNamesExprs(Loc, Box<Node>, Box<Node>),
+    LocalNames(Loc, [Loc; 1], Box<Node>),
+    LocalNamesExprs(Loc, [Loc; 3], Box<Node>, Box<Node>),
 
     IfThen(Loc, [Loc; 4], Box<Node>, Box<Node>),
     IfThenElse(Loc, [Loc; 6], Box<Node>, Box<Node>, Box<Node>),
@@ -231,11 +233,19 @@ impl ConfiguredWrite for Node {
                 cfg_write_node_vec_locs_sep(f, cfg, buf, names, ".", "")?;
                 cfg_write!(f, cfg, buf, LocOpt(&locs[0], ""), ":", LocOpt(&locs[1], ""), n)
             }
-            FuncDecl(_, n1, n2) => cfg_write!(f, cfg, buf, "function ", n1, n2),
-            LocalNamesExprs(_, n1, n2) => match &**n2 {
-                Node::Empty(_) => cfg_write!(f, cfg, buf, "local ", n1),
-                _ => cfg_write!(f, cfg, buf, "local ", n1, " = ", n2),
-            },
+            FuncDecl(_, locs, n1, n2) => {
+                cfg_write!(f, cfg, buf, "function", LocOpt(&locs[0], " "), n1, LocOpt(&locs[1], ""), n2)
+            }
+            LocalFuncDecl(_, locs, n1, n2) => {
+                cfg_write!(f, cfg, buf, "local", LocOpt(&locs[0], " "), "function", LocOpt(&locs[1], " "), n1,
+                           LocOpt(&locs[2], ""), n2)
+            }
+
+            LocalNames(_, locs, n) => cfg_write!(f, cfg, buf, "local", LocOpt(&locs[0], " "), n),
+            LocalNamesExprs(_, locs, n1, n2) => {
+                cfg_write!(f, cfg, buf, "local", LocOpt(&locs[0], " "), n1, LocOpt(&locs[1], " "), "=",
+                           LocOpt(&locs[2], " "), n2)
+            }
 
             IfThen(_, locs, e1, b1) => {
                 cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",

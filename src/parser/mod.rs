@@ -143,6 +143,8 @@ fn test_function() {
     assert_eq!(ts("fn = function() end"), Ok("fn = function() end".to_string()));
     assert_eq!(ts("fn_name():method():fn{a1, a2}"), Ok("fn_name():method():fn{ a1, a2 }".to_string()));
     assert_eq!(ts("function Obj:type() print(str) end"), Ok("function Obj:type() print(str) end".to_string()));
+    assert_eq!(ts("local function Obj:type() print(str) end"), Err(TestError::ErrorWhileParsing));
+    assert_eq!(ts("local function obj_type() print(str) end"), Ok("local function obj_type() print(str) end".to_string()));
 }
 
 #[test]
@@ -461,4 +463,20 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#.to_string()
         tsc(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] end"#),
         Ok(r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] end"#.to_string())
     );
+
+    // local names = exprs
+    assert_eq!(tsc("local --[[1]]a"), Ok("local --[[1]] a".to_string()));
+    assert_eq!(tsc("local --[[1]]a--2\n,--[[7]] b"), Ok("local --[[1]] a --2\n, --[[7]] b".to_string()));
+    assert_eq!(tsc("local --[[1]]a--2\n=--[[7]] 1"), Ok("local --[[1]] a --2\n= --[[7]] 1".to_string()));
+    assert_eq!(
+        tsc("local --[[1]]a--2\n,--3\n b --[[4]],--[[5]] c--6\n =--[[7]] 1--8\n,--9\n 2--10\n, --11\n3"),
+        Ok("local --[[1]] a --2\n, --3\nb --[[4]] , --[[5]] c --6\n= --[[7]] 1 --8\n, --9\n2 --10\n, --11\n3"
+            .to_string())
+    );
+
+    // FuncDecl
+    assert_eq!(tsc("function  --[[1]] a--2\n.--3\nb--[[4]](--5\na --6\n,--[[7]] b--[[8]])--[[9]] end"),
+               Ok("function --[[1]] a --2\n. --3\nb --[[4]] ( --5\na --6\n, --[[7]] b --[[8]] ) --[[9]] end".to_string()));
+    assert_eq!(tsc("local --[[0]] function  --[[1]] b--[[4]](--5\na --6\n,--[[7]] b--[[8]])--[[9]] end"),
+               Ok("local --[[0]] function --[[1]] b --[[4]] ( --5\na --6\n, --[[7]] b --[[8]] ) --[[9]] end".to_string()));
 }

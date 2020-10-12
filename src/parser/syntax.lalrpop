@@ -128,7 +128,8 @@ StatMayEndsPar: Node = {
     FunctionCallNoStartsMayEndsPar,
     <l:@L> <n1:VarListNoStartPar> "=" <n2:ExpList> <r:@R> => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
     <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>    => Node::Repeat(Loc(l, r), Box::new(n), Box::new(e)),
-    <l:@L> "local" <n1:NameList> "=" <n2:ExpList> <r:@R>  => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> "local" <l1:@R> <r1:@L> <n1:NameList> <l2:@R> <r2:@L> "=" <l3:@R> <r3:@L> <n2:ExpList> <rs:@R>
+        => Node::LocalNamesExprs(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(n1), Box::new(n2)),
 }
 
 StatNoPar: Node = {
@@ -163,11 +164,13 @@ StatNoPar: Node = {
     <l:@L> "for" <n:NameList> "in" <e:ExpList> "do" <b:Block> "end" <r:@R>
             => Node::ForRange(Loc(l, r), Box::new(n), Box::new(e), Box::new(b)),
 
-    <l:@L> "function" <n1:FuncName> <n2:FuncBody> <r:@R>     => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
-    <l:@L> "local" "function" <n1:Name> <n2:FuncBody> <r:@R> => Node::FuncDecl(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> "function" <l1:@R> <r1:@L> <n1:FuncName> <l2:@R> <r2:@L> <n2:FuncBody> <rs:@R>
+        => Node::FuncDecl(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(n1), Box::new(n2)),
+    <ls:@L> "local" <l1:@R> <r1:@L> "function" <l2:@R> <r2:@L> <n1:Name> <l3:@R> <r3:@L> <n2:FuncBody> <rs:@R>
+        => Node::LocalFuncDecl(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(n1), Box::new(n2)),
 
-    <l:@L> "local" <n1:NameList> <empl:@L> <empr:@R> <r:@R>
-        => Node::LocalNamesExprs(Loc(l, r), Box::new(n1), Box::new(Node::Empty(Loc(empl, empr)))),
+    <ls:@L> "local" <l1:@R> <r1:@L> <n:NameList> <rs:@R>
+        => Node::LocalNames(Loc(ls, rs), [Loc(l1, r1)], Box::new(n)),
 }
 
 ElseIfThenVec: Node = {
