@@ -540,6 +540,10 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
         tsc("local --[[0]] function  --[[1]] b--[[4]](--5\na --6\n,--[[7]] b--[[8]])--[[9]] print(a)--[[10]]end"),
         Ok("local --[[0]] function --[[1]] b --[[4]] ( --5\na --6\n, --[[7]] b --[[8]] ) --[[9]] print(a) --[[10]] end".to_string())
     );
+    assert_eq!(
+        tsc("function fn(  --5\n   --[[6]] )end"),
+        Ok("function fn( --5\n   --[[6]] ) end".to_string())
+    );
 
     // For
     assert_eq!(
@@ -579,17 +583,34 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
     );
 
     // DoEnd
+    assert_eq!(tsc("do--1\n print(a)--[[2]]end"), Ok("do --1\nprint(a) --[[2]] end".to_string()));
+    assert_eq!(tsc("do--1\n --[[2]] end"), Ok("do --1\n --[[2]] end".to_string()));
+
+    // RepeatUntil
     assert_eq!(
-        tsc("do--1\n print(a)--[[2]]end"),
-        Ok("do --1\nprint(a) --[[2]] end".to_string())
+        tsc("repeat--[[1]] print(a)--2\nuntil --[[3]]  a < 4"),
+        Ok("repeat --[[1]] print(a) --2\nuntil --[[3]] a < 4".to_string())
     );
     assert_eq!(
-        tsc("do--1\n --[[2]] end"),
-        Ok("do --1\n --[[2]] end".to_string())
+        tsc("repeat--[[1]] --2\nuntil --[[3]]  a < 4"),
+        Ok("repeat --[[1]] --2\nuntil --[[3]] a < 4".to_string())
+    );
+
+    // VarsExprs
+    assert_eq!(
+        tsc("a--[[1]].--2\nt--[[3]],--[[4]] a--5\n.--6\nr--[[7]] =--8\n 2--[[9]], --10\n'as'"),
+        Ok("a --[[1]] . --2\nt --[[3]] , --[[4]] a --5\n. --6\nr --[[7]] = --8\n2 --[[9]] , --10\n'as'".to_string())
+    );
+    assert_eq!(
+        tsc("(--[[0]]a--[[1]])--11\n.--2\nt--[[3]],--[[4]] a--5\n.--6\nr--[[7]] =--8\n 2--[[9]], --10\n'as'"),
+        Ok("( --[[0]] a --[[1]] ) --11\n. --2\nt --[[3]] , --[[4]] a --5\n. --6\nr --[[7]] = --8\n2 --[[9]] , --10\n'as'".to_string())
     );
 }
 
 #[test]
 fn test_keep_comments_special() {
-    assert_eq!(tsc("--[[1]]"), Ok("".to_string()));
+    assert_eq!(tsc("   "), Ok("".to_string()));
+    assert_eq!(tsc("--[[1]]"), Ok(" --[[1]] ".to_string()));
+    assert_eq!(tsc("--[[1]] ; --2\n "), Ok(" --[[1]]  --2\n".to_string()));
+    assert_eq!(tsc("--[[1]] print(a) --2\n "), Ok(" --[[1]] print(a) --2\n".to_string()));
 }

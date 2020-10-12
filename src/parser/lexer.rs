@@ -67,6 +67,8 @@ pub enum Token<'input> {
     Until,
     VarArg,
     While,
+
+    EOF,
 }
 
 impl fmt::Display for Token<'_> {
@@ -139,6 +141,8 @@ impl fmt::Display for Token<'_> {
             Until => write!(f, "until"),
             VarArg => write!(f, "..."),
             While => write!(f, "while"),
+
+            EOF => write!(f, "<EOF>"),
         }
     }
 }
@@ -188,11 +192,12 @@ impl fmt::Display for LexicalError {
 pub struct Lexer<'input> {
     chars: std::iter::Peekable<CharIndices<'input>>,
     input: &'input str,
+    at_end: bool,
 }
 
 impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
-        Lexer { chars: input.char_indices().peekable(), input }
+        Lexer { chars: input.char_indices().peekable(), input, at_end: false }
     }
 
     fn seek_end_by_predicate(&mut self, start: usize, f: &dyn Fn(char, bool) -> bool) -> usize {
@@ -326,7 +331,13 @@ impl<'input> Iterator for Lexer<'input> {
         use Token::*;
         loop {
             match self.chars.next() {
-                None => return None, // end of file
+                None => {
+                    if !self.at_end {
+                        self.at_end = true;
+                        return Some(Ok((self.input.len(), EOF, self.input.len())));
+                    }
+                    return None;
+                }
 
                 Some((_, ' ')) | Some((_, '\n')) | Some((_, '\r')) | Some((_, '\t')) => continue,
 

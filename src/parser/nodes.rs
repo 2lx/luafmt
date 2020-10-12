@@ -89,14 +89,14 @@ pub enum Node {
     StatementList(Loc, Vec<(Loc, Node)>),
     DoEnd(Loc, [Loc; 1]),
     DoBEnd(Loc, [Loc; 2], Box<Node>),
-    VarsExprs(Loc, Box<Node>, Box<Node>),
+    VarsExprs(Loc, [Loc; 2], Box<Node>, Box<Node>),
     Name(Loc, String),
     Label(Loc, [Loc; 2], Box<Node>),
     GoTo(Loc, [Loc; 1], Box<Node>),
     WhileDo(Loc, [Loc; 3], Box<Node>),
     WhileDoB(Loc, [Loc; 4], Box<Node>, Box<Node>),
-    RepeatUntil(Loc, Box<Node>),
-    RepeatBUntil(Loc, Box<Node>, Box<Node>),
+    RepeatUntil(Loc, [Loc; 2], Box<Node>),
+    RepeatBUntil(Loc, [Loc; 3], Box<Node>, Box<Node>),
     ForInt(Loc, [Loc; 7], Box<Node>, Box<Node>, Box<Node>),
     ForIntB(Loc, [Loc; 8], Box<Node>, Box<Node>, Box<Node>, Box<Node>),
     ForIntStep(Loc, [Loc; 9], Box<Node>, Box<Node>, Box<Node>, Box<Node>),
@@ -128,6 +128,7 @@ pub enum Node {
     RetStatNoneComma(Loc, [Loc; 1]),
     RetStatExprComma(Loc, [Loc; 2], Box<Node>),
     StatsRetStat(Loc, [Loc; 1], Box<Node>, Box<Node>),
+    Chunk(Loc, Box<Node>, Loc),
 
     Empty(Loc),
 }
@@ -228,7 +229,7 @@ impl ConfiguredWrite for Node {
             StatementList(_, stts) => cfg_write_node_vec_locs(f, cfg, buf, stts, " "),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, "do", LocOpt(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => cfg_write!(f, cfg, buf, "do", LocOpt(&locs[0], " "), b, LocOpt(&locs[1], " "), "end"),
-            VarsExprs(_, n1, n2) => cfg_write!(f, cfg, buf, n1, " = ", n2),
+            VarsExprs(_, locs, n1, n2) => cfg_write!(f, cfg, buf, n1, LocOpt(&locs[0], " "), "=", LocOpt(&locs[1], " "), n2),
 
             VarRoundSuffix(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")", LocOpt(&locs[2], ""), n2)
@@ -335,8 +336,10 @@ impl ConfiguredWrite for Node {
                                               "do", LocOpt(&locs[2], " "), "end"),
             WhileDoB(_, locs, e, n) => cfg_write!(f, cfg, buf, "while", LocOpt(&locs[0], " "), e, LocOpt(&locs[1], " "),
                                                   "do", LocOpt(&locs[2], " "), n, LocOpt(&locs[3], " "), "end"),
-            RepeatUntil(_, e) => cfg_write!(f, cfg, buf, "repeat ", " until ", e),
-            RepeatBUntil(_, n, e) => cfg_write!(f, cfg, buf, "repeat ", n, " until ", e),
+            RepeatUntil(_, locs, e) => cfg_write!(f, cfg, buf, "repeat", LocOpt(&locs[0], " "), "until",
+                                                  LocOpt(&locs[1], " "), e),
+            RepeatBUntil(_, locs, b, e) => cfg_write!(f, cfg, buf, "repeat", LocOpt(&locs[0], " "), b,
+                                                      LocOpt(&locs[1], " "), "until", LocOpt(&locs[2], " "), e),
 
             ForInt(_, locs, n, e1, e2) => {
                 cfg_write!(f, cfg, buf, "for", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], " "), "=", LocOpt(&locs[2], " "),
@@ -376,6 +379,7 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, "return", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], ""), ";")
             }
             StatsRetStat(_, locs, n1, n2) => cfg_write!(f, cfg, buf, n1, LocOpt(&locs[0], " "), n2),
+            Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, LocOpt(&locl, ""), n, LocOpt(&locr, "")),
 
             Empty(_) => Ok(()),
         }

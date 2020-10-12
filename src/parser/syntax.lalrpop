@@ -72,8 +72,13 @@ TSepEndList<T, C>: Vec<(Loc, T, Loc)> = {
 
 // syntax
 pub Chunk: Node = {
-    => Node::StatementList(Loc(0, 0), Vec::new()),
-    Block,
+    <rs:@L> EOF => {
+        let node = Node::StatementList(Loc(0, 0), Vec::new());
+        Node::Chunk(Loc(0, rs), Box::new(node), Loc(0, 0))
+    },
+    <r1:@L> <b:Block> <l2:@R> <r2:@L> EOF => {
+        Node::Chunk(Loc(0, r1), Box::new(b), Loc(l2, r2))
+    },
 }
 
 Block: Node = {
@@ -112,18 +117,21 @@ Stat: Node = {
 }
 
 StatStartsMayEndsPar: Node = {
-    <l:@L> <n1:VarListStartsPar> "=" <n2:ExpList> <r:@R> => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> <n1:VarListStartsPar> <l1:@R> <r1:@L> "=" <l2:@R> <r2:@L> <n2:ExpList> <rs:@R>
+        => Node::VarsExprs(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(n1), Box::new(n2)),
+
     FunctionCallStartsMayEndsPar,
 }
 
 StatMayEndsPar: Node = {
     FunctionCallNoStartsMayEndsPar,
-    <l:@L> <n1:VarListNoStartPar> "=" <n2:ExpList> <r:@R> => Node::VarsExprs(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> <n1:VarListNoStartPar> <l1:@R> <r1:@L> "=" <l2:@R> <r2:@L> <n2:ExpList> <rs:@R>
+        => Node::VarsExprs(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(n1), Box::new(n2)),
 
-    <l:@L> "repeat" <n:Block> "until" <e:OpExp> <r:@R>
-        => Node::RepeatBUntil(Loc(l, r), Box::new(n), Box::new(e)),
-    <l:@L> "repeat" "until" <e:OpExp> <r:@R>
-        => Node::RepeatUntil(Loc(l, r), Box::new(e)),
+    <ls:@L> "repeat" <l1:@R> <r1:@L> <b:Block> <l2:@R> <r2:@L> "until" <l3:@R> <r3:@L> <e:OpExp> <rs:@R>
+        => Node::RepeatBUntil(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(b), Box::new(e)),
+    <ls:@L> "repeat" <l1:@R> <r1:@L> "until" <l2:@R> <r2:@L> <e:OpExp> <rs:@R>
+        => Node::RepeatUntil(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
 
     <ls:@L> "local" <l1:@R> <r1:@L> <n1:NameList> <l2:@R> <r2:@L> "=" <l3:@R> <r3:@L> <n2:ExpList> <rs:@R>
         => Node::LocalNamesExprs(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(n1), Box::new(n2)),
@@ -557,13 +565,13 @@ Op11<T>: Node = {
 }
 
 Name: Node = {
-    <l:@L> <s:LexVariable> <r:@R> => Node::Name(Loc(l, r), s.to_string()),
+    <ls:@L> <s:LexVariable> <rs:@R> => Node::Name(Loc(ls, rs), s.to_string()),
 }
 
 StringLiteral: Node = {
-    <l:@L> <s:NormalStringLiteral> <r:@R>    => Node::NormalStringLiteral(Loc(l, r), s.to_string()),
-    <l:@L> <s:CharStringLiteral> <r:@R>      => Node::CharStringLiteral(Loc(l, r), s.to_string()),
-    <l:@L> <v:MultilineStringLiteral> <r:@R> => Node::MultilineStringLiteral(Loc(l, r), v.0, v.1.to_string()),
+    <ls:@L> <s:NormalStringLiteral> <rs:@R>    => Node::NormalStringLiteral(Loc(ls, rs), s.to_string()),
+    <ls:@L> <s:CharStringLiteral> <rs:@R>      => Node::CharStringLiteral(Loc(ls, rs), s.to_string()),
+    <ls:@L> <v:MultilineStringLiteral> <rs:@R> => Node::MultilineStringLiteral(Loc(ls, rs), v.0, v.1.to_string()),
 }
 
 extern {
@@ -633,5 +641,7 @@ extern {
         NormalStringLiteral    => Token::NormalStringLiteral(<&'input str>),
         CharStringLiteral      => Token::CharStringLiteral(<&'input str>),
         MultilineStringLiteral => Token::MultilineStringLiteral(<usize>, <&'input str>),
+
+        EOF => Token::EOF,
     }
 }
