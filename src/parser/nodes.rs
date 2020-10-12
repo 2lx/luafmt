@@ -79,31 +79,49 @@ pub enum Node {
     VarSuffixList(Loc, Vec<(Loc, Node)>),
     FnMethodCall(Loc, [Loc; 2], Box<Node>, Box<Node>),
     FunctionDef(Loc, [Loc; 1], Box<Node>),
-    FuncBody(Loc, [Loc; 4], Box<Node>, Box<Node>),
+    FuncBody(Loc, [Loc; 3], Box<Node>),
+    FuncBodyB(Loc, [Loc; 4], Box<Node>, Box<Node>),
     FuncName(Loc, Vec<(Loc, Node, Loc)>),
     FuncNameSelf(Loc, [Loc; 2], Vec<(Loc, Node, Loc)>, Box<Node>),
     FuncDecl(Loc, [Loc; 2], Box<Node>, Box<Node>),
     LocalFuncDecl(Loc, [Loc; 3], Box<Node>, Box<Node>),
 
     StatementList(Loc, Vec<(Loc, Node)>),
-    DoEnd(Loc, Box<Node>),
+    DoEnd(Loc),
+    DoBEnd(Loc, Box<Node>),
     VarsExprs(Loc, Box<Node>, Box<Node>),
     Name(Loc, String),
     Label(Loc, [Loc; 2], Box<Node>),
     GoTo(Loc, [Loc; 1], Box<Node>),
-    While(Loc, Box<Node>, Box<Node>),
-    Repeat(Loc, Box<Node>, Box<Node>),
-    ForRange(Loc, Box<Node>, Box<Node>, Box<Node>),
-    ForInt(Loc, Box<Node>, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
+    WhileDo(Loc, Box<Node>),
+    WhileDoB(Loc, Box<Node>, Box<Node>),
+    RepeatUntil(Loc, Box<Node>),
+    RepeatBUntil(Loc, Box<Node>, Box<Node>),
+    ForInt(Loc, [Loc; 7], Box<Node>, Box<Node>, Box<Node>),
+    ForIntB(Loc, [Loc; 8], Box<Node>, Box<Node>, Box<Node>, Box<Node>),
+    ForIntStep(Loc, [Loc; 9], Box<Node>, Box<Node>, Box<Node>, Box<Node>),
+    ForIntStepB(Loc, [Loc; 10], Box<Node>, Box<Node>, Box<Node>, Box<Node>, Box<Node>),
+    ForRange(Loc, [Loc; 5], Box<Node>, Box<Node>),
+    ForRangeB(Loc, [Loc; 6], Box<Node>, Box<Node>, Box<Node>),
+
     LocalNames(Loc, [Loc; 1], Box<Node>),
     LocalNamesExprs(Loc, [Loc; 3], Box<Node>, Box<Node>),
 
-    IfThen(Loc, [Loc; 4], Box<Node>, Box<Node>),
-    IfThenElse(Loc, [Loc; 6], Box<Node>, Box<Node>, Box<Node>),
-    IfThenElseIf(Loc, [Loc; 5], Box<Node>, Box<Node>, Box<Node>),
-    IfThenElseIfElse(Loc, [Loc; 7], Box<Node>, Box<Node>, Box<Node>, Box<Node>),
+    IfThen(Loc, [Loc; 3], Box<Node>),
+    IfThenB(Loc, [Loc; 4], Box<Node>, Box<Node>),
+    IfThenElse(Loc, [Loc; 4], Box<Node>),
+    IfThenBElse(Loc, [Loc; 5], Box<Node>, Box<Node>),
+    IfThenElseB(Loc, [Loc; 5], Box<Node>, Box<Node>),
+    IfThenBElseB(Loc, [Loc; 6], Box<Node>, Box<Node>, Box<Node>),
+    IfThenElseIf(Loc, [Loc; 4], Box<Node>, Box<Node>),
+    IfThenBElseIf(Loc, [Loc; 5], Box<Node>, Box<Node>, Box<Node>),
+    IfThenElseIfElse(Loc, [Loc; 5], Box<Node>, Box<Node>),
+    IfThenBElseIfElse(Loc, [Loc; 6], Box<Node>, Box<Node>, Box<Node>),
+    IfThenElseIfElseB(Loc, [Loc; 6], Box<Node>, Box<Node>, Box<Node>),
+    IfThenBElseIfElseB(Loc, [Loc; 7], Box<Node>, Box<Node>, Box<Node>, Box<Node>),
     ElseIfThenVec(Loc, Vec<(Loc, Node)>),
-    ElseIfThen(Loc, [Loc; 3], Box<Node>, Box<Node>),
+    ElseIfThen(Loc, [Loc; 2], Box<Node>),
+    ElseIfThenB(Loc, [Loc; 3], Box<Node>, Box<Node>),
 
     RetStatNone(Loc),
     RetStatExpr(Loc, [Loc; 1], Box<Node>),
@@ -208,7 +226,8 @@ impl ConfiguredWrite for Node {
             NameList(_, names) => cfg_write_node_vec_locs_sep(f, cfg, buf, names, ",", " "),
             VarList(_, vars) => cfg_write_node_vec_locs_sep(f, cfg, buf, vars, ",", " "),
             StatementList(_, stts) => cfg_write_node_vec_locs(f, cfg, buf, stts, " "),
-            DoEnd(_, n) => cfg_write!(f, cfg, buf, "do ", n, " end"),
+            DoEnd(_) => cfg_write!(f, cfg, buf, "do ", " end"),
+            DoBEnd(_, n) => cfg_write!(f, cfg, buf, "do ", n, " end"),
             VarsExprs(_, n1, n2) => cfg_write!(f, cfg, buf, n1, " = ", n2),
 
             VarRoundSuffix(_, locs, n1, n2) => {
@@ -220,14 +239,14 @@ impl ConfiguredWrite for Node {
             }
             ParList(_, pars) => cfg_write_node_vec_locs_sep(f, cfg, buf, pars, ",", " "),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, "function", LocOpt(&locs[0], ""), n),
-            FuncBody(_, locs, n1, n2) => match &**n2 {
-                Node::StatementList(_, v2) if v2.is_empty() => {
-                    cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")",
-                               LocOpt(&locs[2], " "), "end")
-                }
-                _ => cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")",
-                                LocOpt(&locs[2], " "), n2, LocOpt(&locs[3], " "), "end"),
-            },
+            FuncBody(_, locs, n1) => {
+                cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")", LocOpt(&locs[2], " "),
+                           "end")
+            }
+            FuncBodyB(_, locs, n1, n2) => {
+                cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")", LocOpt(&locs[2], " "),
+                           n2, LocOpt(&locs[3], " "), "end")
+            }
             FuncName(_, names) => cfg_write_node_vec_locs_sep(f, cfg, buf, names, ".", ""),
             FuncNameSelf(_, locs, names, n) => {
                 cfg_write_node_vec_locs_sep(f, cfg, buf, names, ".", "")?;
@@ -247,40 +266,106 @@ impl ConfiguredWrite for Node {
                            LocOpt(&locs[2], " "), n2)
             }
 
-            IfThen(_, locs, e1, b1) => {
+            // if
+            IfThen(_, locs, e1) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), "end")
+            }
+            IfThenB(_, locs, e1, b1) => {
                 cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
                            LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), "end")
             }
-            IfThenElse(_, locs, e1, b1, b2) => {
+            IfThenElse(_, locs, e1) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), "else", LocOpt(&locs[3], " "), "end")
+            }
+            IfThenBElse(_, locs, e1, b1) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), "else", LocOpt(&locs[4], " "), "end")
+            }
+            IfThenElseB(_, locs, e1, b2) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), "else", LocOpt(&locs[3], " "), b2, LocOpt(&locs[4], " "), "end")
+            }
+            IfThenBElseB(_, locs, e1, b1, b2) => {
                 cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
                            LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), "else", LocOpt(&locs[4], " "), b2,
                            LocOpt(&locs[5], " "), "end")
             }
-            IfThenElseIf(_, locs, e1, b1, n) => {
+            IfThenElseIf(_, locs, e1, n) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), n, LocOpt(&locs[3], " "), "end")
+            }
+            IfThenBElseIf(_, locs, e1, b1, n) => {
                 cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
                            LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), n, LocOpt(&locs[4], " "), "end")
             }
-            IfThenElseIfElse(_, locs, e1, b1, n, b2) => {
+            IfThenElseIfElse(_, locs, e1, n) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), n, LocOpt(&locs[3], " "), "else", LocOpt(&locs[4], " "), "end")
+            }
+            IfThenBElseIfElse(_, locs, e1, b1, n) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), n, LocOpt(&locs[4], " "), "else",
+                           LocOpt(&locs[5], " "), "end")
+            }
+            IfThenElseIfElseB(_, locs, e1, n, b2) => {
+                cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
+                           LocOpt(&locs[2], " "), n, LocOpt(&locs[3], " "), "else", LocOpt(&locs[4], " "), b2,
+                           LocOpt(&locs[5], " "), "end")
+            }
+            IfThenBElseIfElseB(_, locs, e1, b1, n, b2) => {
                 cfg_write!(f, cfg, buf, "if", LocOpt(&locs[0], " "), e1, LocOpt(&locs[1], " "), "then",
                            LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), n, LocOpt(&locs[4], " "), "else",
                            LocOpt(&locs[5], " "), b2, LocOpt(&locs[6], " "), "end")
             }
             ElseIfThenVec(_, elems) => cfg_write_node_vec_locs(f, cfg, buf, elems, " "),
-            ElseIfThen(_, locs, e, n) => {
+            ElseIfThen(_, locs, e) => {
+                cfg_write!(f, cfg, buf, "elseif", LocOpt(&locs[0], " "), e, LocOpt(&locs[1], " "), "then")
+            }
+            ElseIfThenB(_, locs, e, b) => {
                 cfg_write!(f, cfg, buf, "elseif", LocOpt(&locs[0], " "), e, LocOpt(&locs[1], " "), "then",
-                           LocOpt(&locs[2], " "), n)
+                           LocOpt(&locs[2], " "), b)
             }
 
             Name(_, s) => write!(f, "{}", s),
             Label(_, locs, n) => cfg_write!(f, cfg, buf, "::", LocOpt(&locs[0], ""), n, LocOpt(&locs[1], ""), "::"),
             GoTo(_, locs, n) => cfg_write!(f, cfg, buf, "goto", LocOpt(&locs[0], " "), n),
-            While(_, e, n) => cfg_write!(f, cfg, buf, "while ", e, " do ", n, " end"),
-            Repeat(_, n, e) => cfg_write!(f, cfg, buf, "repeat ", n, " until ", e),
-            ForRange(_, n, e, b) => cfg_write!(f, cfg, buf, "for ", n, " in ", e, " do ", b, " end"),
-            ForInt(_, n, e1, e2, e3, b) => match &**e3 {
-                Node::Empty(_) => cfg_write!(f, cfg, buf, "for ", n, " = ", e1, ", ", e2, " do ", b, " end"),
-                _ => cfg_write!(f, cfg, buf, "for ", n, " = ", e1, ", ", e2, ", ", e3, " do ", b, " end"),
+            WhileDo(_, e) => cfg_write!(f, cfg, buf, "while ", e, " do ", " end"),
+            WhileDoB(_, e, n) => cfg_write!(f, cfg, buf, "while ", e, " do ", n, " end"),
+            RepeatUntil(_, e) => cfg_write!(f, cfg, buf, "repeat ", " until ", e),
+            RepeatBUntil(_, n, e) => cfg_write!(f, cfg, buf, "repeat ", n, " until ", e),
+
+            ForInt(_, locs, n, e1, e2) => {
+                cfg_write!(f, cfg, buf, "for", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], " "), "=", LocOpt(&locs[2], " "),
+                           e1, LocOpt(&locs[3], ""), ",", LocOpt(&locs[4], " "), e2, LocOpt(&locs[5], " "), "do",
+                           LocOpt(&locs[6], " "), "end")
+            }
+            ForIntB(_, locs, n, e1, e2, b) => {
+                cfg_write!(f, cfg, buf, "for", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], " "), "=", LocOpt(&locs[2], " "),
+                           e1, LocOpt(&locs[3], ""), ",", LocOpt(&locs[4], " "), e2, LocOpt(&locs[5], " "), "do",
+                           LocOpt(&locs[6], " "), b, LocOpt(&locs[7], " "), "end")
+            }
+            ForIntStep(_, locs, n, e1, e2, e3) => {
+                cfg_write!(f, cfg, buf, "for", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], " "), "=", LocOpt(&locs[2], " "),
+                           e1, LocOpt(&locs[3], ""), ",", LocOpt(&locs[4], " "), e2, LocOpt(&locs[5], ""), ",",
+                           LocOpt(&locs[6], " "), e3, LocOpt(&locs[7], " "), "do", LocOpt(&locs[8], " "), "end")
             },
+            ForIntStepB(_, locs, n, e1, e2, e3, b) => {
+                cfg_write!(f, cfg, buf, "for", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], " "), "=", LocOpt(&locs[2], " "),
+                           e1, LocOpt(&locs[3], ""), ",", LocOpt(&locs[4], " "), e2, LocOpt(&locs[5], ""), ",",
+                           LocOpt(&locs[6], " "), e3, LocOpt(&locs[7], " "), "do", LocOpt(&locs[8], " "), b,
+                           LocOpt(&locs[9], " "), "end")
+            },
+            ForRange(_, locs, n, e) => {
+                cfg_write!(f, cfg, buf, "for", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], " "), "in",
+                           LocOpt(&locs[2], " "), e, LocOpt(&locs[3], " "), "do", LocOpt(&locs[4], " "), "end")
+            }
+            ForRangeB(_, locs, n, e, b) => {
+                cfg_write!(f, cfg, buf, "for", LocOpt(&locs[0], " "), n, LocOpt(&locs[1], " "), "in",
+                           LocOpt(&locs[2], " "), e, LocOpt(&locs[3], " "), "do", LocOpt(&locs[4], " "), b,
+                           LocOpt(&locs[5], " "), "end")
+            }
 
             RetStatNone(_) => write!(f, "return"),
             RetStatExpr(_, locs, n) => cfg_write!(f, cfg, buf, "return", LocOpt(&locs[0], " "), n),
