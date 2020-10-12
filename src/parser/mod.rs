@@ -317,28 +317,29 @@ fn test_numeral() {
 
 #[test]
 fn test_keep_comments_op() {
-    assert_eq!(tsc("c = a  --\n  +   --[[]]   b"), Ok("c = a --\n +  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  -   --[[]]   b"), Ok("c = a --\n -  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  or   --[[]]   b"), Ok("c = a --\n or  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  and   --[[]]   b"), Ok("c = a --\n and  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  ==  --[[]] b"), Ok("c = a --\n ==  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  ~=  --[[]] b"), Ok("c = a --\n ~=  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  >=  --[[]] b"), Ok("c = a --\n >=  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  <=  --[[]] b"), Ok("c = a --\n <=  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  <  --[[]] b"), Ok("c = a --\n <  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  >  --[[]] b"), Ok("c = a --\n >  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  |  --[[]] b"), Ok("c = a --\n |  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  ~  --[[]] b"), Ok("c = a --\n ~  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  &  --[[]] b"), Ok("c = a --\n &  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  >>  --[[]] b"), Ok("c = a --\n >>  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  <<  --[[]] b"), Ok("c = a --\n <<  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  ..  --[[]] b"), Ok("c = a --\n ..  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  *  --[[]] b"), Ok("c = a --\n *  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  /  --[[]] b"), Ok("c = a --\n /  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  //  --[[]] b"), Ok("c = a --\n //  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  %  --[[]] b"), Ok("c = a --\n %  --[[]]b".to_string()));
-    assert_eq!(tsc("c = a  --\n  ^  --[[]] b"), Ok("c = a --\n ^  --[[]]b".to_string()));
-    assert_eq!(tsc("c = not  --\n  b"), Ok("c = not  --\nb".to_string()));
+    assert_eq!(tsc("c = a  --\n  +   --[[]]   b"), Ok("c = a --\n+ --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  -   --[[]]   b"), Ok("c = a --\n- --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  or   --[[]]   b"), Ok("c = a --\nor --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  and   --[[]]   b"), Ok("c = a --\nand --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ==  --[[]] b"), Ok("c = a --\n== --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ~=  --[[]] b"), Ok("c = a --\n~= --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  >=  --[[]] b"), Ok("c = a --\n>= --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  <=  --[[]] b"), Ok("c = a --\n<= --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  <  --[[]] b"), Ok("c = a --\n< --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  >  --[[]] b"), Ok("c = a --\n> --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  |  --[[]] b"), Ok("c = a --\n| --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ~  --[[]] b"), Ok("c = a --\n~ --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  &  --[[]] b"), Ok("c = a --\n& --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  >>  --[[]] b"), Ok("c = a --\n>> --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  <<  --[[]] b"), Ok("c = a --\n<< --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ..  --[[]] b"), Ok("c = a --\n.. --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  *  --[[]] b"), Ok("c = a --\n* --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  /  --[[]] b"), Ok("c = a --\n/ --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  //  --[[]] b"), Ok("c = a --\n// --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  %  --[[]] b"), Ok("c = a --\n% --[[]] b".to_string()));
+    assert_eq!(tsc("c = a  --\n  ^  --[[]] b"), Ok("c = a --\n^ --[[]] b".to_string()));
+    assert_eq!(tsc("c = not  --\n  b"), Ok("c = not --\nb".to_string()));
+    assert_eq!(tsc("c = not--[[]]b"), Ok("c = not --[[]] b".to_string()));
     assert_eq!(tsc("c = -  --\n  b"), Ok("c = - --\nb".to_string()));
     assert_eq!(tsc("c = #  --\n  b"), Ok("c = # --\nb".to_string()));
     assert_eq!(tsc("c = ~  --\n  b"), Ok("c = ~ --\nb".to_string()));
@@ -346,22 +347,22 @@ fn test_keep_comments_op() {
 
 #[test]
 fn test_keep_comments_other() {
-    assert_eq!(tsc("t = { a --\n  =  --[[]]  3}"), Ok("t = { a --\n =  --[[]]3 }".to_string()));
+    assert_eq!(tsc("t = { a --\n  =  --[[]]  3}"), Ok("t = { a --\n= --[[]] 3 }".to_string()));
     assert_eq!(
         tsc("t = { [ --c1\n a --[[c2]]] --c3\n= --c4\n 3}"),
-        Ok("t = { [ --c1\na --[[c2]]] --c3\n =  --c4\n3 }".to_string())
+        Ok("t = { [ --c1\na --[[c2]] ] --c3\n= --c4\n3 }".to_string())
     );
     assert_eq!(
         tsc("t = { [ --c1\n 'a' --[[c2]]] --c3\n= --c4\n 3}"),
-        Ok("t = { [ --c1\n'a' --[[c2]]] --c3\n =  --c4\n3 }".to_string())
+        Ok("t = { [ --c1\n'a' --[[c2]] ] --c3\n= --c4\n3 }".to_string())
     );
     assert_eq!(
         tsc("t = { [ --c1\n \"a\" --[[c2]]] --c3\n= --c4\n 3}"),
-        Ok("t = { [ --c1\n\"a\" --[[c2]]] --c3\n =  --c4\n3 }".to_string())
+        Ok("t = { [ --c1\n\"a\" --[[c2]] ] --c3\n= --c4\n3 }".to_string())
     );
     assert_eq!(
         tsc("t = { [ --c1\n [[a]] --[[c2]]] --c3\n= --c4\n 3}"),
-        Ok("t = { [ --c1\n[[a]] --[[c2]]] --c3\n =  --c4\n3 }".to_string())
+        Ok("t = { [ --c1\n[[a]] --[[c2]] ] --c3\n= --c4\n3 }".to_string())
     );
     assert_eq!(
         tsc("t = { --0\n a = 1 --1\n, --2\n b = 2 --3\n, --4\n c = 3 --5\n, --6\n d = 4 --7\n, --8\n e = 5 --9\n, --10\n }"),

@@ -319,82 +319,82 @@ OpExp: Node = {
 
 Op0<T>: Node = {
     <ls:@L> <e1:Op0<T>> <l1:@R> <r1:@L> "or" <l2:@R> <r2:@L> <e2:Op1<T>> <rs:@R>
-        => Node::LogicalOr(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("or"), Box::new(e1), Box::new(e2)),
     Op1<T>,
 }
 
 Op1<T>: Node = {
     <ls:@L> <e1:Op1<T>> <l1:@R> <r1:@L> "and" <l2:@R> <r2:@L> <e2:Op2<T>> <rs:@R>
-        => Node::LogicalAnd(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("and"), Box::new(e1), Box::new(e2)),
     Op2<T>,
 }
 
 Op2<T>: Node = {
     <ls:@L> <e1:Op2<T>> <l1:@R> <r1:@L> "==" <l2:@R> <r2:@L> <e2:Op3<T>> <rs:@R>
-        => Node::Equality(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("=="), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op2<T>> <l1:@R> <r1:@L> "~=" <l2:@R> <r2:@L> <e2:Op3<T>> <rs:@R>
-        => Node::Inequality(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("~="), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op2<T>> <l1:@R> <r1:@L> "<"  <l2:@R> <r2:@L> <e2:Op3<T>> <rs:@R>
-        => Node::LessThan(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("<"), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op2<T>> <l1:@R> <r1:@L> ">"  <l2:@R> <r2:@L> <e2:Op3<T>> <rs:@R>
-        => Node::GreaterThan(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str(">"), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op2<T>> <l1:@R> <r1:@L> "<=" <l2:@R> <r2:@L> <e2:Op3<T>> <rs:@R>
-        => Node::LessOrEqual(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("<="), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op2<T>> <l1:@R> <r1:@L> ">=" <l2:@R> <r2:@L> <e2:Op3<T>> <rs:@R>
-        => Node::GreaterOrEqual(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str(">="), Box::new(e1), Box::new(e2)),
     Op3<T>,
 }
 
 Op3<T>: Node = {
     <ls:@L> <e1:Op3<T>> <l1:@R> <r1:@L> "|" <l2:@R> <r2:@L> <e2:Op4<T>> <rs:@R>
-        => Node::BitwiseOr(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("|"), Box::new(e1), Box::new(e2)),
     Op4<T>,
 }
 
 Op4<T>: Node = {
     <ls:@L> <e1:Op4<T>> <l1:@R> <r1:@L> "~" <l2:@R> <r2:@L> <e2:Op5<T>> <rs:@R>
-        => Node::BitwiseXor(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("~"), Box::new(e1), Box::new(e2)),
     Op5<T>,
 }
 
 Op5<T>: Node = {
     <ls:@L> <e1:Op5<T>> <l1:@R> <r1:@L> "&" <l2:@R> <r2:@L> <e2:Op6<T>> <rs:@R>
-        => Node::BitwiseAnd(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("&"), Box::new(e1), Box::new(e2)),
     Op6<T>,
 }
 
 Op6<T>: Node = {
     <ls:@L> <e1:Op6<T>> <l1:@R> <r1:@L> "<<" <l2:@R> <r2:@L> <e2:Op7<T>> <rs:@R>
-        => Node::LeftShift( Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp( Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("<<"), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op6<T>> <l1:@R> <r1:@L> ">>" <l2:@R> <r2:@L> <e2:Op7<T>> <rs:@R>
-        => Node::RightShift(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str(">>"), Box::new(e1), Box::new(e2)),
     Op7<T>,
 }
 
 // right-associative
 Op7<T>: Node = {
     <ls:@L> <e1:Op8<T>> <l1:@R> <r1:@L> ".." <l2:@R> <r2:@L> <e2:Op7<T>> <rs:@R>
-        => Node::Concatenation(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str(".."), Box::new(e1), Box::new(e2)),
     Op8<T>,
 }
 
 Op8<T>: Node = {
     <ls:@L> <e1:Op8<T>> <l1:@R> <r1:@L> "+" <l2:@R> <r2:@L> <e2:Op9<T>> <rs:@R>
-        => Node::Addition(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("+"), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op8<T>> <l1:@R> <r1:@L> "-" <l2:@R> <r2:@L> <e2:Op9<T>> <rs:@R>
-        => Node::Subtraction(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("-"), Box::new(e1), Box::new(e2)),
     Op9<T>,
 }
 
 Op9<T>: Node = {
     <ls:@L> <e1:Op9<T>> <l1:@R> <r1:@L> "*"  <l2:@R> <r2:@L> <e2:Op10<T>> <rs:@R>
-        => Node::Multiplication(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("*"), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op9<T>> <l1:@R> <r1:@L> "/"  <l2:@R> <r2:@L> <e2:Op10<T>> <rs:@R>
-        => Node::Division(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("/"), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op9<T>> <l1:@R> <r1:@L> "//" <l2:@R> <r2:@L> <e2:Op10<T>> <rs:@R>
-        => Node::FloorDivision(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("//"), Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Op9<T>> <l1:@R> <r1:@L> "%"  <l2:@R> <r2:@L> <e2:Op10<T>> <rs:@R>
-        => Node::Modulo(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("%"), Box::new(e1), Box::new(e2)),
     Op10<T>,
 }
 
@@ -402,18 +402,18 @@ Op10<T>: Node = {
     <ls:@L> "not" <l1:@R> <r1:@L> <e:Op11<T>> <rs:@R>
         => Node::UnaryNot(Loc(ls, rs), [Loc(l1, r1)], Box::new(e)),
     <ls:@L> "#"   <l1:@R> <r1:@L> <e:Op11<T>> <rs:@R>
-        => Node::UnaryLength(Loc(ls, rs), [Loc(l1, r1)], Box::new(e)),
+        => Node::UnaryOp(Loc(ls, rs), [Loc(l1, r1)], Str("#"), Box::new(e)),
     <ls:@L> "-"   <l1:@R> <r1:@L> <e:Op11<T>> <rs:@R>
-        => Node::UnaryMinus(Loc(ls, rs), [Loc(l1, r1)], Box::new(e)),
+        => Node::UnaryOp(Loc(ls, rs), [Loc(l1, r1)], Str("-"), Box::new(e)),
     <ls:@L> "~"   <l1:@R> <r1:@L> <e:Op11<T>> <rs:@R>
-        => Node::UnaryBitwiseXor(Loc(ls, rs), [Loc(l1, r1)], Box::new(e)),
+        => Node::UnaryOp(Loc(ls, rs), [Loc(l1, r1)], Str("~"), Box::new(e)),
     Op11<T>,
 }
 
 // right-associative
 Op11<T>: Node = {
     <ls:@L> <e1:T> <l1:@R> <r1:@L> "^" <l2:@R> <r2:@L> <e2:Op11<T>> <rs:@R>
-        => Node::Exponentiation(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
+        => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("^"), Box::new(e1), Box::new(e2)),
     T,
 }
 

@@ -6,10 +6,37 @@ use crate::{cfg_write, cfg_write_helper};
 #[derive(Debug)]
 pub struct Loc(pub usize, pub usize);
 
-impl ConfiguredWrite for Loc {
+#[derive(Debug)]
+pub struct Str(pub &'static str);
+
+impl ConfiguredWrite for Str {
+    fn configured_write(&self, f: &mut dyn fmt::Write, _cfg: &Config, _buf: &str) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+pub struct LocOpt<'a>(pub &'a Loc, pub &'static str);
+
+impl ConfiguredWrite for LocOpt<'_> {
     fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str) -> fmt::Result {
-        if cfg.keep_comments && self.1 - self.0 > 2 {
-            write!(f, " {}", &buf[self.0..self.1].trim_matches(' '))?;
+        if cfg.keep_comments {
+            let trimmed = &buf[self.0.0..self.0.1].trim_matches(' ');
+            if trimmed.len() > 0 {
+                let prefix = match trimmed.chars().next().unwrap() {
+                    '-' => " ",
+                    _ => "",
+                };
+                let suffix = match trimmed.chars().last().unwrap() {
+                    '\n' => "",
+                    _ => " ",
+                };
+
+                write!(f, "{}{}{}", prefix, trimmed, suffix)?;
+            } else {
+                write!(f, "{}", self.1)?;
+            }
+        } else {
+            write!(f, "{}", self.1)?;
         }
         Ok(())
     }
@@ -17,36 +44,9 @@ impl ConfiguredWrite for Loc {
 
 #[derive(Debug)]
 pub enum Node {
-    Exponentiation(Loc, [Loc; 2], Box<Node>, Box<Node>),
+    BinaryOp(Loc, [Loc; 2], Str, Box<Node>, Box<Node>),
+    UnaryOp(Loc, [Loc; 1], Str, Box<Node>),
     UnaryNot(Loc, [Loc; 1], Box<Node>),
-    UnaryMinus(Loc, [Loc; 1], Box<Node>),
-    UnaryLength(Loc, [Loc; 1], Box<Node>),
-    UnaryBitwiseXor(Loc, [Loc; 1], Box<Node>),
-
-    Multiplication(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    Division(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    FloorDivision(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    Modulo(Loc, [Loc; 2], Box<Node>, Box<Node>),
-
-    Addition(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    Subtraction(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    Concatenation(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    LeftShift(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    RightShift(Loc, [Loc; 2], Box<Node>, Box<Node>),
-
-    BitwiseAnd(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    BitwiseXor(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    BitwiseOr(Loc, [Loc; 2], Box<Node>, Box<Node>),
-
-    Equality(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    Inequality(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    LessThan(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    GreaterThan(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    LessOrEqual(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    GreaterOrEqual(Loc, [Loc; 2], Box<Node>, Box<Node>),
-
-    LogicalAnd(Loc, [Loc; 2], Box<Node>, Box<Node>),
-    LogicalOr(Loc, [Loc; 2], Box<Node>, Box<Node>),
 
     Var(Loc, Box<Node>, Box<Node>),
     RoundBrackets(Loc, Box<Node>),
@@ -141,11 +141,11 @@ fn cfg_write_node_vec_locs(
             if let Node::Empty(_) = elem.1 {
                 continue;
             }
-            cfg_write!(f, cfg, buf, (elem.0), (elem.1), (elem.2))?;
+            cfg_write!(f, cfg, buf, LocOpt(&elem.0, ""), elem.1, LocOpt(&elem.2, ""))?;
             write!(f, "{}{}", sep, ws)?;
         }
         let last = &elems[elems.len() - 1];
-        cfg_write!(f, cfg, buf, (last.0), (last.1), (last.2))?;
+        cfg_write!(f, cfg, buf, LocOpt(&last.0, ""), last.1, LocOpt(&last.2, ""))?;
         write!(f, "{}", padding)?;
     }
     Ok(())
@@ -157,36 +157,11 @@ impl ConfiguredWrite for Node {
         use Node::*;
 
         match self {
-            Exponentiation(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " ^ ", (locs[1]), r),
-            UnaryNot(_, locs, r) => cfg_write!(f, cfg, buf, "not ", (locs[0]), r),
-            UnaryMinus(_, locs, r) => cfg_write!(f, cfg, buf, "-", (locs[0]), r),
-            UnaryLength(_, locs, r) => cfg_write!(f, cfg, buf, "#", (locs[0]), r),
-            UnaryBitwiseXor(_, locs, r) => cfg_write!(f, cfg, buf, "~", (locs[0]), r),
-
-            Multiplication(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " * ", (locs[1]), r),
-            Division(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " / ", (locs[1]), r),
-            FloorDivision(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " // ", (locs[1]), r),
-            Modulo(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " % ", (locs[1]), r),
-
-            Addition(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " + ", (locs[1]), r),
-            Subtraction(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " - ", (locs[1]), r),
-            Concatenation(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " .. ", (locs[1]), r),
-            LeftShift(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " << ", (locs[1]), r),
-            RightShift(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " >> ", (locs[1]), r),
-
-            BitwiseAnd(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " & ", (locs[1]), r),
-            BitwiseXor(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " ~ ", (locs[1]), r),
-            BitwiseOr(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " | ", (locs[1]), r),
-
-            Equality(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " == ", (locs[1]), r),
-            Inequality(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " ~= ", (locs[1]), r),
-            LessThan(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " < ", (locs[1]), r),
-            GreaterThan(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " > ", (locs[1]), r),
-            LessOrEqual(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " <= ", (locs[1]), r),
-            GreaterOrEqual(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " >= ", (locs[1]), r),
-
-            LogicalAnd(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " and ", (locs[1]), r),
-            LogicalOr(_, locs, l, r) => cfg_write!(f, cfg, buf, l, (locs[0]), " or ", (locs[1]), r),
+            BinaryOp(_, locs, tok, l, r) => {
+                cfg_write!(f, cfg, buf, l, LocOpt(&locs[0], " "), tok, LocOpt(&locs[1], " "), r)
+            }
+            UnaryOp(_, locs, tok, r) => cfg_write!(f, cfg, buf, tok, LocOpt(&locs[0], ""), r),
+            UnaryNot(_, locs, r) => cfg_write!(f, cfg, buf, "not", LocOpt(&locs[0], " "), r),
 
             Var(_, n1, n2) => cfg_write!(f, cfg, buf, n1, n2),
             RoundBrackets(_, r) => cfg_write!(f, cfg, buf, "(", r, ")"),
@@ -206,12 +181,17 @@ impl ConfiguredWrite for Node {
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)
             }
 
-            TableConstructor(_, locs, r) => cfg_write!(f, cfg, buf, "{{", (locs[0]), r, (locs[1]), "}}"),
+            TableConstructor(_, locs, r) => {
+                cfg_write!(f, cfg, buf, "{{", LocOpt(&locs[0], ""), r, LocOpt(&locs[1], ""), "}}")
+            }
             Fields(_, fields) => cfg_write_node_vec_locs(f, cfg, buf, fields, " ", ",", " "),
             FieldNamedBracket(_, locs, e1, e2) => {
-                cfg_write!(f, cfg, buf, "[", (locs[0]), e1, (locs[1]), "]", (locs[2]), " = ", (locs[3]), e2)
+                cfg_write!(f, cfg, buf, "[", LocOpt(&locs[0], ""), e1, LocOpt(&locs[1], ""), "]", LocOpt(&locs[2], " "),
+                           "=", LocOpt(&locs[3], " "), e2)
             }
-            FieldNamed(_, locs, e1, e2) => cfg_write!(f, cfg, buf, e1, (locs[0]), " = ", (locs[1]), e2),
+            FieldNamed(_, locs, e1, e2) => {
+                cfg_write!(f, cfg, buf, e1, LocOpt(&locs[0], " "), "=", LocOpt(&locs[1], " "), e2)
+            }
             FieldSequential(_, e) => cfg_write!(f, cfg, buf, e),
 
             TableIndex(_, e) => cfg_write!(f, cfg, buf, "[", e, "]"),

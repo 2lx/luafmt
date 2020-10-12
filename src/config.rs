@@ -12,7 +12,7 @@ macro_rules! cfg_write_helper {
 
 #[macro_export]
 macro_rules! cfg_write {
-    ($wrt:expr, $cfg:expr, $buf:expr, $($arg:tt),+) => {{
+    ($wrt:expr, $cfg:expr, $buf:expr, $($arg:expr),+) => {{
         $( cfg_write_helper!($wrt, $cfg, $buf, $arg)?; )+
         Ok(())
     }};
