@@ -567,4 +567,29 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
         tsc("for --[[1]]a--[[2]] in--[[3]] ipairs(t)--4\ndo--9\n --[[10]]end"),
         Ok("for --[[1]] a --[[2]] in --[[3]] ipairs(t) --4\ndo --9\n --[[10]] end".to_string())
     );
+
+    // WhileDo
+    assert_eq!(
+        tsc("while --1\n a < 3 --[[2]]do --[[3]]a = a + 1 --4\nend"),
+        Ok("while --1\na < 3 --[[2]] do --[[3]] a = a + 1 --4\nend".to_string())
+    );
+    assert_eq!(
+        tsc("while --1\n a < 3 --[[2]]do--5\n --[[3]]end"),
+        Ok("while --1\na < 3 --[[2]] do --5\n --[[3]] end".to_string())
+    );
+
+    // DoEnd
+    assert_eq!(
+        tsc("do--1\n print(a)--[[2]]end"),
+        Ok("do --1\nprint(a) --[[2]] end".to_string())
+    );
+    assert_eq!(
+        tsc("do--1\n --[[2]] end"),
+        Ok("do --1\n --[[2]] end".to_string())
+    );
+}
+
+#[test]
+fn test_keep_comments_special() {
+    assert_eq!(tsc("--[[1]]"), Ok("".to_string()));
 }

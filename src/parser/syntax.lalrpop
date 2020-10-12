@@ -136,15 +136,15 @@ StatNoPar: Node = {
     <ls:@L> "goto" <l1:@R> <r1:@L> <n:Name> <rs:@R>
         => Node::GoTo(Loc(ls, rs), [Loc(l1, r1)], Box::new(n)),
 
-    <l:@L> "do" <n:Block> "end" <r:@R>
-        => Node::DoBEnd(Loc(l, r), Box::new(n)),
-    <l:@L> "do" "end" <r:@R>
-        => Node::DoEnd(Loc(l, r)),
+    <ls:@L> "do" <l1:@R> <r1:@L> "end" <rs:@R>
+        => Node::DoEnd(Loc(ls, rs), [Loc(l1, r1)]),
+    <ls:@L> "do" <l1:@R> <r1:@L> <n:Block> <l2:@R> <r2:@L> "end" <rs:@R>
+        => Node::DoBEnd(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(n)),
 
-    <l:@L> "while" <e:OpExp> "do" <n:Block> "end" <r:@R>
-        => Node::WhileDoB(Loc(l, r), Box::new(e), Box::new(n)),
-    <l:@L> "while" <e:OpExp> "do" "end" <r:@R>
-        => Node::WhileDo(Loc(l, r), Box::new(e)),
+    <ls:@L> "while" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> "do" <l3:@R> <r3:@L> "end" <rs:@R>
+        => Node::WhileDo(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(e)),
+    <ls:@L> "while" <l1:@R> <r1:@L> <e:OpExp> <l2:@R> <r2:@L> "do" <l3:@R> <r3:@L> <b:Block> <l4:@R> <r4:@L> "end" <rs:@R>
+        => Node::WhileDoB(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4)], Box::new(e), Box::new(b)),
 
     // if
     <ls:@L> "if" <l1:@R> <r1:@L> <e1:OpExp> <l2:@R> <r2:@L> "then" <l3:@R> <r3:@L> "end" <rs:@R>
