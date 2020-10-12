@@ -13,7 +13,10 @@ pub fn parse(src: &str) -> Result<nodes::Node, ParseError<usize, lexer::Token, l
 }
 
 #[allow(dead_code)]
-static TEST_CONFIG: Config = Config { indent_width: 4, keep_comments: false };
+static CFG_NO_COMMENTS: Config = Config::default_no_comments();
+
+#[allow(dead_code)]
+static CFG_NORMALIZE_WS: Config = Config::default_normalize_ws();
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
@@ -39,13 +42,12 @@ fn ts_base(source: &'static str, cfg: &Config) -> Result<String, TestError> {
 
 #[allow(dead_code)]
 fn ts(source: &'static str) -> Result<String, TestError> {
-    ts_base(source, &TEST_CONFIG)
+    ts_base(source, &CFG_NO_COMMENTS)
 }
 
 #[allow(dead_code)]
 fn tsc(source: &'static str) -> Result<String, TestError> {
-    let cfg = Config { indent_width: 4, keep_comments: true };
-    ts_base(source, &cfg)
+    ts_base(source, &CFG_NORMALIZE_WS)
 }
 
 #[test]
@@ -137,6 +139,9 @@ fn test_function() {
     assert_eq!(ts("fn = function(a) return a end"), Ok("fn = function(a) return a end".to_string()));
     assert_eq!(ts("fn = function() return end"), Ok("fn = function() return end".to_string()));
     assert_eq!(ts("fn = function(a, b) return a, b end"), Ok("fn = function(a, b) return a, b end".to_string()));
+    assert_eq!(ts("function fn() return end"), Ok("function fn() return end".to_string()));
+    assert_eq!(ts("function fn() return; end"), Ok("function fn() return; end".to_string()));
+    assert_eq!(ts("function fn() return;; end"), Err(TestError::ErrorWhileParsing));
 
     // no RetStat
     assert_eq!(ts("fn = function(a, b) end"), Ok("fn = function(a, b) end".to_string()));

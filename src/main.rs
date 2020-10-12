@@ -14,7 +14,7 @@ fn read_input() -> Result<String, std::io::Error> {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let config = config::Config { indent_width: 4, keep_comments: true };
+    let config = config::Config::default();
     let buffer = read_input()?;
 
     match parser::parse(&buffer) {
