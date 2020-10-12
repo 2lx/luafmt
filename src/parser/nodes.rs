@@ -72,13 +72,13 @@ pub enum Node {
     TableMember(Loc, Box<Node>),
     ExpList(Loc, Vec<Node>),
     NameList(Loc, Vec<Node>),
-    ParList(Loc, Vec<Node>),
+    ParList(Loc, Vec<(Loc, Node, Loc)>),
     VarList(Loc, Vec<Node>),
     VarRoundSuffix(Loc, Box<Node>, Box<Node>),
     VarSuffixList(Loc, Vec<Node>),
     FnMethodCall(Loc, Box<Node>, Box<Node>),
-    FunctionDef(Loc, Box<Node>),
-    FuncBody(Loc, Box<Node>, Box<Node>),
+    FunctionDef(Loc, [Loc; 1], Box<Node>),
+    FuncBody(Loc, [Loc; 4], Box<Node>, Box<Node>),
     FuncName(Loc, Vec<Node>, Box<Node>),
     FuncDecl(Loc, Box<Node>, Box<Node>),
 
@@ -202,11 +202,15 @@ impl ConfiguredWrite for Node {
             VarRoundSuffix(_, n1, n2) => cfg_write!(f, cfg, buf, "(", n1, ")", n2),
             VarSuffixList(_, suffs) => cfg_write_node_vec(f, cfg, buf, suffs, "", ""),
             FnMethodCall(_, n1, n2) => cfg_write!(f, cfg, buf, ":", n1, n2),
-            ParList(_, pars) => cfg_write_node_vec(f, cfg, buf, pars, ",", " "),
-            FunctionDef(_, n) => cfg_write!(f, cfg, buf, "function", n),
-            FuncBody(_, n1, n2) => match &**n2 {
-                Node::StatementList(_, v2) if v2.is_empty() => cfg_write!(f, cfg, buf, "(", n1, ") end"),
-                _ => cfg_write!(f, cfg, buf, "(", n1, ") ", n2, " end"),
+            ParList(_, pars) => cfg_write_node_vec_locs(f, cfg, buf, pars, ",", " "),
+            FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, "function", LocOpt(&locs[0], ""), n),
+            FuncBody(_, locs, n1, n2) => match &**n2 {
+                Node::StatementList(_, v2) if v2.is_empty() => {
+                    cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")",
+                               LocOpt(&locs[2], " "), "end")
+                }
+                _ => cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")",
+                                LocOpt(&locs[2], " "), n2, LocOpt(&locs[3], " "), "end"),
             },
             FuncName(_, names, n) => {
                 cfg_write_node_vec(f, cfg, buf, names, ".", "")?;

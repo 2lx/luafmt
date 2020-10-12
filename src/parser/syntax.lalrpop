@@ -5,7 +5,7 @@ grammar<'input>(input: &'input str);
 
 // templates
 // cannot be empty, no separators
-SimpleVec<T>: Vec<T> = {
+TList<T>: Vec<T> = {
     <v:(<T>)*> <e:(<T>)> => {
         let mut v = v;
         v.push(e);
@@ -13,7 +13,7 @@ SimpleVec<T>: Vec<T> = {
     },
 }
 // can be empty, no separators
-SimpleEmptyVec<T>: Vec<T> = {
+TEmptyList<T>: Vec<T> = {
     => Vec::new(),
     <v:(<T>)*> <e:T> => {
         let mut v = v;
@@ -23,7 +23,7 @@ SimpleEmptyVec<T>: Vec<T> = {
 }
 
 // cannot be empty, no separator at the end
-SepVec<T, C>: Vec<T> = {
+TSepList<T, C>: Vec<T> = {
     <e:T> => {
         let mut v = Vec::new();
         v.push(e);
@@ -37,23 +37,31 @@ SepVec<T, C>: Vec<T> = {
 };
 
 // can be empty, no separator at the end
-SepEmptyVec<T, C>: Vec<T> = {
+TEmptySepList<T, C>: Vec<(Loc, T, Loc)> = {
     => Vec::new(),
-    <e:T> <v:(C <T>)*> => {
+    <e:T> => {
+        let mut v = Vec::new();
+        v.push((Loc(0, 0), e, Loc(0, 0)));
+        v
+    },
+    <e:T> <l1:@R> <r1:@L> C <l2:@R> <r2:@L> <v:TEmptySepList<T, C>> => {
         let mut v = v;
-        v.insert(0, e);
+        if !v.is_empty() {
+            v[0].0 = Loc(l2, r2);
+        }
+        v.insert(0, (Loc(0, 0), e, Loc(l1, r1)));
         v
     }
 };
 
 // cannot be empty, may have a separator at the end
-SepVecEnd<T, C>: Vec<(Loc, T, Loc)> = {
+TSepEndList<T, C>: Vec<(Loc, T, Loc)> = {
     <e:T> <l2:@R> <r2:@L> C? => {
         let mut v = Vec::new();
         v.push((Loc(0, 0), e, Loc(l2, r2)));
         v
     },
-    <e:T> <l1:@R> <r1:@L> C <l2:@R> <r2:@L> <v:SepVecEnd<T, C>> => {
+    <e:T> <l1:@R> <r1:@L> C <l2:@R> <r2:@L> <v:TSepEndList<T, C>> => {
         let mut v = v;
         if !v.is_empty() {
             v[0].0 = Loc(l2, r2);
@@ -74,12 +82,12 @@ Block: Node = {
 }
 
 Stats: Node = {
-    <l:@L> <n1:StatStartsMayEndsPar> <v:SimpleEmptyVec<Stat>> <r:@R> => {
+    <l:@L> <n1:StatStartsMayEndsPar> <v:TEmptyList<Stat>> <r:@R> => {
         let mut v = v;
         v.insert(0, n1);
         Node::StatementList(Loc(l, r), v)
     },
-    <l:@L> <n:SimpleEmptyVec<Stat>> <r:@R> => Node::StatementList(Loc(l, r), n),
+    <l:@L> <n:TEmptyList<Stat>> <r:@R> => Node::StatementList(Loc(l, r), n),
 }
 
 Stat: Node = {
@@ -133,7 +141,7 @@ StatNoExp: Node = {
 }
 
 ElseIfThenVec: Node = {
-    <l:@L> <v:SimpleEmptyVec<ElseIfThen>> <r:@R> => Node::ElseIfThenVec(Loc(l, r), v),
+    <l:@L> <v:TEmptyList<ElseIfThen>> <r:@R> => Node::ElseIfThenVec(Loc(l, r), v),
 }
 
 ElseIfThen: Node = {
@@ -152,15 +160,15 @@ Label: Node = {
 }
 
 FuncName: Node = {
-    <l:@L> <v:SepVec<Name, ".">> <r:@R>              => Node::FuncName(Loc(l, r), v, Box::new(Node::Empty(Loc(r, r)))),
-    <l:@L> <v:SepVec<Name, ".">> ":" <n:Name> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(n)),
+    <l:@L> <v:TSepList<Name, ".">> <r:@R>              => Node::FuncName(Loc(l, r), v, Box::new(Node::Empty(Loc(r, r)))),
+    <l:@L> <v:TSepList<Name, ".">> ":" <n:Name> <r:@R> => Node::FuncName(Loc(l, r), v, Box::new(n)),
 }
 
 // ---------------------------
 
 VarListStartsPar: Node = {
     VarExp,
-    <l:@L> <n1:VarExp> "," <v:SepVec<VarMayExp, ",">> <r:@R> => {
+    <l:@L> <n1:VarExp> "," <v:TSepList<VarMayExp, ",">> <r:@R> => {
         let mut v = v;
         v.insert(0, n1);
         Node::VarList(Loc(l, r), v)
@@ -173,7 +181,7 @@ VarListNoStartPar: Node = {
         v.push(n);
         Node::VarList(Loc(l, r), v)
     },
-    <l:@L> <n:VarNoExp> "," <v:SepVec<VarMayExp, ",">> <r:@R> => {
+    <l:@L> <n:VarNoExp> "," <v:TSepList<VarMayExp, ",">> <r:@R> => {
         let mut v = v;
         v.insert(0, n);
         Node::VarList(Loc(l, r), v)
@@ -219,12 +227,12 @@ VarMayExp: Node = {
 }
 
 VarSuffixList: Node = {
-    <v:SimpleVec<VarSuffix>> => Node::VarSuffixList(Loc(0, 0), v),
+    <v:TList<VarSuffix>> => Node::VarSuffixList(Loc(0, 0), v),
 }
 
 VarSuffixListNoEndPar: Node = {
     VarSuffixNoEndPar,
-    <v:SimpleVec<VarSuffix>> <n:VarSuffixNoEndPar> => {
+    <v:TList<VarSuffix>> <n:VarSuffixNoEndPar> => {
         let mut v = v;
         v.push(n);
         Node::VarSuffixList(Loc(0, 0), v)
@@ -246,11 +254,11 @@ VarSuffix: Node = {
 // ---------------------------
 
 NameList: Node = {
-    <l:@L> <n:SepVec<Name, ",">> <r:@R> => Node::NameList(Loc(l, r), n),
+    <l:@L> <n:TSepList<Name, ",">> <r:@R> => Node::NameList(Loc(l, r), n),
 }
 
 ExpList: Node = {
-    <l:@L> <n:SepVec<OpExp, ",">> <r:@R> => Node::ExpList(Loc(l, r), n),
+    <l:@L> <n:TSepList<OpExp, ",">> <r:@R> => Node::ExpList(Loc(l, r), n),
 }
 
 Exp: Node = {
@@ -273,20 +281,22 @@ Args: Node = {
 }
 
 FunctionDef: Node = {
-    <l:@L> "function" <n:FuncBody> <r:@R> => Node::FunctionDef(Loc(l, r), Box::new(n)),
+    <ls:@L> "function" <l1:@R> <r1:@L> <n:FuncBody> <rs:@R>
+        => Node::FunctionDef(Loc(ls, rs), [Loc(l1, r1)], Box::new(n)),
 }
 
 FuncBody: Node = {
-    <l:@L> "(" <n1:ParList> ")" <n2:Block> "end" <r:@R> => Node::FuncBody(Loc(l, r), Box::new(n1), Box::new(n2)),
+    <ls:@L> "(" <l1:@R> <r1:@L> <n1:ParList> <l2:@R> <r2:@L> ")" <l3:@R> <r3:@L> <n2:Block> <l4:@R> <r4:@L> "end" <rs:@R>
+        => Node::FuncBody(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4)], Box::new(n1), Box::new(n2)),
 }
 
 ParList: Node = {
-    <l:@L> <n:SepEmptyVec<Par, ",">> <r:@R> => Node::ParList(Loc(l, r), n),
+    <ls:@L> <v:TEmptySepList<Par, ",">> <rs:@R> => Node::ParList(Loc(ls, rs), v),
 }
 
 Par: Node = {
     Name,
-    <l:@L> "..." <r:@R> => Node::VarArg(Loc(l, r)),
+    <ls:@L> "..." <rs:@R> => Node::VarArg(Loc(ls, rs)),
 }
 
 TableConstructor: Node = {
@@ -297,7 +307,7 @@ TableConstructor: Node = {
 }
 
 FieldList: Node = {
-    <ls:@L> <v:SepVecEnd<Field, FieldSep>> <rs:@R> => Node::Fields(Loc(ls, rs), v),
+    <ls:@L> <v:TSepEndList<Field, FieldSep>> <rs:@R> => Node::Fields(Loc(ls, rs), v),
 }
 
 Field: Node = {
@@ -305,7 +315,7 @@ Field: Node = {
         => Node::FieldNamedBracket(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4)], Box::new(e1), Box::new(e2)),
     <ls:@L> <e1:Name> <l1:@R> <r1:@L> "=" <l2:@R> <r2:@L> <e2:OpExp> <rs:@R>
         => Node::FieldNamed(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e1), Box::new(e2)),
-    <l:@L> <e:OpExp> <r:@R>                         => Node::FieldSequential(Loc(l, r), Box::new(e)),
+    <ls:@L> <e:OpExp> <rs:@R> => Node::FieldSequential(Loc(ls, rs), Box::new(e)),
 }
 
 FieldSep = {

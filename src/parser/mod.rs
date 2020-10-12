@@ -368,4 +368,12 @@ fn test_keep_comments_other() {
         tsc("t = { --0\n a = 1 --1\n, --2\n b = 2 --3\n, --4\n c = 3 --5\n, --6\n d = 4 --7\n, --8\n e = 5 --9\n, --10\n }"),
         Ok("t = { --0\na = 1 --1\n,  --2\nb = 2 --3\n,  --4\nc = 3 --5\n,  --6\nd = 4 --7\n,  --8\ne = 5 --9\n --10\n}".to_string())
     );
+    assert_eq!(
+        tsc("fn = function --1\n( --[[2]]a --3\n  , --4\n b--[[5]] ,--6\n c --[[7]])--8\nend"),
+        Ok("fn = function --1\n( --[[2]] a --3\n,  --4\nb --[[5]] ,  --6\nc --[[7]] ) --8\nend".to_string())
+    );
+    assert_eq!(
+        tsc("fn = function --1\n( --[==[2]==]a --3\n  , --4\n b--[[5]] ,--6\n c --[[7]])--[=[8]=]print(a) --[[9]]end"),
+        Ok("fn = function --1\n( --[==[2]==] a --3\n,  --4\nb --[[5]] ,  --6\nc --[[7]] ) --[=[8]=] print(a) --[[9]] end".to_string())
+    );
 }
