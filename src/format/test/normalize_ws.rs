@@ -135,16 +135,16 @@ fn test_normalize_ws_other() {
     assert_eq!(ts("::label1:: goto label1"), Ok("::label1:: goto label1".to_string()));
 
     // StatRetStat
-    assert_eq!(ts("a = b; return"), Ok("a = b return".to_string()));
-    assert_eq!(ts("a = b; --[[1]] return"), Ok("a = b --[[1]] return".to_string()));
-    assert_eq!(ts("a = b; --[[1]] return--2\n;"), Ok("a = b --[[1]] return --2\n;".to_string()));
+    assert_eq!(ts("a = b; return"), Ok("a = b; return".to_string()));
+    assert_eq!(ts("a = b; --[[1]] return"), Ok("a = b; --[[1]] return".to_string()));
+    assert_eq!(ts("a = b; --[[1]] return--2\n;"), Ok("a = b; --[[1]] return --2\n;".to_string()));
     assert_eq!(
         ts("a = b; --[[1]] return--2\n2--[[3]],--[[4]]3"),
-        Ok("a = b --[[1]] return --2\n2 --[[3]] , --[[4]] 3".to_string())
+        Ok("a = b; --[[1]] return --2\n2 --[[3]] , --[[4]] 3".to_string())
     );
     assert_eq!(
         ts("a = b; --[[1]] return--2\n2--[[3]],--[[4]]3--5\n;"),
-        Ok("a = b --[[1]] return --2\n2 --[[3]] , --[[4]] 3 --5\n;".to_string())
+        Ok("a = b; --[[1]] return --2\n2 --[[3]] , --[[4]] 3 --5\n;".to_string())
     );
 
     // ParStats
@@ -323,6 +323,6 @@ fn test_normalize_ws_special() {
 
     assert_eq!(ts("   "), Ok("".to_string()));
     assert_eq!(ts("--[[1]]"), Ok(" --[[1]] ".to_string()));
-    assert_eq!(ts("--[[1]] ; --2\n "), Ok(" --[[1]]  --2\n".to_string()));
+    assert_eq!(ts("--[[1]] ; --2\n "), Ok(" --[[1]] ; --2\n".to_string()));
     assert_eq!(ts("--[[1]] print(a) --2\n "), Ok(" --[[1]] print(a) --2\n".to_string()));
 }

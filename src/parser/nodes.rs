@@ -133,8 +133,7 @@ pub enum Node {
     RetStatExprComma(Loc, [Loc; 2], Box<Node>),
     StatsRetStat(Loc, [Loc; 1], Box<Node>, Box<Node>),
     Chunk(Loc, Box<Node>, Loc),
-
-    Empty(Loc),
+    Semicolon(Loc),
 }
 
 fn cfg_write_node_vec_locs_sep(
@@ -150,9 +149,6 @@ fn cfg_write_node_vec_locs_sep(
         cfg_write!(f, cfg, buf, LocOpt(&first.0, ""), first.1, LocOpt(&first.2, ""))?;
 
         for elem in &elems[1..elems.len()] {
-            if let Node::Empty(_) = elem.1 {
-                continue;
-            }
             write!(f, "{}", sep)?;
             cfg_write!(f, cfg, buf, LocOpt(&elem.0, ws), elem.1, LocOpt(&elem.2, ""))?;
         }
@@ -199,10 +195,11 @@ fn cfg_write_node_vec_locs(
         cfg_write!(f, cfg, buf, LocOpt(&first.0, ""), first.1)?;
 
         for elem in &elems[1..elems.len()] {
-            if let Node::Empty(_) = elem.1 {
-                continue;
+            if let Node::Semicolon(_) = elem.1 {
+                cfg_write!(f, cfg, buf, LocOpt(&elem.0, ""), elem.1)?;
+            } else {
+                cfg_write!(f, cfg, buf, LocOpt(&elem.0, ws), elem.1)?;
             }
-            cfg_write!(f, cfg, buf, LocOpt(&elem.0, ws), elem.1)?;
         }
     }
     Ok(())
@@ -418,7 +415,7 @@ impl ConfiguredWrite for Node {
             StatsRetStat(_, locs, n1, n2) => cfg_write!(f, cfg, buf, n1, LocOpt(&locs[0], " "), n2),
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, LocOpt(&locl, ""), n, LocOpt(&locr, "")),
 
-            Empty(_) => Ok(()),
+            Semicolon(_) => write!(f, ";"),
         }
     }
 }

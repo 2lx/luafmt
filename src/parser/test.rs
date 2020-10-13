@@ -1,16 +1,3 @@
-// #[allow(clippy::all)]
-// #[cfg_attr(rustfmt, rustfmt_skip)]
-// mod syntax;
-// mod lexer;
-// pub mod nodes;
-//
-// use lalrpop_util::ParseError;
-//
-// pub fn parse(src: &str) -> Result<nodes::Node, ParseError<usize, lexer::Token, lexer::LexicalError>> {
-//     let lexer = lexer::Lexer::new(src);
-//     syntax::ChunkParser::new().parse(src, lexer)
-// }
-
 use crate::config::{Config, ConfiguredWrite};
 use crate::parser::parse;
 
@@ -162,11 +149,14 @@ fn test_function() {
 
 #[test]
 fn test_stat() {
-    assert_eq!(tscln(";"), Ok("".to_string()));
-    assert_eq!(tscln(";;;;;;;"), Ok("".to_string()));
-    assert_eq!(tscln("a = 32;;;;;;;"), Ok("a = 32".to_string()));
-    assert_eq!(tscln(r#"a = "32";;;;b = {3, 4};;;;;c = 45"#), Ok("a = \"32\" b = { 3, 4 } c = 45".to_string()));
-    assert_eq!(tscln("a = 3+2; b =12-3; c=-42;"), Ok("a = 3 + 2 b = 12 - 3 c = -42".to_string()));
+    assert_eq!(tscln(";"), Ok(";".to_string()));
+    assert_eq!(tscln(";;;;;;;"), Ok(";;;;;;;".to_string()));
+    assert_eq!(tscln("a = 32;;;  ;; ;;"), Ok("a = 32;;;;;;;".to_string()));
+    assert_eq!(
+        tscln(r#"a = "32";;;;b = {3, 4};;;;;c = 45"#),
+        Ok("a = \"32\";;;; b = { 3, 4 };;;;; c = 45".to_string())
+    );
+    assert_eq!(tscln("a = 3+2; b =12-3; c=-42;"), Ok("a = 3 + 2; b = 12 - 3; c = -42;".to_string()));
 }
 
 #[test]
@@ -180,14 +170,8 @@ fn test_for() {
         Ok("for a in pairs(tbl) do x.fn(a) end".to_string())
     );
     assert_eq!(tscln("for a = 5, 1, -1 do x.fn(a) end"), Ok("for a = 5, 1, -1 do x.fn(a) end".to_string()));
-    assert_eq!(
-        tscln("for a = 1, 5 do x.fn(a) fn(b + 3) end"),
-        Ok("for a = 1, 5 do x.fn(a) fn(b + 3) end".to_string())
-    );
-    assert_eq!(
-        tscln("while a < 4 do fn(a) fn(b); break end"),
-        Ok("while a < 4 do fn(a) fn(b) break end".to_string())
-    );
+    assert_eq!(tscln("for a = 1, 5 do x.fn(a) fn(b + 3) end"), Ok("for a = 1, 5 do x.fn(a) fn(b + 3) end".to_string()));
+    assert_eq!(tscln("while a < 4 do fn(a) fn(b); break end"), Ok("while a < 4 do fn(a) fn(b); break end".to_string()));
     assert_eq!(
         tscln("local a, b repeat fn(a) fn(b) until a > b print(a, b)"),
         Ok("local a, b repeat fn(a) fn(b) until a > b print(a, b)".to_string())
@@ -242,10 +226,7 @@ fn test_round_prefix() {
     assert_eq!(tscln("({ a = 2}).a = 3"), Ok("({ a = 2 }).a = 3".to_string()));
     assert_eq!(tscln("(fn()):fl().a = 3"), Ok("(fn()):fl().a = 3".to_string()));
     assert_eq!(tscln("(fn()):fl().a, ({}).f = 3, (3&2)"), Ok("(fn()):fl().a, ({}).f = 3, (3 & 2)".to_string()));
-    assert_eq!(
-        tscln("local str = ({ a = 3, b = 2 })[param]"),
-        Ok("local str = ({ a = 3, b = 2 })[param]".to_string())
-    );
+    assert_eq!(tscln("local str = ({ a = 3, b = 2 })[param]"), Ok("local str = ({ a = 3, b = 2 })[param]".to_string()));
 
     // assert_eq!(tscln("a = 3 (fn()):fl().a = 3"), Ok("a = 3 (fn()):fl().a = 3".to_string()));
     // assert_eq!(tscln("({ a = 2}).a = 3 (fn()):fl().a = 3"), Ok("({ a = 2}).a = 3 (fn()):fl().a = 3".to_string()));
@@ -298,10 +279,7 @@ fn test_if() {
 
 #[test]
 fn test_cut_comment() {
-    assert_eq!(
-        tscln("if a + b > 4 then -- comment \n  print(a) -- comment 2 end "),
-        Err(TestError::ErrorWhileParsing)
-    );
+    assert_eq!(tscln("if a + b > 4 then -- comment \n  print(a) -- comment 2 end "), Err(TestError::ErrorWhileParsing));
     assert_eq!(
         tscln("if a + b > 4 then -- comment\n--\n-- \n  print(a) -- comment 2 \nend "),
         Ok("if a + b > 4 then print(a) end".to_string())
@@ -345,8 +323,8 @@ fn test_numeral() {
 fn test_keep_comments_ops() {
     // binary ops
     for op in vec![
-        "+", "-", "or", "and", "==", "~=", ">=", "<=", "<", ">", "|", "~", "&", ">>", "<<", "..", "*", "/", "//",
-        "%", "^",
+        "+", "-", "or", "and", "==", "~=", ">=", "<=", "<", ">", "|", "~", "&", ">>", "<<", "..", "*", "/", "//", "%",
+        "^",
     ] {
         let str = format!("c   --1\n  =  --[=[2]=]   a  --3\n  {}   --[[4]]   b", op);
         assert_eq!(tsdef(&str), Ok(str.to_string()));
@@ -402,11 +380,11 @@ fn test_keep_comments_other() {
         "::label1:: goto label1",
 
         // StatRetStat
-        // "a = b; return",
-        // "a = b; --[[1]] return",
-        // "a = b; --[[1]] return--2\n;",
-        // "a = b; --[[1]] return--2\n2--[[3]],--[[4]]3",
-        // "a = b; --[[1]] return--2\n2--[[3]],--[[4]]3--5\n;",
+        "a = b; return",
+        "a = b; --[[1]] return",
+        "a = b; --[[1]] return--2\n;",
+        "a = b; --[[1]] return--2\n2--[[3]],--[[4]]3",
+        "a = b; --[[1]] return--2\n2--[[3]],--[[4]]3--5\n;",
         "a = b return",
         "a = b --[[1]] return",
         "a = b --[[1]] return--2\n;",
@@ -481,9 +459,10 @@ elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] end"#,
 #[test]
 fn test_keep_comments_special() {
     assert_eq!(tsdef("   "), Ok("   ".to_string()));
+    assert_eq!(tsdef(" ;   ; "), Ok(" ;   ; ".to_string()));
+    assert_eq!(tsdef(" ;;; ;;;  ;;;;;; ;; ;; --[[]] ;;; ;; ;"), Ok(" ;;; ;;;  ;;;;;; ;; ;; --[[]] ;;; ;; ;".to_string()));
     assert_eq!(tsdef("--[[1]]"), Ok("--[[1]]".to_string()));
-    // assert_eq!(tsdef("--[[1]] ; --2\n "), Ok("--[[1]] ; --2\n ".to_string()));
+    assert_eq!(tsdef("--[[1]] ; --2\n "), Ok("--[[1]] ; --2\n ".to_string()));
     assert_eq!(tsdef("--[[1]]  --2\n "), Ok("--[[1]]  --2\n ".to_string()));
     assert_eq!(tsdef("--[[1]] print(a) --2\n "), Ok("--[[1]] print(a) --2\n ".to_string()));
 }
-

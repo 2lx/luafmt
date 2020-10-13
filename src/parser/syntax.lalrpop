@@ -143,7 +143,7 @@ StatMayEndsPar: Node = {
 }
 
 StatNoPar: Node = {
-    <ls:@L> ";" <rs:@R> => Node::Empty(Loc(ls, rs)),
+    <ls:@L> ";" <rs:@R> => Node::Semicolon(Loc(ls, rs)),
     Label,
     <ls:@L> "break" <rs:@R> => Node::Break(Loc(ls, rs)),
     <ls:@L> "goto" <l1:@R> <r1:@L> <n:Name> <rs:@R>
