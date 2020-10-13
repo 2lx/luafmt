@@ -2,9 +2,9 @@ use std::fmt;
 use crate::config::{Config, ConfiguredWrite};
 use crate::parser::basics::{Loc};
 
-pub struct LocOpt<'a>(pub &'a Loc, pub &'static str);
+pub struct LocHint<'a, 'b>(pub &'a Loc, pub &'b str);
 
-impl ConfiguredWrite for LocOpt<'_> {
+impl ConfiguredWrite for LocHint<'_, '_> {
     fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str) -> fmt::Result {
         if cfg.remove_comments == Some(true) {
             return write!(f, "{}", self.1)

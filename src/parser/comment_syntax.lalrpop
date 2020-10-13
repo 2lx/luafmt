@@ -1,0 +1,55 @@
+use super::basics::*;
+use super::comment_ast::*;
+use super::comment_lexer::*;
+
+grammar<'input>(input: &'input str);
+
+// templates
+// cannot be empty, no separators
+TList<T>: Vec<(Loc, T)> = {
+    <e:T> => {
+        let mut v = Vec::new();
+        v.push((Loc(0, 0), e));
+        v
+    },
+    <v:TList<T>> <l1:@R> <r1:@L> <e:T> => {
+        let mut v = v;
+        v.push((Loc(l1, r1), e));
+        v
+    },
+}
+
+// syntax
+pub Chunk: Node = {
+    <rs:@L> EOF => {
+        let node = Node::CommentList(Loc(0, 0), Vec::new());
+        Node::Chunk(Loc(0, rs), Box::new(node), Loc(0, 0))
+    },
+    <r1:@L> <b:Comments> <l2:@R> <r2:@L> EOF => {
+        Node::Chunk(Loc(0, r1), Box::new(b), Loc(l2, r2))
+    },
+}
+
+Comments: Node = {
+    <ls:@L> <v:TList<Comment>> <rs:@R> => Node::CommentList(Loc(ls, rs), v),
+}
+
+Comment: Node = {
+    <ls:@L> <s:OneLineComment> <rs:@R>   => Node::OneLineComment(Loc(ls, rs), s.to_string()),
+    <ls:@L> <v:MultiLineComment> <rs:@R> => Node::MultiLineComment(Loc(ls, rs), v.0, v.1.to_string()),
+    <ls:@L> "\n" <rs:@R>                 => Node::NewLine(Loc(ls, rs)),
+}
+
+extern {
+    type Location = usize;
+    type Error = LexicalError;
+
+    enum Token<'input> {
+        "\n"    => Token::NewLine,
+
+        OneLineComment   => Token::OneLineComment(<&'input str>),
+        MultiLineComment => Token::MultiLineComment(<usize>, <&'input str>),
+
+        EOF => Token::EOF,
+    }
+}

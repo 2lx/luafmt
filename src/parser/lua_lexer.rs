@@ -1,8 +1,9 @@
+use super::lexer_util::*;
+use phf::phf_map;
 use std::fmt;
 use std::str::CharIndices;
-use phf::phf_map;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Token<'input> {
     OpExponentiation,
     OpLogicalNot,
@@ -32,7 +33,7 @@ pub enum Token<'input> {
     Numeral(&'input str),
     NormalStringLiteral(&'input str),
     CharStringLiteral(&'input str),
-    MultilineStringLiteral(usize, &'input str),
+    MultiLineStringLiteral(usize, &'input str),
 
     Semicolon,
     Comma,
@@ -103,7 +104,7 @@ impl fmt::Display for Token<'_> {
             Numeral(n) => write!(f, "\"{}\"", n),
             NormalStringLiteral(s) => write!(f, "\"{}\"", s),
             CharStringLiteral(s) => write!(f, "'{}'", s),
-            MultilineStringLiteral(level, s) => {
+            MultiLineStringLiteral(level, s) => {
                 let level_str = (0..*level).map(|_| "=").collect::<String>();
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)
             }
@@ -172,7 +173,7 @@ static KEYWORDS: phf::Map<&'static str, Token> = phf_map! {
     "while"    => Token::While,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LexicalError {
     UnrecognizedSymbol(usize, char),
     UnexpectedEOF,
@@ -198,129 +199,6 @@ pub struct Lexer<'input> {
 impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
         Lexer { chars: input.char_indices().peekable(), input, at_end: false }
-    }
-
-    fn seek_end_by_predicate(&mut self, start: usize, f: &dyn Fn(char, bool) -> bool) -> usize {
-        let mut end = start;
-        let mut escaped = false;
-
-        while let Some(&(i, ch)) = self.chars.peek() {
-            if f(ch, escaped) {
-                break;
-            }
-
-            end = i;
-            self.chars.next();
-            escaped = ch == '\\';
-        }
-
-        end + 1
-    }
-
-    fn get_integer_end(&mut self, start: usize) -> usize {
-        self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_digit())
-    }
-
-    fn get_hex_integer_end(&mut self, start: usize) -> usize {
-        self.seek_end_by_predicate(start, &|ch: char, _| {
-            !ch.is_ascii_digit() && !(ch >= 'A' && ch <= 'F') && !(ch >= 'a' && ch <= 'f')
-        })
-    }
-
-    fn get_float_end(&mut self, start: usize) -> usize {
-        let mut end = self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_digit() && ch != '.');
-
-        match self.chars.peek() {
-            Some(&(i, 'e')) | Some(&(i, 'E')) => {
-                self.chars.next();
-                match self.chars.peek() {
-                    Some(&(_, '-')) => {
-                        self.chars.next();
-                    }
-                    _ => {}
-                };
-                end = self.get_integer_end(i);
-            }
-            _ => {}
-        }
-
-        end
-    }
-
-    fn get_variable_end(&mut self, start: usize) -> usize {
-        self.seek_end_by_predicate(start, &|ch: char, _| !ch.is_ascii_alphabetic() && !ch.is_ascii_digit() && ch != '_')
-    }
-
-    fn get_string_end(&mut self, prefix: char, start: usize) -> usize {
-        self.seek_end_by_predicate(start, &|ch: char, escaped: bool| !escaped && ch == prefix)
-    }
-
-    fn get_oneline_comment_end(&mut self, start: usize) -> usize {
-        self.seek_end_by_predicate(start, &|ch: char, _| ch == '\n')
-    }
-
-    fn get_multiline_string_level(&mut self, start: usize) -> (usize, usize) {
-        let end = self.seek_end_by_predicate(start, &|ch: char, _| ch != '=');
-        (end, end - 1 - start)
-    }
-
-    fn get_multiline_string_end(&mut self, level: usize, start: usize) -> usize {
-        let mut end = start;
-        let mut escaped = false;
-
-        while let Some((i, ch)) = self.chars.next() {
-            end = i;
-            if !escaped && ch == ']' {
-                let (_, cur_level) = self.get_multiline_string_level(i);
-
-                if level == cur_level {
-                    match self.chars.peek() {
-                        Some(&(_, ']')) => {
-                            break;
-                        }
-                        _ => (),
-                    }
-                }
-            }
-            escaped = ch == '\\';
-        }
-
-        end + 1
-    }
-
-    fn process_comment(&mut self, start: usize) {
-        match self.chars.peek() {
-            Some(&(i, '[')) => {
-                self.chars.next();
-
-                match self.chars.peek() {
-                    Some(&(_, '=')) => {
-                        let (_, level) = self.get_multiline_string_level(i);
-                        match self.chars.peek() {
-                            Some(&(si, '[')) => {
-                                self.chars.next();
-                                self.get_multiline_string_end(level, si + 1);
-                                self.chars.next();
-                            }
-                            _ => {
-                                self.get_oneline_comment_end(i);
-                            }
-                        }
-                    }
-                    Some(&(i, '[')) => {
-                        self.chars.next();
-                        self.get_multiline_string_end(0, i + 1);
-                        self.chars.next();
-                    }
-                    _ => {
-                        self.get_oneline_comment_end(start);
-                    }
-                }
-            }
-            _ => {
-                self.get_oneline_comment_end(start);
-            }
-        }
     }
 }
 
@@ -357,7 +235,8 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, '-')) => match self.chars.peek() {
                     Some(&(_, '-')) => {
                         self.chars.next();
-                        self.process_comment(i + 2);
+                        get_comment_start_end_and_type(&mut self.chars, i + 2);
+                        self.chars.next();
 
                         continue;
                     }
@@ -376,7 +255,7 @@ impl<'input> Iterator for Lexer<'input> {
                         }
                     }
                     Some(&(_, ch)) if ch.is_ascii_digit() => {
-                        let end = self.get_float_end(i);
+                        let end = get_float_end(&mut self.chars, i);
                         return Some(Ok((i, Numeral(&self.input[i..end]), end)));
                     }
                     _ => return Some(Ok((i, Period, i + 1))),
@@ -441,43 +320,48 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some((i, ']')) => return Some(Ok((i, CloseSquareBracket, i + 1))),
                 Some((i, '[')) => match self.chars.peek() {
-                    Some(&(_, '=')) => {
-                        let (str_begin, level) = self.get_multiline_string_level(i);
+                    Some(&(level_start, '=')) => {
+                        let level = get_multiline_string_level(&mut self.chars, level_start);
                         match self.chars.peek() {
-                            Some(&(si, '[')) => {
+                            Some(&(square_2_start, '[')) => {
                                 self.chars.next();
-                                let end = self.get_multiline_string_end(level, si);
+                                let text_start = square_2_start + 1;
+                                let text_end = get_multiline_string_end(&mut self.chars, level, text_start);
                                 self.chars.next();
 
                                 return Some(Ok((
                                     i,
-                                    MultilineStringLiteral(level, &self.input[str_begin + 1..end - 1]),
-                                    end,
+                                    MultiLineStringLiteral(level, &self.input[text_start..text_end]),
+                                    text_end + level + 2,
                                 )));
                             }
                             Some((chi, chu)) => return Some(Err(LexicalError::UnrecognizedSymbol(*chi, *chu))),
                             None => return Some(Err(LexicalError::UnexpectedEOF)),
                         }
                     }
-                    Some((_, '[')) => {
+                    Some(&(square_2_start, '[')) => {
                         self.chars.next();
-                        let str_begin = i + 2;
-                        let end = self.get_multiline_string_end(0, i + 1);
+                        let text_start = square_2_start + 1;
+                        let text_end = get_multiline_string_end(&mut self.chars, 0, text_start);
                         self.chars.next();
 
-                        return Some(Ok((i, MultilineStringLiteral(0, &self.input[str_begin..end - 1]), end + 1)));
+                        return Some(Ok((
+                            i,
+                            MultiLineStringLiteral(0, &self.input[text_start..text_end]),
+                            text_end + 2,
+                        )));
                     }
                     _ => return Some(Ok((i, OpenSquareBracket, i + 1))),
                 },
 
                 Some((i, '"')) => {
-                    let end = self.get_string_end('"', i);
+                    let end = get_string_end(&mut self.chars, '"', i);
                     self.chars.next();
                     return Some(Ok((i, NormalStringLiteral(&self.input[i + 1..end]), end + 1)));
                 }
 
                 Some((i, '\'')) => {
-                    let end = self.get_string_end('\'', i);
+                    let end = get_string_end(&mut self.chars, '\'', i);
                     self.chars.next();
                     return Some(Ok((i, CharStringLiteral(&self.input[i + 1..end]), end + 1)));
                 }
@@ -485,22 +369,22 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, '0')) => match self.chars.peek() {
                     Some(&(_, 'x')) => {
                         self.chars.next();
-                        let end = self.get_hex_integer_end(i);
+                        let end = get_hex_integer_end(&mut self.chars, i);
                         return Some(Ok((i, Numeral(&self.input[i..end]), end)));
                     }
                     _ => {
-                        let end = self.get_float_end(i);
+                        let end = get_float_end(&mut self.chars, i);
                         return Some(Ok((i, Numeral(&self.input[i..end]), end)));
                     }
                 },
 
                 Some((i, ch)) if ch.is_ascii_digit() => {
-                    let end = self.get_float_end(i);
+                    let end = get_float_end(&mut self.chars, i);
                     return Some(Ok((i, Numeral(&self.input[i..end]), end)));
                 }
 
                 Some((i, ch)) if ch.is_ascii_alphabetic() || ch == '_' => {
-                    let end = self.get_variable_end(i);
+                    let end = get_variable_end(&mut self.chars, i);
                     let variable = &self.input[i..end];
 
                     match KEYWORDS.get(variable) {
@@ -513,4 +397,123 @@ impl<'input> Iterator for Lexer<'input> {
             }
         }
     }
+}
+
+#[test]
+fn test_lua_lexer() {
+    type TRes<'a> = Vec<Result<(usize, Token<'a>, usize), LexicalError>>;
+    use Token::*;
+
+    let tokens = Lexer::new("").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, EOF, 0))));
+
+    let tokens = Lexer::new("  ").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((2, EOF, 2))));
+
+    let tokens = Lexer::new("  \n  ").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((5, EOF, 5))));
+
+    let tokens = Lexer::new("\n   \n").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((5, EOF, 5))));
+
+    let tokens = Lexer::new("--123\n--[[54354]]").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((17, EOF, 17))));
+
+    let tokens = Lexer::new("  a = b  ").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(Ok((2, Variable("a"), 3)), Ok((4, EqualsSign, 5)), Ok((6, Variable("b"), 7)), Ok((9, EOF, 9)))
+    );
+
+    let tokens = Lexer::new("a = \"st'ri'[[n]]g\"").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, Variable("a"), 1)),
+            Ok((2, EqualsSign, 3)),
+            Ok((4, NormalStringLiteral("st'ri'[[n]]g"), 18)),
+            Ok((18, EOF, 18))
+        )
+    );
+
+    let tokens = Lexer::new("a = '[[s]]t\"ri\"ng'").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, Variable("a"), 1)),
+            Ok((2, EqualsSign, 3)),
+            Ok((4, CharStringLiteral("[[s]]t\"ri\"ng"), 18)),
+            Ok((18, EOF, 18))
+        )
+    );
+
+    let tokens = Lexer::new("a = [[]]").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, Variable("a"), 1)),
+            Ok((2, EqualsSign, 3)),
+            Ok((4, MultiLineStringLiteral(0, ""), 8)),
+            Ok((8, EOF, 8))
+        )
+    );
+
+    let tokens = Lexer::new("a = [[st\"r'i\"n'g]]").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, Variable("a"), 1)),
+            Ok((2, EqualsSign, 3)),
+            Ok((4, MultiLineStringLiteral(0, "st\"r'i\"n'g"), 18)),
+            Ok((18,EOF, 18))
+        )
+    );
+
+    let tokens = Lexer::new("a = [=[]=]").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, Variable("a"), 1)),
+            Ok((2, EqualsSign, 3)),
+            Ok((4, MultiLineStringLiteral(1, ""), 10)),
+            Ok((10,EOF, 10))
+        )
+    );
+
+    let tokens = Lexer::new("a = [===[st\"r'i\"n'g]===]").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, Variable("a"), 1)),
+            Ok((2, EqualsSign, 3)),
+            Ok((4, MultiLineStringLiteral(3, "st\"r'i\"n'g"), 24)),
+            Ok((24,EOF, 24))
+        )
+    );
+
+    let tokens = Lexer::new("[===[]=]]]]==]==]===]").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, MultiLineStringLiteral(3, "]=]]]]==]=="), 21)), Ok((21, EOF, 21))));
+
+    let tokens = Lexer::new("for a in pairs(tbl) do x.fn(a) end").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, For, 3)),
+            Ok((4, Variable("a"), 5)),
+            Ok((6, In, 8)),
+            Ok((9, Variable("pairs"), 14)),
+            Ok((14, OpenRoundBracket, 15)),
+            Ok((15, Variable("tbl"), 18)),
+            Ok((18, CloseRoundBracket, 19)),
+            Ok((20, Do, 22)),
+            Ok((23, Variable("x"), 24)),
+            Ok((24, Period, 25)),
+            Ok((25, Variable("fn"), 27)),
+            Ok((27, OpenRoundBracket, 28)),
+            Ok((28, Variable("a"), 29)),
+            Ok((29, CloseRoundBracket, 30)),
+            Ok((31, End, 34)),
+            Ok((34, EOF, 34))
+        )
+    );
 }

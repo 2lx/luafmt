@@ -15,7 +15,11 @@ fn read_input() -> Result<String, std::io::Error> {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let config = Config { field_separator: Some(","), trailing_field_separator: Some(true), ..Config::default() };
+    let config = Config {
+        field_separator: Some(","),
+        trailing_field_separator: Some(false),
+        ..Config::default()
+    };
     let buffer = read_input()?;
 
     match parser::parse_lua(&buffer) {
@@ -23,7 +27,7 @@ fn main() -> Result<(), std::io::Error> {
             let mut output = String::new();
             match result.configured_write(&mut output, &config, &buffer) {
                 Err(_) => println!("An error occured while formatting: {:?}", result),
-                _ => println!("{}", output),
+                _ => print!("{}", output),
             };
         }
         Err(err) => println!("An error occured while parsing: {}", err),

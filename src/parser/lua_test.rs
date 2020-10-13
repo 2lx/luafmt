@@ -1,5 +1,5 @@
-use crate::config::{Config, ConfiguredWrite};
 use super::parse_lua;
+use crate::config::{Config, ConfiguredWrite};
 
 #[allow(dead_code)]
 static CFG_NO_COMMENTS: Config = Config { remove_comments: Some(true), ..Config::default() };
@@ -125,7 +125,7 @@ fn test_function() {
     assert_eq!(tscln("fn_name{a1, a2}.field = fn().f4"), Ok("fn_name{ a1, a2 }.field = fn().f4".to_string()));
     assert_eq!(tscln("fn()()(fn2('abc'))(1, 2)()"), Ok("fn()()(fn2('abc'))(1, 2)()".to_string()));
     assert_eq!(tscln("a = fn()().field"), Ok("a = fn()().field".to_string()));
-    assert_eq!(tscln("a = fn{fn}{fn}(2){fn}.field(3).b"), Ok("a = fn{ fn }{ fn }(2){ fn }.field(3).b".to_string()));
+    assert_eq!(tscln("a = fn{fn}{fn}{}(2){fn}.field(3).b"), Ok("a = fn{ fn }{ fn }{}(2){ fn }.field(3).b".to_string()));
 
     // RetStat
     assert_eq!(tscln("fn = function(a) return a end"), Ok("fn = function(a) return a end".to_string()));
@@ -161,14 +161,7 @@ fn test_stat() {
 
 #[test]
 fn test_for() {
-    assert_eq!(
-        tscln(
-            r#"for a in pairs(tbl) do
-                            x.fn(a)
-                        end"#
-        ),
-        Ok("for a in pairs(tbl) do x.fn(a) end".to_string())
-    );
+    assert_eq!(tscln("for a in pairs(tbl) do x.fn(a) end"), Ok("for a in pairs(tbl) do x.fn(a) end".to_string()));
     assert_eq!(tscln("for a = 5, 1, -1 do x.fn(a) end"), Ok("for a = 5, 1, -1 do x.fn(a) end".to_string()));
     assert_eq!(tscln("for a = 1, 5 do x.fn(a) fn(b + 3) end"), Ok("for a = 1, 5 do x.fn(a) fn(b + 3) end".to_string()));
     assert_eq!(tscln("while a < 4 do fn(a) fn(b); break end"), Ok("while a < 4 do fn(a) fn(b); break end".to_string()));
@@ -460,7 +453,10 @@ elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] end"#,
 fn test_keep_comments_special() {
     assert_eq!(tsdef("   "), Ok("   ".to_string()));
     assert_eq!(tsdef(" ;   ; "), Ok(" ;   ; ".to_string()));
-    assert_eq!(tsdef(" ;;; ;;;  ;;;;;; ;; ;; --[[]] ;;; ;; ;"), Ok(" ;;; ;;;  ;;;;;; ;; ;; --[[]] ;;; ;; ;".to_string()));
+    assert_eq!(
+        tsdef(" ;;; ;;;  ;;;;;; ;; ;; --[[]] ;;; ;; ;"),
+        Ok(" ;;; ;;;  ;;;;;; ;; ;; --[[]] ;;; ;; ;".to_string())
+    );
     assert_eq!(tsdef("--[[1]]"), Ok("--[[1]]".to_string()));
     assert_eq!(tsdef("--[[1]] ; --2\n "), Ok("--[[1]] ; --2\n ".to_string()));
     assert_eq!(tsdef("--[[1]]  --2\n "), Ok("--[[1]]  --2\n ".to_string()));

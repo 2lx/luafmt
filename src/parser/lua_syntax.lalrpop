@@ -396,9 +396,9 @@ Exp: Node = {
 
 Args: Node = {
     <ls:@L> "(" <l1:@R> <r1:@L> <e:ExpList> <l2:@R> <r2:@L> ")" <rs:@R>
-        => Node::RoundBrackets(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
+        => Node::ArgsRoundBrackets(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
     <ls:@L> "(" <l1:@R> <r1:@L> ")" <rs:@R>
-        => Node::RoundBracketsEmpty(Loc(ls, rs), [Loc(l1, r1)]),
+        => Node::ArgsRoundBracketsEmpty(Loc(ls, rs), [Loc(l1, r1)]),
     TableConstructor,
     StringLiteral,
 }
@@ -563,7 +563,7 @@ Name: Node = {
 StringLiteral: Node = {
     <ls:@L> <s:NormalStringLiteral> <rs:@R>    => Node::NormalStringLiteral(Loc(ls, rs), s.to_string()),
     <ls:@L> <s:CharStringLiteral> <rs:@R>      => Node::CharStringLiteral(Loc(ls, rs), s.to_string()),
-    <ls:@L> <v:MultilineStringLiteral> <rs:@R> => Node::MultilineStringLiteral(Loc(ls, rs), v.0, v.1.to_string()),
+    <ls:@L> <v:MultiLineStringLiteral> <rs:@R> => Node::MultiLineStringLiteral(Loc(ls, rs), v.0, v.1.to_string()),
 }
 
 extern {
@@ -632,7 +632,7 @@ extern {
         Numeral                => Token::Numeral(<&'input str>),
         NormalStringLiteral    => Token::NormalStringLiteral(<&'input str>),
         CharStringLiteral      => Token::CharStringLiteral(<&'input str>),
-        MultilineStringLiteral => Token::MultilineStringLiteral(<usize>, <&'input str>),
+        MultiLineStringLiteral => Token::MultiLineStringLiteral(<usize>, <&'input str>),
 
         EOF => Token::EOF,
     }
