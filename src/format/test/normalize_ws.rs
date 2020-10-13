@@ -1,5 +1,5 @@
 use crate::config::{Config, ConfiguredWrite};
-use crate::parser::parse;
+use crate::parser::parse_lua;
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
@@ -10,7 +10,7 @@ enum TestError {
 
 #[allow(dead_code)]
 fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
-    match parse(source) {
+    match parse_lua(source) {
         Err(_) => Err(TestError::ErrorWhileParsing),
         Ok(result) => {
             let mut output = String::new();

@@ -1,5 +1,6 @@
-use super::nodes::*;
-use super::lexer::{Token, LexicalError};
+use super::basics::*;
+use super::lua_ast::*;
+use super::lua_lexer::*;
 
 grammar<'input>(input: &'input str);
 
@@ -19,36 +20,18 @@ TList<T>: Vec<(Loc, T)> = {
 }
 
 // cannot be empty, no separator at the end
-TSepList<T, C>: Vec<(Loc, T, Loc)> = {
+TSepList<T, C>: Vec<(Loc, T, Loc, String)> = {
     <e:T> => {
         let mut v = Vec::new();
-        v.push((Loc(0, 0), e, Loc(0, 0)));
+        v.push((Loc(0, 0), e, Loc(0, 0), String::new()));
         v
     },
-    <e:T> <l1:@R> <r1:@L> C <l2:@R> <r2:@L> <v:TSepList<T, C>> => {
+    <e:T> <l1:@R> <r1:@L> <sep:C> <l2:@R> <r2:@L> <v:TSepList<T, C>> => {
         let mut v = v;
         if !v.is_empty() {
             v[0].0 = Loc(l2, r2);
         }
-        v.insert(0, (Loc(0, 0), e, Loc(l1, r1)));
-        v
-    }
-};
-
-// can be empty, no separator at the end
-TEmptySepList<T, C>: Vec<(Loc, T, Loc)> = {
-    => Vec::new(),
-    <e:T> => {
-        let mut v = Vec::new();
-        v.push((Loc(0, 0), e, Loc(0, 0)));
-        v
-    },
-    <e:T> <l1:@R> <r1:@L> C <l2:@R> <r2:@L> <v:TEmptySepList<T, C>> => {
-        let mut v = v;
-        if !v.is_empty() {
-            v[0].0 = Loc(l2, r2);
-        }
-        v.insert(0, (Loc(0, 0), e, Loc(l1, r1)));
+        v.insert(0, (Loc(0, 0), e, Loc(l1, r1), sep.to_string()));
         v
     }
 };
@@ -58,7 +41,7 @@ TSepEndList<T, C>: Vec<(Loc, T, Loc, String)> = {
     <e:T> <l2:@R> <r2:@L> <sep:C?> <r3:@R> => {
         let mut v = Vec::new();
         let s = match sep {
-            None => "".to_string(),
+            None => String::new(),
             Some(s) => s.to_string(),
         };
         v.push((Loc(0, 0), e, Loc(l2, r2), s));
@@ -291,7 +274,7 @@ VarListStartsPar: Node = {
         if !v.is_empty() {
             v[0].0 = Loc(l2, r2);
         }
-        v.insert(0, (Loc(0, 0), n, Loc(l1, r1)));
+        v.insert(0, (Loc(0, 0), n, Loc(l1, r1), ",".to_string()));
         Node::VarList(Loc(ls, rs), v)
     },
 }
@@ -299,7 +282,7 @@ VarListStartsPar: Node = {
 VarListNoStartPar: Node = {
     <ls:@L> <n:VarNoExp> <rs:@R> => {
         let mut v = Vec::new();
-        v.push((Loc(0, 0), n, Loc(0, 0)));
+        v.push((Loc(0, 0), n, Loc(0, 0), String::new()));
         Node::VarList(Loc(ls, rs), v)
     },
     <ls:@L> <n:VarNoExp> <l1:@R> <r1:@L> "," <l2:@R> <r2:@L> <v:TSepList<VarMayExp, ",">> <rs:@R> => {
@@ -307,7 +290,7 @@ VarListNoStartPar: Node = {
         if !v.is_empty() {
             v[0].0 = Loc(l2, r2);
         }
-        v.insert(0, (Loc(0, 0), n, Loc(l1, r1)));
+        v.insert(0, (Loc(0, 0), n, Loc(l1, r1), ",".to_string()));
         Node::VarList(Loc(ls, rs), v)
     }
 }
@@ -426,14 +409,18 @@ FunctionDef: Node = {
 }
 
 FuncBody: Node = {
+    <ls:@L> "(" <l1:@R> <r1:@L> ")" <l2:@R> <r2:@L> "end" <rs:@R>
+        => Node::FuncBody(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)]),
+    <ls:@L> "(" <l1:@R> <r1:@L> ")" <l2:@R> <r2:@L> <n2:Block> <l3:@R> <r3:@L> "end" <rs:@R>
+        => Node::FuncBodyB(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(n2)),
     <ls:@L> "(" <l1:@R> <r1:@L> <n1:ParList> <l2:@R> <r2:@L> ")" <l3:@R> <r3:@L> "end" <rs:@R>
-        => Node::FuncBody(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(n1)),
+        => Node::FuncPBody(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3)], Box::new(n1)),
     <ls:@L> "(" <l1:@R> <r1:@L> <n1:ParList> <l2:@R> <r2:@L> ")" <l3:@R> <r3:@L> <n2:Block> <l4:@R> <r4:@L> "end" <rs:@R>
-        => Node::FuncBodyB(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4)], Box::new(n1), Box::new(n2)),
+        => Node::FuncPBodyB(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2), Loc(l3, r3), Loc(l4, r4)], Box::new(n1), Box::new(n2)),
 }
 
 ParList: Node = {
-    <ls:@L> <v:TEmptySepList<Par, ",">> <rs:@R> => Node::ParList(Loc(ls, rs), v),
+    <ls:@L> <v:TSepList<Par, ",">> <rs:@R> => Node::ParList(Loc(ls, rs), v),
 }
 
 Par: Node = {

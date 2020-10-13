@@ -1,6 +1,6 @@
-use phf::phf_map;
 use std::fmt;
 use std::str::CharIndices;
+use phf::phf_map;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Token<'input> {

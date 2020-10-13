@@ -2,49 +2,8 @@ use std::fmt;
 
 use crate::config::{Config, ConfiguredWrite};
 use crate::{cfg_write, cfg_write_helper};
-
-#[derive(Debug)]
-pub struct Loc(pub usize, pub usize);
-
-#[derive(Debug)]
-pub struct Str(pub &'static str);
-
-impl ConfiguredWrite for Str {
-    fn configured_write(&self, f: &mut dyn fmt::Write, _cfg: &Config, _buf: &str) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-pub struct LocOpt<'a>(pub &'a Loc, pub &'static str);
-
-impl ConfiguredWrite for LocOpt<'_> {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str) -> fmt::Result {
-        if cfg.remove_comments == Some(true) {
-            return write!(f, "{}", self.1)
-        }
-
-        if cfg.normalize_ws != Some(true) {
-            return write!(f, "{}", &buf[self.0.0..self.0.1])
-        }
-
-        let trimmed = &buf[self.0.0..self.0.1].trim_matches(' ');
-        if trimmed.len() > 0 {
-            let prefix = match trimmed.chars().next().unwrap() {
-                '-' => " ",
-                _ => "",
-            };
-            let suffix = match trimmed.chars().last().unwrap() {
-                '\n' => "",
-                _ => " ",
-            };
-
-            write!(f, "{}{}{}", prefix, trimmed, suffix)?;
-        } else {
-            write!(f, "{}", self.1)?;
-        }
-        Ok(())
-    }
-}
+use crate::format::locopt::LocOpt;
+use super::basics::*;
 
 #[derive(Debug)]
 pub enum Node {
@@ -75,18 +34,20 @@ pub enum Node {
 
     TableIndex(Loc, [Loc; 2], Box<Node>),
     TableMember(Loc, [Loc; 1], Box<Node>),
-    ExpList(Loc, Vec<(Loc, Node, Loc)>),
-    NameList(Loc, Vec<(Loc, Node, Loc)>),
-    ParList(Loc, Vec<(Loc, Node, Loc)>),
-    VarList(Loc, Vec<(Loc, Node, Loc)>),
+    ExpList(Loc, Vec<(Loc, Node, Loc, String)>),
+    NameList(Loc, Vec<(Loc, Node, Loc, String)>),
+    ParList(Loc, Vec<(Loc, Node, Loc, String)>),
+    VarList(Loc, Vec<(Loc, Node, Loc, String)>),
     VarRoundSuffix(Loc, [Loc; 3], Box<Node>, Box<Node>),
     VarSuffixList(Loc, Vec<(Loc, Node)>),
     FnMethodCall(Loc, [Loc; 2], Box<Node>, Box<Node>),
     FunctionDef(Loc, [Loc; 1], Box<Node>),
-    FuncBody(Loc, [Loc; 3], Box<Node>),
-    FuncBodyB(Loc, [Loc; 4], Box<Node>, Box<Node>),
-    FuncName(Loc, Vec<(Loc, Node, Loc)>),
-    FuncNameSelf(Loc, [Loc; 2], Vec<(Loc, Node, Loc)>, Box<Node>),
+    FuncBody(Loc, [Loc; 2]),
+    FuncBodyB(Loc, [Loc; 3], Box<Node>),
+    FuncPBody(Loc, [Loc; 3], Box<Node>),
+    FuncPBodyB(Loc, [Loc; 4], Box<Node>, Box<Node>),
+    FuncName(Loc, Vec<(Loc, Node, Loc, String)>),
+    FuncNameSelf(Loc, [Loc; 2], Vec<(Loc, Node, Loc, String)>, Box<Node>),
     FuncDecl(Loc, [Loc; 2], Box<Node>, Box<Node>),
     LocalFuncDecl(Loc, [Loc; 3], Box<Node>, Box<Node>),
 
@@ -136,54 +97,36 @@ pub enum Node {
     Semicolon(Loc),
 }
 
-fn cfg_write_node_vec_locs_sep(
-    f: &mut dyn fmt::Write,
-    cfg: &Config,
-    buf: &str,
-    elems: &Vec<(Loc, Node, Loc)>,
-    sep: &str,
-    ws: &'static str,
-) -> Result<(), core::fmt::Error> {
-    if !elems.is_empty() {
-        let first = &elems[0];
-        cfg_write!(f, cfg, buf, LocOpt(&first.0, ""), first.1, LocOpt(&first.2, ""))?;
-
-        for elem in &elems[1..elems.len()] {
-            write!(f, "{}", sep)?;
-            cfg_write!(f, cfg, buf, LocOpt(&elem.0, ws), elem.1, LocOpt(&elem.2, ""))?;
-        }
-    }
-    Ok(())
-}
-
-fn cfg_write_field_vec(
+fn cfg_write_sep_vector(
     f: &mut dyn fmt::Write,
     cfg: &Config,
     buf: &str,
     elems: &Vec<(Loc, Node, Loc, String)>,
-    sep: &str,
+    default_ws: &'static str,
+    default_sep: Option<&str>,
+    trailing_sep: Option<bool>,
 ) -> Result<(), core::fmt::Error> {
     for i in 0..elems.len() {
-        let ws = match i { 0 => "", _ => " ", };
+        let ws = match i { 0 => "", _ => default_ws, };
         let elem = &elems[i];
         cfg_write!(f, cfg, buf, LocOpt(&elem.0, ws), elem.1, LocOpt(&elem.2, ""))?;
 
         let need_trailing_sep = i != elems.len() - 1
-            || cfg.trailing_field_separator.is_none() && !elem.3.is_empty()
-            || cfg.trailing_field_separator == Some(true);
+            || trailing_sep.is_none() && !elem.3.is_empty()
+            || trailing_sep == Some(true);
 
         if need_trailing_sep {
-            if cfg.field_separator.is_none() {
+            if default_sep.is_none() {
                 write!(f, "{}", elem.3)?;
             } else {
-                write!(f, "{}", sep)?;
+                write!(f, "{}", default_sep.unwrap())?;
             }
         }
     }
     Ok(())
 }
 
-fn cfg_write_node_vec_locs(
+fn cfg_write_vector(
     f: &mut dyn fmt::Write,
     cfg: &Config,
     buf: &str,
@@ -240,11 +183,7 @@ impl ConfiguredWrite for Node {
             }
             TableConstructorEmpty(_, locs) => cfg_write!(f, cfg, buf, "{{", LocOpt(&locs[0], ""), "}}"),
             Fields(_, fields) => {
-                let fsep = match cfg.field_separator {
-                    Some(s) => s,
-                    None => "",
-                };
-                cfg_write_field_vec(f, cfg, buf, fields, fsep)
+                cfg_write_sep_vector(f, cfg, buf, fields, " ", cfg.field_separator, cfg.trailing_field_separator)
             }
             FieldNamedBracket(_, locs, e1, e2) => {
                 cfg_write!(f, cfg, buf, "[", LocOpt(&locs[0], ""), e1, LocOpt(&locs[1], ""), "]", LocOpt(&locs[2], " "),
@@ -257,10 +196,10 @@ impl ConfiguredWrite for Node {
 
             TableIndex(_, locs, e) => cfg_write!(f, cfg, buf, "[", LocOpt(&locs[0], ""), e, LocOpt(&locs[1], ""), "]"),
             TableMember(_, locs, n) => cfg_write!(f, cfg, buf, ".", LocOpt(&locs[0], ""), n),
-            ExpList(_, exps) => cfg_write_node_vec_locs_sep(f, cfg, buf, exps, ",", " "),
-            NameList(_, names) => cfg_write_node_vec_locs_sep(f, cfg, buf, names, ",", " "),
-            VarList(_, vars) => cfg_write_node_vec_locs_sep(f, cfg, buf, vars, ",", " "),
-            StatementList(_, stts) => cfg_write_node_vec_locs(f, cfg, buf, stts, " "),
+            ExpList(_, exps) => cfg_write_sep_vector(f, cfg, buf, exps, " ", Some(","), Some(false)),
+            NameList(_, names) => cfg_write_sep_vector(f, cfg, buf, names, " ", Some(","), Some(false)),
+            VarList(_, vars) => cfg_write_sep_vector(f, cfg, buf, vars, " ", Some(","), Some(false)),
+            StatementList(_, stts) => cfg_write_vector(f, cfg, buf, stts, " "),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, "do", LocOpt(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => cfg_write!(f, cfg, buf, "do", LocOpt(&locs[0], " "), b, LocOpt(&locs[1], " "), "end"),
             VarsExprs(_, locs, n1, n2) => cfg_write!(f, cfg, buf, n1, LocOpt(&locs[0], " "), "=", LocOpt(&locs[1], " "), n2),
@@ -268,23 +207,30 @@ impl ConfiguredWrite for Node {
             VarRoundSuffix(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")", LocOpt(&locs[2], ""), n2)
             }
-            VarSuffixList(_, suffs) => cfg_write_node_vec_locs(f, cfg, buf, suffs, ""),
+            VarSuffixList(_, suffs) => cfg_write_vector(f, cfg, buf, suffs, ""),
             FnMethodCall(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, ":", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), n2)
             }
-            ParList(_, pars) => cfg_write_node_vec_locs_sep(f, cfg, buf, pars, ",", " "),
+            ParList(_, pars) => cfg_write_sep_vector(f, cfg, buf, pars, " ", Some(","), Some(false)),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, "function", LocOpt(&locs[0], ""), n),
-            FuncBody(_, locs, n1) => {
+            FuncBody(_, locs) => {
+                cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), ")", LocOpt(&locs[1], " "), "end")
+            }
+            FuncBodyB(_, locs, n2) => {
+                cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), ")", LocOpt(&locs[1], " "), n2, LocOpt(&locs[2], " "),
+                           "end")
+            }
+            FuncPBody(_, locs, n1) => {
                 cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")", LocOpt(&locs[2], " "),
                            "end")
             }
-            FuncBodyB(_, locs, n1, n2) => {
+            FuncPBodyB(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, "(", LocOpt(&locs[0], ""), n1, LocOpt(&locs[1], ""), ")", LocOpt(&locs[2], " "),
                            n2, LocOpt(&locs[3], " "), "end")
             }
-            FuncName(_, names) => cfg_write_node_vec_locs_sep(f, cfg, buf, names, ".", ""),
+            FuncName(_, names) => cfg_write_sep_vector(f, cfg, buf, names, "", Some("."), Some(false)),
             FuncNameSelf(_, locs, names, n) => {
-                cfg_write_node_vec_locs_sep(f, cfg, buf, names, ".", "")?;
+                cfg_write_sep_vector(f, cfg, buf, names, "", Some("."), Some(false))?;
                 cfg_write!(f, cfg, buf, LocOpt(&locs[0], ""), ":", LocOpt(&locs[1], ""), n)
             }
             FuncDecl(_, locs, n1, n2) => {
@@ -354,7 +300,7 @@ impl ConfiguredWrite for Node {
                            LocOpt(&locs[2], " "), b1, LocOpt(&locs[3], " "), n, LocOpt(&locs[4], " "), "else",
                            LocOpt(&locs[5], " "), b2, LocOpt(&locs[6], " "), "end")
             }
-            ElseIfThenVec(_, elems) => cfg_write_node_vec_locs(f, cfg, buf, elems, " "),
+            ElseIfThenVec(_, elems) => cfg_write_vector(f, cfg, buf, elems, " "),
             ElseIfThen(_, locs, e) => {
                 cfg_write!(f, cfg, buf, "elseif", LocOpt(&locs[0], " "), e, LocOpt(&locs[1], " "), "then")
             }

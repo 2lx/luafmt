@@ -1,5 +1,5 @@
 use crate::config::{Config, ConfiguredWrite};
-use crate::parser::parse;
+use super::parse_lua;
 
 #[allow(dead_code)]
 static CFG_NO_COMMENTS: Config = Config { remove_comments: Some(true), ..Config::default() };
@@ -16,7 +16,7 @@ enum TestError {
 
 #[allow(dead_code)]
 fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
-    match parse(source) {
+    match parse_lua(source) {
         Err(_) => Err(TestError::ErrorWhileParsing),
         Ok(result) => {
             let mut output = String::new();
@@ -43,7 +43,7 @@ fn tsdef(source: &str) -> Result<String, TestError> {
 fn test_errors() {
     use lalrpop_util::ParseError;
 
-    let result = parse("a = 3 + 22 * ? + 65");
+    let result = parse_lua("a = 3 + 22 * ? + 65");
     assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
@@ -51,7 +51,7 @@ fn test_errors() {
         _ => assert!(false, "wrong error type"),
     };
 
-    let result = parse("1++2");
+    let result = parse_lua("1++2");
     assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
@@ -59,7 +59,7 @@ fn test_errors() {
         _ => assert!(false, "wrong error type"),
     };
 
-    let result = parse("1 2");
+    let result = parse_lua("1 2");
     assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]
@@ -67,7 +67,7 @@ fn test_errors() {
         _ => assert!(false, "wrong error type"),
     };
 
-    let result = parse("1+");
+    let result = parse_lua("1+");
     assert!(result.is_err(), "{:?}", result);
     match result.unwrap_err() {
         #[allow(unused_variables)]

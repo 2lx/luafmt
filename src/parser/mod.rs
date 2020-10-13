@@ -1,13 +1,15 @@
 #[allow(clippy::all)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
-mod syntax;
-mod lexer;
-mod test;
-pub mod nodes;
+mod lua_syntax;
+mod lua_lexer;
+mod lua_test;
+
+pub mod basics;
+pub mod lua_ast;
 
 use lalrpop_util::ParseError;
 
-pub fn parse(src: &str) -> Result<nodes::Node, ParseError<usize, lexer::Token, lexer::LexicalError>> {
-    let lexer = lexer::Lexer::new(src);
-    syntax::ChunkParser::new().parse(src, lexer)
+pub fn parse_lua(src: &str) -> Result<lua_ast::Node, ParseError<usize, lua_lexer::Token, lua_lexer::LexicalError>> {
+    let lexer = lua_lexer::Lexer::new(src);
+    lua_syntax::ChunkParser::new().parse(src, lexer)
 }

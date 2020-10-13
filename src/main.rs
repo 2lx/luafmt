@@ -18,7 +18,7 @@ fn main() -> Result<(), std::io::Error> {
     let config = Config { field_separator: Some(","), trailing_field_separator: Some(true), ..Config::default() };
     let buffer = read_input()?;
 
-    match parser::parse(&buffer) {
+    match parser::parse_lua(&buffer) {
         Ok(result) => {
             let mut output = String::new();
             match result.configured_write(&mut output, &config, &buffer) {
