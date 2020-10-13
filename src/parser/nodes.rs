@@ -68,7 +68,7 @@ pub enum Node {
 
     TableConstructor(Loc, [Loc; 2], Box<Node>),
     TableConstructorEmpty(Loc, [Loc; 1]),
-    Fields(Loc, Vec<(Loc, Node, Loc)>),
+    Fields(Loc, Vec<(Loc, Node, Loc, String)>),
     FieldNamedBracket(Loc, [Loc; 4], Box<Node>, Box<Node>),
     FieldNamed(Loc, [Loc; 2], Box<Node>, Box<Node>),
     FieldSequential(Loc, Box<Node>),
@@ -160,6 +160,33 @@ fn cfg_write_node_vec_locs_sep(
     Ok(())
 }
 
+fn cfg_write_field_vec(
+    f: &mut dyn fmt::Write,
+    cfg: &Config,
+    buf: &str,
+    elems: &Vec<(Loc, Node, Loc, String)>,
+    sep: &str,
+) -> Result<(), core::fmt::Error> {
+    for i in 0..elems.len() {
+        let ws = match i { 0 => "", _ => " ", };
+        let elem = &elems[i];
+        cfg_write!(f, cfg, buf, LocOpt(&elem.0, ws), elem.1, LocOpt(&elem.2, ""))?;
+
+        let need_trailing_sep = i != elems.len() - 1
+            || cfg.trailing_field_separator.is_none() && !elem.3.is_empty()
+            || cfg.trailing_field_separator == Some(true);
+
+        if need_trailing_sep {
+            if cfg.field_separator.is_none() {
+                write!(f, "{}", elem.3)?;
+            } else {
+                write!(f, "{}", sep)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn cfg_write_node_vec_locs(
     f: &mut dyn fmt::Write,
     cfg: &Config,
@@ -215,7 +242,13 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, "{{", LocOpt(&locs[0], " "), r, LocOpt(&locs[1], " "), "}}")
             }
             TableConstructorEmpty(_, locs) => cfg_write!(f, cfg, buf, "{{", LocOpt(&locs[0], ""), "}}"),
-            Fields(_, fields) => cfg_write_node_vec_locs_sep(f, cfg, buf, fields, ",", " "),
+            Fields(_, fields) => {
+                let fsep = match cfg.field_separator {
+                    Some(s) => s,
+                    None => "",
+                };
+                cfg_write_field_vec(f, cfg, buf, fields, fsep)
+            }
             FieldNamedBracket(_, locs, e1, e2) => {
                 cfg_write!(f, cfg, buf, "[", LocOpt(&locs[0], ""), e1, LocOpt(&locs[1], ""), "]", LocOpt(&locs[2], " "),
                            "=", LocOpt(&locs[3], " "), e2)

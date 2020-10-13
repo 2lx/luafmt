@@ -54,18 +54,23 @@ TEmptySepList<T, C>: Vec<(Loc, T, Loc)> = {
 };
 
 // cannot be empty, may have a separator at the end
-TSepEndList<T, C>: Vec<(Loc, T, Loc)> = {
-    <e:T> <l2:@R> <r2:@L> C? => {
+TSepEndList<T, C>: Vec<(Loc, T, Loc, String)> = {
+    <e:T> <l2:@R> <r2:@L> <sep:C?> <r3:@R> => {
         let mut v = Vec::new();
-        v.push((Loc(0, 0), e, Loc(l2, r2)));
+        let s = match sep {
+            None => "".to_string(),
+            Some(s) => s.to_string(),
+        };
+        v.push((Loc(0, 0), e, Loc(l2, r2), s));
         v
     },
-    <e:T> <l1:@R> <r1:@L> C <l2:@R> <r2:@L> <v:TSepEndList<T, C>> => {
+    <e:T> <l1:@R> <r1:@L> <sep:C> <l2:@R> <r2:@L> <v:TSepEndList<T, C>> => {
         let mut v = v;
         if !v.is_empty() {
             v[0].0 = Loc(l2, r2);
         }
-        v.insert(0, (Loc(0, 0), e, Loc(l1, r1)));
+        let s = sep.to_string();
+        v.insert(0, (Loc(0, 0), e, Loc(l1, r1), s));
         v
     },
 };

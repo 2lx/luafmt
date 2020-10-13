@@ -2,7 +2,8 @@ use std::io::{self, Read};
 
 mod config;
 mod parser;
-use config::ConfiguredWrite;
+mod format;
+use config::{Config, ConfiguredWrite};
 
 fn read_input() -> Result<String, std::io::Error> {
     let mut buffer = String::new();
@@ -14,7 +15,7 @@ fn read_input() -> Result<String, std::io::Error> {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let config = config::Config::default();
+    let config = Config { field_separator: Some(","), trailing_field_separator: Some(true), ..Config::default() };
     let buffer = read_input()?;
 
     match parser::parse(&buffer) {

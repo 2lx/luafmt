@@ -22,19 +22,19 @@ pub struct Config {
     pub indent_str: Option<&'static str>,
     pub remove_comments: Option<bool>,
     pub normalize_ws: Option<bool>,
+    pub field_separator: Option<&'static str>,
+    pub trailing_field_separator: Option<bool>,
 }
 
 impl Config {
     pub const fn default() -> Self {
-        Config { remove_comments: None, indent_str: None, normalize_ws: None }
-    }
-
-    pub const fn default_no_comments() -> Self {
-        Config { remove_comments: Some(true), ..Config::default() }
-    }
-
-    pub const fn default_normalize_ws() -> Self {
-        Config { normalize_ws: Some(true), ..Config::default() }
+        Config {
+            remove_comments: None,
+            indent_str: None,
+            normalize_ws: None,
+            field_separator: None,
+            trailing_field_separator: None,
+        }
     }
 }
 
