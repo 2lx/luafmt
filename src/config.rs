@@ -22,6 +22,7 @@ pub struct Config {
     pub indent_str: Option<&'static str>,
     pub remove_comments: Option<bool>,
     pub normalize_ws: Option<bool>,
+    pub remove_newlines: Option<bool>,
     pub field_separator: Option<&'static str>,
     pub trailing_field_separator: Option<bool>,
 }
@@ -30,6 +31,7 @@ impl Config {
     pub const fn default() -> Self {
         Config {
             remove_comments: None,
+            remove_newlines: None,
             indent_str: None,
             normalize_ws: None,
             field_separator: None,

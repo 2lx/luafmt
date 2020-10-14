@@ -2,7 +2,8 @@ use super::parse_lua;
 use crate::config::{Config, ConfiguredWrite};
 
 #[allow(dead_code)]
-static CFG_NO_COMMENTS: Config = Config { remove_comments: Some(true), ..Config::default() };
+static CFG_NO_COMMENTS: Config =
+    Config { remove_comments: Some(true), remove_newlines: Some(true), normalize_ws: Some(true), ..Config::default() };
 
 #[allow(dead_code)]
 static CFG_DEFAULT: Config = Config::default();
@@ -322,7 +323,7 @@ fn test_keep_comments_ops() {
         let str = format!("c   --1\n  =  --[=[2]=]   a  --3\n  {}   --[[4]]   b", op);
         assert_eq!(tsdef(&str), Ok(str.to_string()));
 
-        let str = format!("c = a--\n{}--[[342]]b", op);
+        let str = format!("c = a--\n{} --[[342]]b", op);
         assert_eq!(tsdef(&str), Ok(str.to_string()));
     }
 

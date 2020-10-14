@@ -2,7 +2,7 @@ use std::fmt;
 use crate::parser::basics::Loc;
 use crate::config::{Config, ConfiguredWrite};
 use crate::{cfg_write, cfg_write_helper};
-use super::loc_hint::LocHint;
+use super::loc_hint::*;
 
 pub trait PrefixHintInNoSepList {
     fn prefix_hint_in_no_sep_list(&self, config: &Config) -> &str;
@@ -49,6 +49,23 @@ pub fn cfg_write_vector<Node: ConfiguredWrite + PrefixHintInNoSepList>(
 
         for elem in &elems[1..elems.len()] {
             cfg_write!(f, cfg, buf, LocHint(&elem.0, elem.1.prefix_hint_in_no_sep_list(cfg)), elem.1)?;
+        }
+    }
+    Ok(())
+}
+
+pub fn cfg_write_vector_comments<Node: ConfiguredWrite + PrefixHintInNoSepList>(
+    f: &mut dyn fmt::Write,
+    cfg: &Config,
+    buf: &str,
+    elems: &Vec<(Loc, Node)>,
+) -> Result<(), core::fmt::Error> {
+    if !elems.is_empty() {
+        let first = &elems[0];
+        cfg_write!(f, cfg, buf, SpaceLocHint(&first.0, ""), first.1)?;
+
+        for elem in &elems[1..elems.len()] {
+            cfg_write!(f, cfg, buf, SpaceLocHint(&elem.0, elem.1.prefix_hint_in_no_sep_list(cfg)), elem.1)?;
         }
     }
     Ok(())

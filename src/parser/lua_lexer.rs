@@ -605,6 +605,19 @@ fn test_lua_lexer() {
             Ok((13, EOF, 13))
         )
     );
+
+    let tokens = Lexer::new("c = a--\n+--[[342]]b").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, Variable("c"), 1)),
+            Ok((2, EqualsSign, 3)),
+            Ok((4, Variable("a"), 5)),
+            Ok((8, OpAddition, 9)),
+            Ok((18, Variable("b"), 19)),
+            Ok((19, EOF, 19))
+        )
+    );
 }
 
 #[test]

@@ -1,10 +1,10 @@
 use std::fmt;
 
-use crate::config::{Config, ConfiguredWrite};
-use crate::{cfg_write, cfg_write_helper};
-use crate::format::loc_hint::LocHint;
-use crate::format::util::*;
 use super::basics::*;
+use crate::config::{Config, ConfiguredWrite};
+use crate::format::loc_hint::SpaceLocHint;
+use crate::format::util::*;
+use crate::{cfg_write, cfg_write_helper};
 
 #[derive(Debug)]
 pub enum Node {
@@ -24,7 +24,7 @@ impl PrefixHintInNoSepList for Node {
 
         match self {
             MultiLineComment(_, _, _) | OneLineComment(_, _) => "",
-            _ => " ",
+            _ => "",
         }
     }
 }
@@ -34,10 +34,20 @@ impl ConfiguredWrite for Node {
         use Node::*;
 
         match self {
-            Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, LocHint(&locl, ""), n, LocHint(&locr, "")),
-            VariantList(_, variants) => cfg_write_vector(f, cfg, buf, variants),
-            CommentList(_, comments) => cfg_write_vector(f, cfg, buf, comments),
-            NewLineList(_, newlines) => cfg_write_vector(f, cfg, buf, newlines),
+            Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, SpaceLocHint(&locl, ""), n, SpaceLocHint(&locr, "")),
+            VariantList(_, variants) => cfg_write_vector_comments(f, cfg, buf, variants),
+            CommentList(_, comments) => {
+                if cfg.remove_comments != Some(true) {
+                    cfg_write_vector_comments(f, cfg, buf, comments)?;
+                }
+                Ok(())
+            }
+            NewLineList(_, newlines) => {
+                if cfg.remove_newlines != Some(true) {
+                    cfg_write_vector_comments(f, cfg, buf, newlines)?;
+                }
+                Ok(())
+            }
 
             OneLineComment(_, s) => write!(f, "--{}\n", s),
             MultiLineComment(_, level, s) => {

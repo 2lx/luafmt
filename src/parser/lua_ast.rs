@@ -124,8 +124,12 @@ impl ConfiguredWrite for Node {
             UnaryNot(_, locs, r) => cfg_write!(f, cfg, buf, "not", LocHint(&locs[0], " "), r),
 
             Var(_, locs, n1, n2) => cfg_write!(f, cfg, buf, n1, LocHint(&locs[0], ""), n2),
-            RoundBrackets(_, locs, r) => cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), r, LocHint(&locs[1], ""), ")"),
-            ArgsRoundBrackets(_, locs, r) => cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), r, LocHint(&locs[1], ""), ")"),
+            RoundBrackets(_, locs, r) => {
+                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), r, LocHint(&locs[1], ""), ")")
+            }
+            ArgsRoundBrackets(_, locs, r) => {
+                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), r, LocHint(&locs[1], ""), ")")
+            }
             ArgsRoundBracketsEmpty(_, locs) => cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), ")"),
 
             Nil(_) => write!(f, "nil"),
@@ -151,8 +155,8 @@ impl ConfiguredWrite for Node {
                 cfg_write_sep_vector(f, cfg, buf, fields, " ", cfg.field_separator, cfg.trailing_field_separator)
             }
             FieldNamedBracket(_, locs, e1, e2) => {
-                cfg_write!(f, cfg, buf, "[", LocHint(&locs[0], ""), e1, LocHint(&locs[1], ""), "]", LocHint(&locs[2], " "),
-                           "=", LocHint(&locs[3], " "), e2)
+                cfg_write!(f, cfg, buf, "[", LocHint(&locs[0], ""), e1, LocHint(&locs[1], ""), "]",
+                           LocHint(&locs[2], " "), "=", LocHint(&locs[3], " "), e2)
             }
             FieldNamed(_, locs, e1, e2) => {
                 cfg_write!(f, cfg, buf, e1, LocHint(&locs[0], " "), "=", LocHint(&locs[1], " "), e2)
@@ -166,11 +170,16 @@ impl ConfiguredWrite for Node {
             VarList(_, vars) => cfg_write_sep_vector(f, cfg, buf, vars, " ", Some(","), Some(false)),
             StatementList(_, stts) => cfg_write_vector(f, cfg, buf, stts),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, "do", LocHint(&locs[0], " "), "end"),
-            DoBEnd(_, locs, b) => cfg_write!(f, cfg, buf, "do", LocHint(&locs[0], " "), b, LocHint(&locs[1], " "), "end"),
-            VarsExprs(_, locs, n1, n2) => cfg_write!(f, cfg, buf, n1, LocHint(&locs[0], " "), "=", LocHint(&locs[1], " "), n2),
+            DoBEnd(_, locs, b) => {
+                cfg_write!(f, cfg, buf, "do", LocHint(&locs[0], " "), b, LocHint(&locs[1], " "), "end")
+            }
+            VarsExprs(_, locs, n1, n2) => {
+                cfg_write!(f, cfg, buf, n1, LocHint(&locs[0], " "), "=", LocHint(&locs[1], " "), n2)
+            }
 
             VarRoundSuffix(_, locs, n1, n2) => {
-                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), n1, LocHint(&locs[1], ""), ")", LocHint(&locs[2], ""), n2)
+                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), n1, LocHint(&locs[1], ""), ")",
+                           LocHint(&locs[2], ""), n2)
             }
             VarSuffixList(_, suffs) => cfg_write_vector(f, cfg, buf, suffs),
             FnMethodCall(_, locs, n1, n2) => {
@@ -182,16 +191,16 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), ")", LocHint(&locs[1], " "), "end")
             }
             FuncBodyB(_, locs, n2) => {
-                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), ")", LocHint(&locs[1], " "), n2, LocHint(&locs[2], " "),
-                           "end")
+                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), ")", LocHint(&locs[1], " "), n2,
+                           LocHint(&locs[2], " "), "end")
             }
             FuncPBody(_, locs, n1) => {
-                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), n1, LocHint(&locs[1], ""), ")", LocHint(&locs[2], " "),
-                           "end")
+                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), n1, LocHint(&locs[1], ""), ")",
+                           LocHint(&locs[2], " "), "end")
             }
             FuncPBodyB(_, locs, n1, n2) => {
-                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), n1, LocHint(&locs[1], ""), ")", LocHint(&locs[2], " "),
-                           n2, LocHint(&locs[3], " "), "end")
+                cfg_write!(f, cfg, buf, "(", LocHint(&locs[0], ""), n1, LocHint(&locs[1], ""), ")",
+                           LocHint(&locs[2], " "), n2, LocHint(&locs[3], " "), "end")
             }
             FuncName(_, names) => cfg_write_sep_vector(f, cfg, buf, names, "", Some("."), Some(false)),
             FuncNameSelf(_, locs, names, n) => {
@@ -277,35 +286,40 @@ impl ConfiguredWrite for Node {
             Name(_, s) => write!(f, "{}", s),
             Label(_, locs, n) => cfg_write!(f, cfg, buf, "::", LocHint(&locs[0], ""), n, LocHint(&locs[1], ""), "::"),
             GoTo(_, locs, n) => cfg_write!(f, cfg, buf, "goto", LocHint(&locs[0], " "), n),
-            WhileDo(_, locs, e) => cfg_write!(f, cfg, buf, "while", LocHint(&locs[0], " "), e, LocHint(&locs[1], " "),
-                                              "do", LocHint(&locs[2], " "), "end"),
-            WhileDoB(_, locs, e, n) => cfg_write!(f, cfg, buf, "while", LocHint(&locs[0], " "), e, LocHint(&locs[1], " "),
-                                                  "do", LocHint(&locs[2], " "), n, LocHint(&locs[3], " "), "end"),
+            WhileDo(_, locs, e) => {
+                cfg_write!(f, cfg, buf, "while", LocHint(&locs[0], " "), e, LocHint(&locs[1], " "), "do",
+                           LocHint(&locs[2], " "), "end")
+            }
+            WhileDoB(_, locs, e, n) => {
+                cfg_write!(f, cfg, buf, "while", LocHint(&locs[0], " "), e, LocHint(&locs[1], " "), "do",
+                           LocHint(&locs[2], " "), n, LocHint(&locs[3], " "), "end")
+            }
             RepeatUntil(_, locs, e) => cfg_write!(f, cfg, buf, "repeat", LocHint(&locs[0], " "), "until",
                                                   LocHint(&locs[1], " "), e),
             RepeatBUntil(_, locs, b, e) => cfg_write!(f, cfg, buf, "repeat", LocHint(&locs[0], " "), b,
                                                       LocHint(&locs[1], " "), "until", LocHint(&locs[2], " "), e),
 
             ForInt(_, locs, n, e1, e2) => {
-                cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "=", LocHint(&locs[2], " "),
-                           e1, LocHint(&locs[3], ""), ",", LocHint(&locs[4], " "), e2, LocHint(&locs[5], " "), "do",
-                           LocHint(&locs[6], " "), "end")
+                cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "=",
+                           LocHint(&locs[2], " "), e1, LocHint(&locs[3], ""), ",", LocHint(&locs[4], " "), e2,
+                           LocHint(&locs[5], " "), "do", LocHint(&locs[6], " "), "end")
             }
             ForIntB(_, locs, n, e1, e2, b) => {
-                cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "=", LocHint(&locs[2], " "),
-                           e1, LocHint(&locs[3], ""), ",", LocHint(&locs[4], " "), e2, LocHint(&locs[5], " "), "do",
-                           LocHint(&locs[6], " "), b, LocHint(&locs[7], " "), "end")
+                cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "=",
+                           LocHint(&locs[2], " "), e1, LocHint(&locs[3], ""), ",", LocHint(&locs[4], " "), e2,
+                           LocHint(&locs[5], " "), "do", LocHint(&locs[6], " "), b, LocHint(&locs[7], " "), "end")
             }
             ForIntStep(_, locs, n, e1, e2, e3) => {
-                cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "=", LocHint(&locs[2], " "),
-                           e1, LocHint(&locs[3], ""), ",", LocHint(&locs[4], " "), e2, LocHint(&locs[5], ""), ",",
-                           LocHint(&locs[6], " "), e3, LocHint(&locs[7], " "), "do", LocHint(&locs[8], " "), "end")
+                cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "=",
+                           LocHint(&locs[2], " "), e1, LocHint(&locs[3], ""), ",", LocHint(&locs[4], " "), e2,
+                           LocHint(&locs[5], ""), ",", LocHint(&locs[6], " "), e3, LocHint(&locs[7], " "), "do",
+                           LocHint(&locs[8], " "), "end")
             },
             ForIntStepB(_, locs, n, e1, e2, e3, b) => {
-                cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "=", LocHint(&locs[2], " "),
-                           e1, LocHint(&locs[3], ""), ",", LocHint(&locs[4], " "), e2, LocHint(&locs[5], ""), ",",
-                           LocHint(&locs[6], " "), e3, LocHint(&locs[7], " "), "do", LocHint(&locs[8], " "), b,
-                           LocHint(&locs[9], " "), "end")
+                cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "=",
+                           LocHint(&locs[2], " "), e1, LocHint(&locs[3], ""), ",", LocHint(&locs[4], " "), e2,
+                           LocHint(&locs[5], ""), ",", LocHint(&locs[6], " "), e3, LocHint(&locs[7], " "), "do",
+                           LocHint(&locs[8], " "), b, LocHint(&locs[9], " "), "end")
             },
             ForRange(_, locs, n, e) => {
                 cfg_write!(f, cfg, buf, "for", LocHint(&locs[0], " "), n, LocHint(&locs[1], " "), "in",
