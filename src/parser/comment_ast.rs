@@ -12,7 +12,9 @@ pub enum Node {
     MultiLineComment(Loc, usize, String),
     NewLine(Loc),
 
+    VariantList(Loc, Vec<(Loc, Node)>),
     CommentList(Loc, Vec<(Loc, Node)>),
+    NewLineList(Loc, Vec<(Loc, Node)>),
     Chunk(Loc, Box<Node>, Loc),
 }
 
@@ -33,7 +35,9 @@ impl ConfiguredWrite for Node {
 
         match self {
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, LocHint(&locl, ""), n, LocHint(&locr, "")),
+            VariantList(_, variants) => cfg_write_vector(f, cfg, buf, variants),
             CommentList(_, comments) => cfg_write_vector(f, cfg, buf, comments),
+            NewLineList(_, newlines) => cfg_write_vector(f, cfg, buf, newlines),
 
             OneLineComment(_, s) => write!(f, "--{}\n", s),
             MultiLineComment(_, level, s) => {

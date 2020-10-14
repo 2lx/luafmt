@@ -19,25 +19,67 @@ TList<T>: Vec<(Loc, T)> = {
     },
 }
 
+// cannot be empty, items alternate
+TAltList<T1, T2>: Vec<(Loc, Node)> = {
+    <n:T1> => {
+        let mut v = Vec::new();
+        v.push((Loc(0, 0), n));
+        v
+    },
+    TAltListHelper<T1, T2>,
+    <v:TAltListHelper<T1, T2>> <l1:@R> <r1:@L> <n:T1> => {
+        let mut v = v;
+        v.push((Loc(l1, r1), n));
+        v
+    },
+}
+
+TAltListHelper<T1, T2>: Vec<(Loc, Node)> = {
+    <n1:T1> <l1:@R> <r1:@L> <n2:T2> => {
+        let mut v = Vec::new();
+        v.push((Loc(0, 0), n1));
+        v.push((Loc(l1, r1), n2));
+        v
+    },
+    <v:TAltListHelper<T1, T2>> <l1:@R> <r1:@L> <n1:T1> <l2:@R> <r2:@L> <n2:T2> => {
+        let mut v = v;
+        v.push((Loc(l1, r1), n1));
+        v.push((Loc(l2, r2), n2));
+        v
+    },
+}
+
 // syntax
 pub Chunk: Node = {
     <rs:@L> EOF => {
         let node = Node::CommentList(Loc(0, 0), Vec::new());
         Node::Chunk(Loc(0, rs), Box::new(node), Loc(0, 0))
     },
-    <r1:@L> <b:Comments> <l2:@R> <r2:@L> EOF => {
+    <r1:@L> <b:VariantList> <l2:@R> <r2:@L> EOF => {
         Node::Chunk(Loc(0, r1), Box::new(b), Loc(l2, r2))
     },
 }
 
-Comments: Node = {
+VariantList: Node = {
+    <ls:@L> <v:TAltList<CommentList, NewLineList>> <rs:@R> => Node::VariantList(Loc(ls, rs), v),
+    <ls:@L> <v:TAltList<NewLineList, CommentList>> <rs:@R> => Node::VariantList(Loc(ls, rs), v),
+}
+
+CommentList: Node = {
     <ls:@L> <v:TList<Comment>> <rs:@R> => Node::CommentList(Loc(ls, rs), v),
+}
+
+NewLineList: Node = {
+    <ls:@L> <v:TList<NewLine>> <rs:@R> => Node::NewLineList(Loc(ls, rs), v),
 }
 
 Comment: Node = {
     <ls:@L> <s:OneLineComment> <rs:@R>   => Node::OneLineComment(Loc(ls, rs), s.to_string()),
     <ls:@L> <v:MultiLineComment> <rs:@R> => Node::MultiLineComment(Loc(ls, rs), v.0, v.1.to_string()),
-    <ls:@L> "\n" <rs:@R>                 => Node::NewLine(Loc(ls, rs)),
+}
+
+NewLine: Node = {
+    <ls:@L> "\n" <rs:@R> => Node::NewLine(Loc(ls, rs)),
 }
 
 extern {
@@ -45,11 +87,9 @@ extern {
     type Error = LexicalError;
 
     enum Token<'input> {
-        "\n"    => Token::NewLine,
-
-        OneLineComment   => Token::OneLineComment(<&'input str>),
+        OneLineComment => Token::OneLineComment(<&'input str>),
         MultiLineComment => Token::MultiLineComment(<usize>, <&'input str>),
-
+        "\n" => Token::NewLine,
         EOF => Token::EOF,
     }
 }
