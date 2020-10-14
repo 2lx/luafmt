@@ -75,10 +75,13 @@ pub fn get_float_end(chars: &mut TChars, start: usize) -> (usize, bool) {
 }
 
 pub fn get_variable_end(chars: &mut TChars, start: usize) -> (usize, bool) {
-    // we already got one variable's symbol
-    let (end, _) = seek_end_by_predicate(chars, start, &|ch: char, _| {
+    let (end, succ) = seek_end_by_predicate(chars, start, &|ch: char, _| {
         !ch.is_ascii_alphabetic() && !ch.is_ascii_digit() && ch != '_'
     });
+
+    if !succ && start >= end {
+        return (end, false);
+    }
 
     // variables always end correctly
     return (end, true);
@@ -306,7 +309,7 @@ fn test_get_variable_end() {
 
     let mystr = String::from("");
     let mut iter = mystr.char_indices().peekable();
-    assert_eq!(get_variable_end(&mut iter, 0), (0, true));
+    assert_eq!(get_variable_end(&mut iter, 0), (0, false));
 }
 
 #[test]
@@ -536,4 +539,3 @@ fn test_get_comment_start_end_and_type() {
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 16, 16, Some(3), false));
 }
-

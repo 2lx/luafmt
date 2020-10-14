@@ -33,45 +33,44 @@ fn tsdef(source: &str) -> Result<String, TestError> {
 
 #[test]
 fn test_errors() {
-    // use lalrpop_util::ParseError;
+    use lalrpop_util::ParseError;
 
-    // let result = parse_lua("a = 3 + 22 * ? + 65");
-    // assert!(result.is_err(), "{:?}", result);
-    // match result.unwrap_err() {
-    //     #[allow(unused_variables)]
-    //     ParseError::User { error } => (),
-    //     _ => assert!(false, "wrong error type"),
-    // };
-    //
-    // let result = parse_lua("1++2");
-    // assert!(result.is_err(), "{:?}", result);
-    // match result.unwrap_err() {
-    //     #[allow(unused_variables)]
-    //     ParseError::UnrecognizedToken { token: (l, token, r), expected } => (),
-    //     _ => assert!(false, "wrong error type"),
-    // };
-    //
-    // let result = parse_lua("1 2");
-    // assert!(result.is_err(), "{:?}", result);
-    // match result.unwrap_err() {
-    //     #[allow(unused_variables)]
-    //     ParseError::UnrecognizedToken { token: (_, _, _), expected } => (),
-    //     _ => assert!(false, "wrong error type"),
-    // };
-    //
-    // let result = parse_lua("1+");
-    // assert!(result.is_err(), "{:?}", result);
-    // match result.unwrap_err() {
-    //     #[allow(unused_variables)]
-    //     ParseError::UnrecognizedToken { token: (_, _, _), expected } => (),
-    //     _ => assert!(false, "wrong error type"),
-    // };
+    let result = parse_comment("a");
+    assert!(result.is_err(), "{:?}", result);
+    match result.unwrap_err() {
+        #[allow(unused_variables)]
+        ParseError::User { error } => (),
+        _ => assert!(false, "wrong error type"),
+    };
+
+    let result = parse_comment("--[[asd");
+    assert!(result.is_err(), "{:?}", result);
+    match result.unwrap_err() {
+        #[allow(unused_variables)]
+        ParseError::User { error } => (),
+        _ => assert!(false, "wrong error type"),
+    };
 }
 
 #[test]
 fn test_comments() {
     for str in vec![
-        "  \n\n --[[123]]   --[[]]   --\n\n\n --324\n "
+        "",
+        "     ",
+        "\n",
+        "   \n    ",
+        "\n  \n\n\n\n \n\n   \n",
+        "--\n",
+        "    --\n    ",
+        "--2str[][]\n",
+        "--[[trtstrst]]",
+        "--[=[trtstrst]=]",
+        "--[=[]=]",
+        "--[========[trtstrst]========]",
+        "--[===[trtstrst]====]==]==]=]]]========]==]========]===]",
+        "  \n\n --[[123]]   --[[]]   --\n\n\n --324\n ",
+        "\n\n --[[123]]   --[[]]   --\n\n\n --324\n",
+        "\n\n--[[123]]--[[]]--\n\n\n--324\n",
     ] {
         assert_eq!(tsdef(str), Ok(str.to_string()));
     }

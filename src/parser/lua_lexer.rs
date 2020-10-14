@@ -200,6 +200,16 @@ impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
         Lexer { chars: input.char_indices().peekable(), input, at_end: false }
     }
+
+    fn consume_ok(
+        &mut self,
+        l: usize,
+        tok: Token<'input>,
+        r: usize,
+    ) -> Option<Result<(usize, Token<'input>, usize), LexicalError>> {
+        self.chars.next();
+        return Some(Ok((l, tok, r)));
+    }
 }
 
 impl<'input> Iterator for Lexer<'input> {
@@ -207,222 +217,228 @@ impl<'input> Iterator for Lexer<'input> {
 
     fn next(&mut self) -> Option<Self::Item> {
         use Token::*;
+        let ok = |l: usize, tok: Token<'input>, r: usize| -> Option<Self::Item> {
+            return Some(Ok((l, tok, r)));
+        };
+
         loop {
-            match self.chars.next() {
+            match self.chars.peek() {
                 None => {
                     if !self.at_end {
                         self.at_end = true;
-                        return Some(Ok((self.input.len(), EOF, self.input.len())));
+                        return ok(self.input.len(), EOF, self.input.len());
                     }
                     return None;
                 }
 
-                Some((_, ' ')) | Some((_, '\n')) | Some((_, '\r')) | Some((_, '\t')) => continue,
+                Some(&(_, ' ')) | Some(&(_, '\n')) | Some(&(_, '\r')) | Some(&(_, '\t')) => {
+                    self.chars.next();
+                }
 
-                Some((i, '^')) => return Some(Ok((i, OpExponentiation, i + 1))),
-                Some((i, '#')) => return Some(Ok((i, OpLength, i + 1))),
-                Some((i, '*')) => return Some(Ok((i, OpMultiplication, i + 1))),
-                Some((i, '%')) => return Some(Ok((i, OpModulo, i + 1))),
-                Some((i, '/')) => match self.chars.peek() {
-                    Some(&(_, '/')) => {
-                        self.chars.next();
-                        return Some(Ok((i, OpFloorDivision, i + 2)));
+                Some(&(i, '^')) => return self.consume_ok(i, OpExponentiation, i + 1),
+                Some(&(i, '#')) => return self.consume_ok(i, OpLength, i + 1),
+                Some(&(i, '*')) => return self.consume_ok(i, OpMultiplication, i + 1),
+                Some(&(i, '%')) => return self.consume_ok(i, OpModulo, i + 1),
+                Some(&(i, '/')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, '/')) => return self.consume_ok(i, OpFloorDivision, i + 2),
+                        _ => return ok(i, OpDivision, i + 1),
                     }
-                    _ => return Some(Ok((i, OpDivision, i + 1))),
-                },
+                }
 
-                Some((i, '+')) => return Some(Ok((i, OpAddition, i + 1))),
-                Some((i, '-')) => match self.chars.peek() {
-                    Some(&(_, '-')) => {
-                        self.chars.next();
-                        get_comment_start_ends_and_type(&mut self.chars, i + 2);
-
-                        continue;
-                    }
-                    _ => return Some(Ok((i, Minus, i + 1))),
-                },
-
-                Some((i, '.')) => match self.chars.peek() {
-                    Some(&(_, '.')) => {
-                        self.chars.next();
-                        match self.chars.peek() {
-                            Some(&(_, '.')) => {
-                                self.chars.next();
-                                return Some(Ok((i, VarArg, i + 3)));
+                Some(&(i, '+')) => return self.consume_ok(i, OpAddition, i + 1),
+                Some(&(i, '-')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, '-')) => {
+                            self.chars.next();
+                            let (_, _, _, _, succ) = get_comment_start_ends_and_type(&mut self.chars, i + 2);
+                            if !succ {
+                                return Some(Err(LexicalError::UnexpectedEOF));
                             }
-                            _ => return Some(Ok((i, OpConcatenation, i + 2))),
+
+                            continue;
                         }
+                        _ => return ok(i, Minus, i + 1),
                     }
-                    Some(&(_, ch)) if ch.is_ascii_digit() => {
-                        let (end, succ) = get_float_end(&mut self.chars, i);
-                        match succ {
-                            true => return Some(Ok((i, Numeral(&self.input[i..end]), end))),
-                            false => return Some(Err(LexicalError::UnexpectedEOF)),
+                }
+
+                Some(&(i, '.')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, '.')) => {
+                            self.chars.next();
+
+                            match self.chars.peek() {
+                                Some(&(_, '.')) => return self.consume_ok(i, VarArg, i + 3),
+                                _ => return ok(i, OpConcatenation, i + 2),
+                            }
                         }
+                        Some(&(_, ch)) if ch.is_ascii_digit() => {
+                            let (end, succ) = get_float_end(&mut self.chars, i);
+                            match succ {
+                                true => return ok(i, Numeral(&self.input[i..end]), end),
+                                false => return Some(Err(LexicalError::UnexpectedEOF)),
+                            }
+                        }
+                        _ => return ok(i, Period, i + 1),
                     }
-                    _ => return Some(Ok((i, Period, i + 1))),
-                },
+                }
 
-                Some((i, '<')) => match self.chars.peek() {
-                    Some(&(_, '<')) => {
-                        self.chars.next();
-                        return Some(Ok((i, OpLeftShift, i + 2)));
+                Some(&(i, '<')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, '<')) => return self.consume_ok(i, OpLeftShift, i + 2),
+                        Some(&(_, '=')) => return self.consume_ok(i, OpLessOrEqual, i + 2),
+                        _ => return ok(i, OpLessThan, i + 1),
                     }
-                    Some(&(_, '=')) => {
-                        self.chars.next();
-                        return Some(Ok((i, OpLessOrEqual, i + 2)));
+                }
+
+                Some(&(i, '>')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, '>')) => return self.consume_ok(i, OpRightShift, i + 2),
+                        Some(&(_, '=')) => return self.consume_ok(i, OpGreaterOrEqual, i + 2),
+                        _ => return ok(i, OpGreaterThan, i + 1),
                     }
-                    _ => return Some(Ok((i, OpLessThan, i + 1))),
-                },
+                }
 
-                Some((i, '>')) => match self.chars.peek() {
-                    Some(&(_, '>')) => {
-                        self.chars.next();
-                        return Some(Ok((i, OpRightShift, i + 2)));
+                Some(&(i, '&')) => return self.consume_ok(i, OpBitwiseAnd, i + 1),
+                Some(&(i, '~')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, '=')) => return self.consume_ok(i, OpInequality, i + 2),
+                        _ => return ok(i, Tilde, i + 1),
                     }
-                    Some(&(_, '=')) => {
-                        self.chars.next();
-                        return Some(Ok((i, OpGreaterOrEqual, i + 2)));
+                }
+                Some(&(i, '|')) => return self.consume_ok(i, OpBitwiseOr, i + 1),
+
+                Some(&(i, '=')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, '=')) => return self.consume_ok(i, OpEquality, i + 2),
+                        _ => return ok(i, EqualsSign, i + 1),
                     }
-                    _ => return Some(Ok((i, OpGreaterThan, i + 1))),
-                },
+                }
 
-                Some((i, '&')) => return Some(Ok((i, OpBitwiseAnd, i + 1))),
-                Some((i, '~')) => match self.chars.peek() {
-                    Some(&(_, '=')) => {
-                        self.chars.next();
-                        return Some(Ok((i, OpInequality, i + 2)));
+                Some(&(i, ';')) => return self.consume_ok(i, Semicolon, i + 1),
+                Some(&(i, ',')) => return self.consume_ok(i, Comma, i + 1),
+                Some(&(i, ':')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, ':')) => return self.consume_ok(i, Label, i + 2),
+                        _ => return ok(i, Colon, i + 1),
                     }
-                    _ => return Some(Ok((i, Tilde, i + 1))),
-                },
-                Some((i, '|')) => return Some(Ok((i, OpBitwiseOr, i + 1))),
+                }
 
-                Some((i, '=')) => match self.chars.peek() {
-                    Some(&(_, '=')) => {
-                        self.chars.next();
-                        return Some(Ok((i, OpEquality, i + 2)));
-                    }
-                    _ => return Some(Ok((i, EqualsSign, i + 1))),
-                },
+                Some(&(i, '(')) => return self.consume_ok(i, OpenRoundBracket, i + 1),
+                Some(&(i, ')')) => return self.consume_ok(i, CloseRoundBracket, i + 1),
+                Some(&(i, '{')) => return self.consume_ok(i, OpenCurlyBracket, i + 1),
+                Some(&(i, '}')) => return self.consume_ok(i, CloseCurlyBracket, i + 1),
 
-                Some((i, ';')) => return Some(Ok((i, Semicolon, i + 1))),
-                Some((i, ',')) => return Some(Ok((i, Comma, i + 1))),
-                Some((i, ':')) => match self.chars.peek() {
-                    Some(&(_, ':')) => {
-                        self.chars.next();
-                        return Some(Ok((i, Label, i + 2)));
-                    }
-                    _ => return Some(Ok((i, Colon, i + 1))),
-                },
+                Some(&(i, ']')) => return self.consume_ok(i, CloseSquareBracket, i + 1),
+                Some(&(token_start, '[')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(level_start, '=')) => {
+                            let level = get_multiline_string_level(&mut self.chars, level_start);
+                            match self.chars.peek() {
+                                Some(&(square_2_start, '[')) => {
+                                    self.chars.next();
+                                    let text_start = square_2_start + 1;
+                                    let (text_end, token_end, succ) =
+                                        get_multiline_string_ends(&mut self.chars, level, text_start);
 
-                Some((i, '(')) => return Some(Ok((i, OpenRoundBracket, i + 1))),
-                Some((i, ')')) => return Some(Ok((i, CloseRoundBracket, i + 1))),
-                Some((i, '{')) => return Some(Ok((i, OpenCurlyBracket, i + 1))),
-                Some((i, '}')) => return Some(Ok((i, CloseCurlyBracket, i + 1))),
-
-                Some((i, ']')) => return Some(Ok((i, CloseSquareBracket, i + 1))),
-                Some((token_start, '[')) => match self.chars.peek() {
-                    Some(&(level_start, '=')) => {
-                        let level = get_multiline_string_level(&mut self.chars, level_start);
-                        match self.chars.peek() {
-                            Some(&(square_2_start, '[')) => {
-                                self.chars.next();
-                                let text_start = square_2_start + 1;
-                                let (text_end, token_end, succ) =
-                                    get_multiline_string_ends(&mut self.chars, level, text_start);
-
-                                match succ {
-                                    true => {
-                                        return Some(Ok((
-                                            token_start,
-                                            MultiLineStringLiteral(level, &self.input[text_start..text_end]),
-                                            token_end,
-                                        )))
+                                    match succ {
+                                        true => {
+                                            let token =
+                                                MultiLineStringLiteral(level, &self.input[text_start..text_end]);
+                                            return ok(token_start, token, token_end);
+                                        }
+                                        false => return Some(Err(LexicalError::UnexpectedEOF)),
                                     }
-                                    false => return Some(Err(LexicalError::UnexpectedEOF)),
                                 }
+                                Some((chi, chu)) => return Some(Err(LexicalError::UnrecognizedSymbol(*chi, *chu))),
+                                None => return Some(Err(LexicalError::UnexpectedEOF)),
                             }
-                            Some((chi, chu)) => return Some(Err(LexicalError::UnrecognizedSymbol(*chi, *chu))),
-                            None => return Some(Err(LexicalError::UnexpectedEOF)),
                         }
-                    }
-                    Some(&(square_2_start, '[')) => {
-                        self.chars.next();
-                        let text_start = square_2_start + 1;
-                        let (text_end, token_end, succ) = get_multiline_string_ends(&mut self.chars, 0, text_start);
+                        Some(&(square_2_start, '[')) => {
+                            self.chars.next();
+                            let text_start = square_2_start + 1;
+                            let (text_end, token_end, succ) = get_multiline_string_ends(&mut self.chars, 0, text_start);
 
-                        match succ {
-                            true => {
-                                return Some(Ok((
-                                    token_start,
-                                    MultiLineStringLiteral(0, &self.input[text_start..text_end]),
-                                    token_end,
-                                )))
+                            match succ {
+                                true => {
+                                    let token = MultiLineStringLiteral(0, &self.input[text_start..text_end]);
+                                    return ok(token_start, token, token_end);
+                                }
+                                false => return Some(Err(LexicalError::UnexpectedEOF)),
                             }
-                            false => return Some(Err(LexicalError::UnexpectedEOF)),
                         }
-                    }
-                    _ => return Some(Ok((token_start, OpenSquareBracket, token_start + 1))),
-                },
-
-                Some((i, '"')) => {
-                    let (text_end, token_end, succ) = get_string_ends(&mut self.chars, '"', i);
-                    match succ {
-                        true => return Some(Ok((i, NormalStringLiteral(&self.input[i + 1..text_end]), token_end))),
-                        false => return Some(Err(LexicalError::UnexpectedEOF)),
+                        _ => return ok(token_start, OpenSquareBracket, token_start + 1),
                     }
                 }
 
-                Some((i, '\'')) => {
-                    let (text_end, token_end, succ) = get_string_ends(&mut self.chars, '\'', i);
-                    match succ {
-                        true => return Some(Ok((i, CharStringLiteral(&self.input[i + 1..text_end]), token_end))),
-                        false => return Some(Err(LexicalError::UnexpectedEOF)),
+                Some(&(i, ch @ '"')) | Some(&(i, ch @ '\'')) => {
+                    self.chars.next();
+                    let (text_end, token_end, succ) = get_string_ends(&mut self.chars, ch, i);
+                    match (succ, ch) {
+                        (true, '\'') => return ok(i, CharStringLiteral(&self.input[i + 1..text_end]), token_end),
+                        (true, '"') => return ok(i, NormalStringLiteral(&self.input[i + 1..text_end]), token_end),
+                        _ => return Some(Err(LexicalError::UnexpectedEOF)),
                     }
                 }
 
-                Some((i, '0')) => match self.chars.peek() {
-                    Some(&(_, 'x')) => {
-                        self.chars.next();
-                        let (end, succ) = get_hex_integer_end(&mut self.chars, i + 2);
-                        match succ {
-                            true => return Some(Ok((i, Numeral(&self.input[i..end]), end))),
-                            false => return Some(Err(LexicalError::UnexpectedEOF)),
+                Some(&(i, '0')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, 'x')) => {
+                            self.chars.next();
+                            let (end, succ) = get_hex_integer_end(&mut self.chars, i + 2);
+                            match succ {
+                                true => return ok(i, Numeral(&self.input[i..end]), end),
+                                false => return Some(Err(LexicalError::UnexpectedEOF)),
+                            }
+                        }
+                        _ => {
+                            let (end, succ) = get_float_end(&mut self.chars, i + 1);
+                            match succ {
+                                true => return ok(i, Numeral(&self.input[i..end]), end),
+                                false => return Some(Err(LexicalError::UnexpectedEOF)),
+                            }
                         }
                     }
-                    _ => {
-                        let (end, succ) = get_float_end(&mut self.chars, i + 1);
-                        match succ {
-                            true => return Some(Ok((i, Numeral(&self.input[i..end]), end))),
-                            false => return Some(Err(LexicalError::UnexpectedEOF)),
-                        }
-                    }
-                },
+                }
 
-                Some((i, ch)) if ch.is_ascii_digit() => {
+                Some(&(i, ch)) if ch.is_ascii_digit() => {
+                    self.chars.next();
                     let (end, succ) = get_float_end(&mut self.chars, i + 1);
                     match succ {
-                        true => return Some(Ok((i, Numeral(&self.input[i..end]), end))),
+                        true => return ok(i, Numeral(&self.input[i..end]), end),
                         false => return Some(Err(LexicalError::UnexpectedEOF)),
                     }
                 }
 
-                Some((i, ch)) if ch.is_ascii_alphabetic() || ch == '_' => {
-                    let (end, succ) = get_variable_end(&mut self.chars, i + 1);
+                Some(&(i, ch)) if ch.is_ascii_alphabetic() || ch == '_' => {
+                    let (end, succ) = get_variable_end(&mut self.chars, i);
                     match succ {
                         true => {
                             let variable = &self.input[i..end];
 
                             match KEYWORDS.get(variable) {
-                                Some(w) => return Some(Ok((i, *w, end))),
-                                _ => return Some(Ok((i, Variable(&self.input[i..end]), end))),
+                                Some(w) => return ok(i, *w, end),
+                                _ => return ok(i, Variable(&self.input[i..end]), end),
                             };
                         }
                         false => return Some(Err(LexicalError::UnexpectedEOF)),
                     }
                 }
 
-                Some((i, ch)) => return Some(Err(LexicalError::UnrecognizedSymbol(i, ch))),
+                Some(&(i, ch)) => {
+                    self.chars.next();
+                    return Some(Err(LexicalError::UnrecognizedSymbol(i, ch)));
+                }
             }
         }
     }
@@ -588,5 +604,39 @@ fn test_lua_lexer() {
             Ok((12, Variable("a"), 13)),
             Ok((13, EOF, 13))
         )
+    );
+}
+
+#[test]
+fn test_lua_lexer_errors() {
+    type TRes<'a> = Vec<Result<(usize, Token<'a>, usize), LexicalError>>;
+    use LexicalError::*;
+    use Token::*;
+
+    let tokens = Lexer::new("a = [[str").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((9, EOF, 9))));
+
+    let tokens = Lexer::new("--[[string").collect::<TRes>();
+    assert_eq!(tokens, vec!(Err(UnexpectedEOF), Ok((10, EOF, 10))));
+
+    let tokens = Lexer::new("a = 0.123e").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((10, EOF, 10))));
+
+    let tokens = Lexer::new("a = 0.123e-").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11))));
+
+    let tokens = Lexer::new("a = \"string").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11))));
+
+    let tokens = Lexer::new("a = 'string").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11))));
+
+    let tokens = Lexer::new("a = [[strin").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11))));
+
+    let tokens = Lexer::new("a = `").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnrecognizedSymbol(4, '`')), Ok((5, EOF, 5)))
     );
 }
