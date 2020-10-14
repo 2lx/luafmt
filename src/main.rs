@@ -17,7 +17,7 @@ fn read_input() -> Result<String, std::io::Error> {
 fn main() -> Result<(), std::io::Error> {
     let config = Config {
         field_separator: Some(","),
-        trailing_field_separator: Some(false),
+        trailing_field_separator: Some(true),
         ..Config::default()
     };
     let buffer = read_input()?;

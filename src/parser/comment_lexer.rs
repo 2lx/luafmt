@@ -71,33 +71,32 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((_, ' ')) | Some((_, '\r')) | Some((_, '\t')) => continue,
 
                 Some((i, '\n')) => return Some(Ok((i, NewLine, i + 1))),
-                Some((comment_start, '-')) => match self.chars.peek() {
+                Some((token_start, '-')) => match self.chars.peek() {
                     Some(&(_, '-')) => {
                         self.chars.next();
 
-                        match get_comment_start_end_and_type(&mut self.chars, comment_start + 2) {
-                            Some((text_start, text_end, opt_level)) => {
-                                self.chars.next();
-
-                                match opt_level {
-                                    Some(level) => {
-                                        return Some(Ok((
-                                            comment_start,
-                                            MultiLineComment(level, &self.input[text_start..text_end]),
-                                            text_end + level + 2,
-                                        )))
-                                    }
-                                    None => {
-                                        return Some(Ok((
-                                            comment_start,
-                                            OneLineComment(&self.input[text_start..text_end]),
-                                            text_end + 1,
-                                        )))
-                                    }
-                                };
-                            }
-                            None => return Some(Err(LexicalError::UnexpectedEOF)),
+                        let (text_start, text_end, token_end, opt_level, succ) =
+                            get_comment_start_ends_and_type(&mut self.chars, token_start + 2);
+                        if !succ {
+                            return Some(Err(LexicalError::UnexpectedEOF));
                         }
+
+                        match opt_level {
+                            Some(level) => {
+                                return Some(Ok((
+                                    token_start,
+                                    MultiLineComment(level, &self.input[text_start..text_end]),
+                                    token_end,
+                                )))
+                            }
+                            None => {
+                                return Some(Ok((
+                                    token_start,
+                                    OneLineComment(&self.input[text_start..text_end]),
+                                    token_end,
+                                )))
+                            }
+                        };
                     }
                     Some(&(ip, chp)) => return Some(Err(LexicalError::UnrecognizedSymbol(ip, chp))),
                     None => return Some(Err(LexicalError::UnexpectedEOF)),
@@ -131,6 +130,9 @@ fn test_comment_lexer() {
     let tokens = Lexer::new("--123\n").collect::<TRes>();
     assert_eq!(tokens, vec!(Ok((0, Token::OneLineComment("123"), 6)), Ok((6, Token::EOF, 6))));
 
+    let tokens = Lexer::new("--123").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Token::OneLineComment("123"), 5)), Ok((5, Token::EOF, 5))));
+
     let tokens = Lexer::new("  --  123  \n  ").collect::<TRes>();
     assert_eq!(tokens, vec!(Ok((2, Token::OneLineComment("  123  "), 12)), Ok((14, Token::EOF, 14))));
 
@@ -139,4 +141,10 @@ fn test_comment_lexer() {
 
     let tokens = Lexer::new("--[=[123]=]").collect::<TRes>();
     assert_eq!(tokens, vec!(Ok((0, Token::MultiLineComment(1, "123"), 11)), Ok((11, Token::EOF, 11))));
+
+    let tokens = Lexer::new("--[=123]=]\n").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Token::OneLineComment("[=123]=]"), 11)), Ok((11, Token::EOF, 11))));
+
+    let tokens = Lexer::new("--[=123]=]").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((0, Token::OneLineComment("[=123]=]"), 10)), Ok((10, Token::EOF, 10))));
 }
