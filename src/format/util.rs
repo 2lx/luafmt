@@ -13,8 +13,8 @@ pub fn cfg_write_sep_vector<'a, 'b, 'c: 'a + 'b, Node, Hint>(
     cfg: &Config,
     buf: &str,
     elems: &'c Vec<(Loc, Node, Loc, String)>,
-    default_ws: &'static str,
-    default_sep: Option<&str>,
+    default_ws: &'c str,
+    default_sep: &Option<String>,
     trailing_sep: Option<bool>,
 ) -> Result<(), core::fmt::Error>
 where
@@ -33,10 +33,9 @@ where
             i != elems.len() - 1 || trailing_sep.is_none() && !elem.3.is_empty() || trailing_sep == Some(true);
 
         if need_trailing_sep {
-            if default_sep.is_none() {
-                write!(f, "{}", elem.3)?;
-            } else {
-                write!(f, "{}", default_sep.unwrap())?;
+            match &default_sep {
+                &Some(ref s) => write!(f, "{}", s)?,
+                &None => write!(f, "{}", elem.3)?,
             }
         }
     }

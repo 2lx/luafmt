@@ -2,13 +2,6 @@ use super::parse_lua;
 use crate::config::{Config, ConfiguredWrite};
 
 #[allow(dead_code)]
-static CFG_NO_COMMENTS: Config =
-    Config { remove_comments: Some(true), remove_newlines: Some(true), normalize_ws: Some(true), ..Config::default() };
-
-#[allow(dead_code)]
-static CFG_DEFAULT: Config = Config::default();
-
-#[allow(dead_code)]
 #[derive(PartialEq, Debug)]
 enum TestError {
     ErrorWhileParsing,
@@ -32,12 +25,14 @@ fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
 
 #[allow(dead_code)]
 fn tscln(source: &'static str) -> Result<String, TestError> {
-    ts_base(source, &CFG_NO_COMMENTS)
+    let cfg = Config { remove_comments: Some(true), remove_newlines: Some(true), normalize_ws: Some(true), ..Config::default() };
+    ts_base(source, &cfg)
 }
 
 #[allow(dead_code)]
 fn tsdef(source: &str) -> Result<String, TestError> {
-    ts_base(source, &CFG_DEFAULT)
+    let cfg = Config::default();
+    ts_base(source, &cfg)
 }
 
 #[test]

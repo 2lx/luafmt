@@ -8,8 +8,8 @@ use super::basics::*;
 
 #[derive(Debug)]
 pub enum Node {
-    BinaryOp(Loc, [Loc; 2], Str, Box<Node>, Box<Node>),
-    UnaryOp(Loc, [Loc; 1], Str, Box<Node>),
+    BinaryOp(Loc, [Loc; 2], Str<'static>, Box<Node>, Box<Node>),
+    UnaryOp(Loc, [Loc; 1], Str<'static>, Box<Node>),
     UnaryNot(Loc, [Loc; 1], Box<Node>),
 
     Var(Loc, [Loc; 1], Box<Node>, Box<Node>),
@@ -151,7 +151,7 @@ impl ConfiguredWrite for Node {
             }
             TableConstructorEmpty(_, locs) => cfg_write!(f, cfg, buf, "{{", Hint(&locs[0], ""), "}}"),
             Fields(_, fields) => {
-                cfg_write_sep_vector(f, cfg, buf, fields, " ", cfg.field_separator, cfg.trailing_field_separator)
+                cfg_write_sep_vector(f, cfg, buf, fields, " ", &cfg.field_separator, cfg.trailing_field_separator)
             }
             FieldNamedBracket(_, locs, e1, e2) => {
                 cfg_write!(f, cfg, buf, "[", Hint(&locs[0], ""), e1, Hint(&locs[1], ""), "]", Hint(&locs[2], " "), "=",
@@ -162,9 +162,9 @@ impl ConfiguredWrite for Node {
 
             TableIndex(_, locs, e) => cfg_write!(f, cfg, buf, "[", Hint(&locs[0], ""), e, Hint(&locs[1], ""), "]"),
             TableMember(_, locs, n) => cfg_write!(f, cfg, buf, ".", Hint(&locs[0], ""), n),
-            ExpList(_, exps) => cfg_write_sep_vector(f, cfg, buf, exps, " ", Some(","), Some(false)),
-            NameList(_, names) => cfg_write_sep_vector(f, cfg, buf, names, " ", Some(","), Some(false)),
-            VarList(_, vars) => cfg_write_sep_vector(f, cfg, buf, vars, " ", Some(","), Some(false)),
+            ExpList(_, exps) => cfg_write_sep_vector(f, cfg, buf, exps, " ", &Some(",".to_string()), Some(false)),
+            NameList(_, names) => cfg_write_sep_vector(f, cfg, buf, names, " ", &Some(",".to_string()), Some(false)),
+            VarList(_, vars) => cfg_write_sep_vector(f, cfg, buf, vars, " ", &Some(",".to_string()), Some(false)),
             StatementList(_, stts) => cfg_write_vector(f, cfg, buf, stts),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, "do", Hint(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => cfg_write!(f, cfg, buf, "do", Hint(&locs[0], " "), b, Hint(&locs[1], " "), "end"),
@@ -175,7 +175,7 @@ impl ConfiguredWrite for Node {
             }
             VarSuffixList(_, suffs) => cfg_write_vector(f, cfg, buf, suffs),
             FnMethodCall(_, locs, n1, n2) => cfg_write!(f, cfg, buf, ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2),
-            ParList(_, pars) => cfg_write_sep_vector(f, cfg, buf, pars, " ", Some(","), Some(false)),
+            ParList(_, pars) => cfg_write_sep_vector(f, cfg, buf, pars, " ", &Some(",".to_string()), Some(false)),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, "function", Hint(&locs[0], ""), n),
             FuncBody(_, locs) => cfg_write!(f, cfg, buf, "(", Hint(&locs[0], ""), ")", Hint(&locs[1], " "), "end"),
             FuncBodyB(_, locs, n2) => {
@@ -188,9 +188,9 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], " "), n2,
                            Hint(&locs[3], " "), "end")
             }
-            FuncName(_, names) => cfg_write_sep_vector(f, cfg, buf, names, "", Some("."), Some(false)),
+            FuncName(_, names) => cfg_write_sep_vector(f, cfg, buf, names, "", &Some(".".to_string()), Some(false)),
             FuncNameSelf(_, locs, names, n) => {
-                cfg_write_sep_vector(f, cfg, buf, names, "", Some("."), Some(false))?;
+                cfg_write_sep_vector(f, cfg, buf, names, "", &Some(".".to_string()), Some(false))?;
                 cfg_write!(f, cfg, buf, Hint(&locs[0], ""), ":", Hint(&locs[1], ""), n)
             }
             FuncDecl(_, locs, n1, n2) => {
