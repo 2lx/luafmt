@@ -64,8 +64,14 @@ pub Chunk: Node = {
         let node = Node::StatementList(Loc(0, 0), Vec::new());
         Node::Chunk(Loc(0, rs), Box::new(node), Loc(0, 0))
     },
+    <r1:@L> <n:SheBangLine> <l2:@R> <r2:@L> EOF => {
+        Node::Chunk(Loc(0, r1), Box::new(n), Loc(l2, r2))
+    },
     <r1:@L> <b:Block> <l2:@R> <r2:@L> EOF => {
         Node::Chunk(Loc(0, r1), Box::new(b), Loc(l2, r2))
+    },
+    <r1:@L> <n:SheBangLine> <l2:@R> <r2:@L> <b:Block> <l3:@R> <r3:@L> EOF => {
+        Node::SheBangChunk(Loc(0, r1), Box::new(n), Loc(l2, r2), Box::new(b), Loc(l3, r3))
     },
 }
 
@@ -74,6 +80,10 @@ Block: Node = {
     RetStat,
     <ls:@L> <n1:Stats> <l1:@R> <r1:@L> <n2:RetStat> <rs:@R>
         => Node::StatsRetStat(Loc(ls, rs), [Loc(l1, r1)], Box::new(n1), Box::new(n2)),
+}
+
+SheBangLine: Node = {
+    <ls:@L> <s:SheBang> <rs:@R> => Node::SheBang(Loc(ls, rs), s.to_string()),
 }
 
 Stats: Node = {
@@ -634,6 +644,7 @@ extern {
         CharStringLiteral      => Token::CharStringLiteral(<&'input str>),
         MultiLineStringLiteral => Token::MultiLineStringLiteral(<usize>, <&'input str>),
 
-        EOF => Token::EOF,
+        SheBang => Token::SheBang(<&'input str>),
+        EOF     => Token::EOF,
     }
 }

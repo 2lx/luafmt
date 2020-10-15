@@ -96,7 +96,9 @@ pub enum Node {
     RetStatExprComma(Loc, [Loc; 2], Box<Node>),
     StatsRetStat(Loc, [Loc; 1], Box<Node>, Box<Node>),
     Chunk(Loc, Box<Node>, Loc),
+    SheBangChunk(Loc, Box<Node>, Loc, Box<Node>, Loc),
     Semicolon(Loc),
+    SheBang(Loc, String),
 }
 
 impl util::PrefixHintInNoSepList for Node {
@@ -322,8 +324,12 @@ impl ConfiguredWrite for Node {
             }
             StatsRetStat(_, locs, n1, n2) => cfg_write!(f, cfg, buf, n1, Hint(&locs[0], " "), n2),
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, Hint(&locl, ""), n, Hint(&locr, "")),
+            SheBangChunk(locl, n, locm, b, locr) => {
+                cfg_write!(f, cfg, buf, Hint(&locl, ""), n, Hint(&locm, ""), b, Hint(&locr, ""))
+            }
 
             Semicolon(_) => write!(f, ";"),
+            SheBang(_, s) => write!(f, "{}\n", s),
         }
     }
 }

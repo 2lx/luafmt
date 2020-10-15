@@ -26,6 +26,18 @@ fn seek_end_by_predicate(chars: &mut TChars, start: usize, f: &dyn Fn(char, bool
     }
 }
 
+pub fn get_shebang_ends(chars: &mut TChars, start: usize) -> (usize, usize) {
+    // we already got "#!" symbols
+    let (end, succ) = seek_end_by_predicate(chars, start, &|ch: char, _| ch == '\n');
+
+    if succ {
+        // skip '\n'
+        chars.next();
+        return (end, end + 1);
+    }
+    return (end, end);
+}
+
 pub fn get_integer_end(chars: &mut TChars, start: usize) -> (usize, bool) {
     let (end, succ) = seek_end_by_predicate(chars, start, &|ch: char, _| !ch.is_ascii_digit());
 
@@ -200,6 +212,40 @@ pub fn get_comment_start_ends_and_type(chars: &mut TChars, start: usize) -> (usi
             return (text_start, text_end, token_end, None, succ);
         }
     };
+}
+
+#[test]
+fn test_get_shebang_end() {
+    let mystr = String::from("#!/usr/bin/lua\n  ");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    assert_eq!(get_shebang_ends(&mut iter, 0), (14, 15));
+
+    let mystr = String::from("#!/usr/bin/lua\n");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    assert_eq!(get_shebang_ends(&mut iter, 0), (14, 15));
+
+    let mystr = String::from("#!/usr/bin/lua");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    assert_eq!(get_shebang_ends(&mut iter, 0), (14, 14));
+
+    let mystr = String::from("#");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    assert_eq!(get_shebang_ends(&mut iter, 1), (1, 1));
+
+    let mystr = String::from("#!");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    assert_eq!(get_shebang_ends(&mut iter, 1), (2, 2));
+
+    let mystr = String::from("#!");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    iter.next();
+    assert_eq!(get_shebang_ends(&mut iter, 2), (2, 2));
 }
 
 #[test]

@@ -69,6 +69,7 @@ pub enum Token<'input> {
     VarArg,
     While,
 
+    SheBang(&'input str),
     EOF,
 }
 
@@ -143,6 +144,7 @@ impl fmt::Display for Token<'_> {
             VarArg => write!(f, "..."),
             While => write!(f, "while"),
 
+            SheBang(s) => write!(f, "{}\n", s),
             EOF => write!(f, "<EOF>"),
         }
     }
@@ -236,7 +238,17 @@ impl<'input> Iterator for Lexer<'input> {
                 }
 
                 Some(&(i, '^')) => return self.consume_ok(i, OpExponentiation, i + 1),
-                Some(&(i, '#')) => return self.consume_ok(i, OpLength, i + 1),
+                Some(&(i, '#')) => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&(_, '!')) => {
+                            self.chars.next();
+                            let (text_end, end) = get_shebang_ends(&mut self.chars, i + 2);
+                            return ok(i, SheBang(&self.input[i..text_end]), end);
+                        }
+                        _ => return ok(i, OpLength, i + 1),
+                    }
+                }
                 Some(&(i, '*')) => return self.consume_ok(i, OpMultiplication, i + 1),
                 Some(&(i, '%')) => return self.consume_ok(i, OpModulo, i + 1),
                 Some(&(i, '/')) => {
@@ -463,6 +475,9 @@ fn test_lua_lexer() {
 
     let tokens = Lexer::new("--123\n--[[54354]]").collect::<TRes>();
     assert_eq!(tokens, vec!(Ok((17, EOF, 17))));
+
+    let tokens = Lexer::new("\n#!/usr/bin/lua\n  ").collect::<TRes>();
+    assert_eq!(tokens, vec!(Ok((1, SheBang("#!/usr/bin/lua"), 16)), Ok((18, EOF, 18))));
 
     let tokens = Lexer::new("  a = b  ").collect::<TRes>();
     assert_eq!(

@@ -25,7 +25,12 @@ fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
 
 #[allow(dead_code)]
 fn tscln(source: &'static str) -> Result<String, TestError> {
-    let cfg = Config { remove_comments: Some(true), remove_newlines: Some(true), normalize_ws: Some(true), ..Config::default() };
+    let cfg = Config {
+        remove_comments: Some(true),
+        remove_newlines: Some(true),
+        normalize_ws: Some(true),
+        ..Config::default()
+    };
     ts_base(source, &cfg)
 }
 
@@ -457,4 +462,16 @@ fn test_keep_comments_special() {
     assert_eq!(tsdef("--[[1]] ; --2\n "), Ok("--[[1]] ; --2\n ".to_string()));
     assert_eq!(tsdef("--[[1]]  --2\n "), Ok("--[[1]]  --2\n ".to_string()));
     assert_eq!(tsdef("--[[1]] print(a) --2\n "), Ok("--[[1]] print(a) --2\n ".to_string()));
+    assert_eq!(tsdef("#!/usr/bin/lua\n  --[[]] "), Ok("#!/usr/bin/lua\n  --[[]] ".to_string()));
+    assert_eq!(tsdef("#!/usr/bin/lua\n"), Ok("#!/usr/bin/lua\n".to_string()));
+    assert_eq!(tsdef("#!/usr/bin/lua\n --[[]] local a = 32"), Ok("#!/usr/bin/lua\n --[[]] local a = 32".to_string()));
+    assert_eq!(tsdef("\n\n#!/usr/bin/lua\n --[[]] local a = 32"), Ok("\n\n#!/usr/bin/lua\n --[[]] local a = 32".to_string()));
+    assert_eq!(
+        tsdef("#!/usr/bin/lua\n --[[]] local a = 32 --3\n"),
+        Ok("#!/usr/bin/lua\n --[[]] local a = 32 --3\n".to_string())
+    );
+
+    // special
+    assert_eq!(tsdef("#!/usr/bin/lua"), Ok("#!/usr/bin/lua\n".to_string()));
+    assert_eq!(tsdef("#!"), Ok("#!\n".to_string()));
 }
