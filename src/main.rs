@@ -23,10 +23,10 @@ fn main() -> Result<(), std::io::Error> {
     let buffer = read_input()?;
 
     match parser::parse_lua(&buffer) {
-        Ok(result) => {
+        Ok(node_tree) => {
             let mut output = String::new();
-            match result.configured_write(&mut output, &config, &buffer) {
-                Err(_) => println!("An error occured while formatting: {:?}", result),
+            match node_tree.configured_write(&mut output, &config, &buffer) {
+                Err(_) => println!("An error occured while formatting: {:?}", node_tree),
                 _ => print!("{}", output),
             };
         }
