@@ -1,7 +1,7 @@
 use std::fmt;
 
 use super::basics::*;
-use crate::config::{Config, ConfiguredWrite};
+use crate::config::*;
 use crate::format::loc_hint::SpaceLocHint;
 use crate::format::util;
 use crate::{cfg_write, cfg_write_helper};
@@ -30,7 +30,7 @@ impl util::PrefixHintInNoSepList for Node {
 }
 
 impl ConfiguredWrite for Node {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str) -> fmt::Result {
+    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &State) -> fmt::Result {
         use Node::*;
 
         #[allow(non_snake_case)]
@@ -38,27 +38,30 @@ impl ConfiguredWrite for Node {
         let cfg_write_vector = util::cfg_write_vector::<Node, SpaceLocHint>;
 
         match self {
-            Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, Hint(&locl, ""), n, Hint(&locr, "")),
-            VariantList(_, variants) => cfg_write_vector(f, cfg, buf, variants),
-            CommentList(_, comments) => {
-                if cfg.remove_comments != Some(true) {
-                    cfg_write_vector(f, cfg, buf, comments)?;
+            Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),
+            VariantList(_, variants) => cfg_write_vector(f, cfg, buf, state, variants),
+            CommentList(_, comments) => cfg_write_vector(f, cfg, buf, state, comments),
+            NewLineList(_, newlines) => cfg_write_vector(f, cfg, buf, state, newlines),
+
+            OneLineComment(_, s) => match cfg.remove_comments {
+                Some(true) => match cfg.remove_newlines {
+                    Some(true) => Ok(()),
+                    _ => write!(f, "\n"),
                 }
-                Ok(())
-            }
-            NewLineList(_, newlines) => {
-                if cfg.remove_newlines != Some(true) {
-                    cfg_write_vector(f, cfg, buf, newlines)?;
-                }
-                Ok(())
+                _ => write!(f, "--{}\n", s),
             }
 
-            OneLineComment(_, s) => write!(f, "--{}\n", s),
-            MultiLineComment(_, level, s) => {
-                let level_str = (0..*level).map(|_| "=").collect::<String>();
-                write!(f, "--[{}[{}]{}]", level_str, s, level_str)
+            MultiLineComment(_, level, s) => match cfg.remove_comments {
+                Some(true) => Ok(()),
+                _ => {
+                    let level_str = (0..*level).map(|_| "=").collect::<String>();
+                    write!(f, "--[{}[{}]{}]", level_str, s, level_str)
+                }
             }
-            NewLine(_) => write!(f, "\n"),
+            NewLine(_) => match cfg.remove_newlines {
+                Some(true) => Ok(()),
+                _ => write!(f, "\n"),
+            }
         }
     }
 }

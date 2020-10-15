@@ -1,5 +1,5 @@
 use super::parse_lua;
-use crate::config::{Config, ConfiguredWrite};
+use crate::config::*;
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
@@ -14,8 +14,9 @@ fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
         Err(_) => Err(TestError::ErrorWhileParsing),
         Ok(result) => {
             let mut output = String::new();
+            let state = State::default();
 
-            match result.configured_write(&mut output, cfg, source) {
+            match result.configured_write(&mut output, cfg, source, &state) {
                 Ok(_) => Ok(output),
                 _ => Err(TestError::ErrorWhileWriting),
             }

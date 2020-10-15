@@ -39,7 +39,8 @@ fn process_file(file_path: &PathBuf, config: &Config) {
     match parser::parse_lua(&content) {
         Ok(node_tree) => {
             let mut outbuffer = String::new();
-            match node_tree.configured_write(&mut outbuffer, &config, &content) {
+            let state = config::State::default();
+            match node_tree.configured_write(&mut outbuffer, &config, &content, &state) {
                 Ok(_) => match config.inplace {
                     Some(true) => fs::write(file_path, outbuffer)
                         .expect(&format!("An error occured while writing file `{}`", file_path.display())),

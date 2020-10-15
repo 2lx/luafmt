@@ -3,20 +3,24 @@ use std::fmt::Debug;
 
 #[macro_export]
 macro_rules! cfg_write_helper {
-    ($wrt:expr, $cfg:expr, $buf:expr, $arg:literal) => {
+    ($wrt:expr, $cfg:expr, $buf:expr, $state:expr, $arg:literal) => {
         write!($wrt, $arg)
     };
-    ($wrt:expr, $cfg:expr, $buf:expr, $arg:expr) => {
-        $arg.configured_write($wrt, $cfg, $buf)
+    ($wrt:expr, $cfg:expr, $buf:expr, $state:expr, $arg:expr) => {
+        $arg.configured_write($wrt, $cfg, $buf, $state)
     };
 }
 
 #[macro_export]
 macro_rules! cfg_write {
-    ($wrt:expr, $cfg:expr, $buf:expr, $($arg:expr),+) => {{
-        $( cfg_write_helper!($wrt, $cfg, $buf, $arg)?; )+
+    ($wrt:expr, $cfg:expr, $buf:expr, $state: expr, $($arg:expr),+) => {{
+        $( cfg_write_helper!($wrt, $cfg, $buf, $state, $arg)?; )+
         Ok(())
     }};
+}
+
+pub trait ConfiguredWrite {
+    fn configured_write(&self, f: &mut dyn fmt::Write, config: &Config, buf: &str, state: &State) -> fmt::Result;
 }
 
 #[derive(Debug)]
@@ -71,6 +75,15 @@ impl Config {
     }
 }
 
-pub trait ConfiguredWrite {
-    fn configured_write(&self, f: &mut dyn fmt::Write, config: &Config, buf: &str) -> fmt::Result;
+#[derive(Debug, Clone)]
+pub struct State {
+    // pub remove_comments_is_printable: bool,
+}
+
+impl State {
+    pub const fn default() -> Self {
+        State {
+            // remove_comments_is_printable: false,
+        }
+    }
 }
