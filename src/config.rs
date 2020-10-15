@@ -21,6 +21,9 @@ macro_rules! cfg_write {
 
 #[derive(Debug)]
 pub struct Config {
+    pub inplace: Option<bool>,
+    pub recursive: Option<bool>,
+
     pub field_separator: Option<String>,
     // pub indent_str: Option<String>,
     pub normalize_ws: Option<bool>,
@@ -32,6 +35,9 @@ pub struct Config {
 impl Config {
     pub const fn default() -> Self {
         Config {
+            inplace: None,
+            recursive: None,
+
             field_separator: None,
             // indent_str: None,
             normalize_ws: None,
@@ -41,25 +47,26 @@ impl Config {
         }
     }
 
-    pub fn set(&mut self, param_str: &str, value_str: &str) {
-        match param_str {
-            "remove_comments" => match value_str.parse::<bool>() {
-                Ok(value) => self.remove_comments = Some(value),
-                _ => eprintln!("Invalid `remove_comments` option value `{:?}`", value_str),
-            },
-            "remove_newlines" => match value_str.parse::<bool>() {
-                Ok(value) => self.remove_newlines = Some(value),
-                _ => eprintln!("Invalid `remove_newlines` option value `{:?}`", value_str),
-            },
-            "trailing_field_separator" => match value_str.parse::<bool>() {
-                Ok(value) => self.trailing_field_separator = Some(value),
-                _ => eprintln!("Invalid `trailing_field_separator` option value `{:?}`", value_str),
-            },
-            "field_separator" => match value_str.parse::<String>() {
-                Ok(value) => self.field_separator = Some(value),
-                _ => eprintln!("Invalid `field_separator` option value `{:?}`", value_str),
-            },
-            _ => eprintln!("Invalid option `{}`", param_str),
+    pub fn set(&mut self, option_name: &str, value_str: &str) {
+        macro_rules! set_param_value_as {
+            ($field:expr, $type:ty) => {
+                match value_str.parse::<$type>() {
+                    Ok(value) => $field = Some(value),
+                    _ => eprintln!("Invalid config `{}` option value `{}`", option_name, value_str),
+                }
+            }
+        }
+
+        match option_name {
+            "inplace" => set_param_value_as!(self.inplace, bool),
+            "recursive" => set_param_value_as!(self.recursive, bool),
+
+            "field_separator" => set_param_value_as!(self.field_separator, String),
+            "normalize_ws" => set_param_value_as!(self.normalize_ws, bool),
+            "remove_comments" => set_param_value_as!(self.remove_comments, bool),
+            "remove_newlines" => set_param_value_as!(self.remove_newlines, bool),
+            "trailing_field_separator" => set_param_value_as!(self.trailing_field_separator, bool),
+            _ => eprintln!("Invalid option name `{}`", option_name),
         };
     }
 }

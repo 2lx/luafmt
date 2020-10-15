@@ -1,60 +1,76 @@
-use std::io::{self, Read};
-use std::env;
 use regex::Regex;
+use std::env;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 mod config;
-mod parser;
+mod file_util;
 mod format;
+mod parser;
 use config::{Config, ConfiguredWrite};
 
-fn read_input() -> Result<String, std::io::Error> {
-    let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    handle.read_to_string(&mut buffer)?;
-
-    Ok(buffer)
-}
-
-fn parse_args() -> (Vec::<String>, Vec::<String>) {
+fn get_options_and_filenames() -> (Vec<String>, Vec<String>) {
     let args: Vec<String> = env::args().skip(1).collect();
-    let (params, sources): (Vec<_>, Vec<_>) = args.into_iter().partition(|arg| arg.starts_with('-'));
+    let (options, mut sources): (Vec<_>, Vec<_>) = args.into_iter().partition(|arg| arg.starts_with('-'));
+    sources.sort();
 
-    println!("Params: {:?}", params);
-    println!("Sources: {:?}", sources);
-
-    (params, sources)
+    (options, sources)
 }
 
-fn args_to_config(params: &Vec::<String>) -> Config {
+fn get_config_with_options(options: &Vec<String>) -> Config {
     let mut config = Config::default();
 
-    for param in params.iter() {
-        let re = Regex::new(r"^[-]+([a-zA-Z_0-9]+)=(.*)$").unwrap();
+    for param in options.iter() {
+        let re = Regex::new(r"^[-]+([a-zA-Z_0-9]+)\s*=\s*(.*)$").unwrap();
         match re.captures_iter(param).next() {
             Some(cap) => config.set(&cap[1], &cap[2]),
-            None => eprintln!("Unrecognized param: `{}`", param),
+            None => eprintln!("Unrecognized param `{}`", param),
         }
     }
 
     config
 }
 
-fn main() -> Result<(), std::io::Error> {
-    let (params, _sources) = parse_args();
-    let config = args_to_config(&params);
-    println!("Config: {:?}", config);
+fn process_file(file_path: &PathBuf, config: &Config) {
+    let content =
+        fs::read_to_string(file_path).expect(&format!("An error occured while reading file `{}`", file_path.display()));
 
-    let buffer = read_input()?;
-    match parser::parse_lua(&buffer) {
+    println!("Process file: `{}`", file_path.display());
+    match parser::parse_lua(&content) {
         Ok(node_tree) => {
-            let mut output = String::new();
-            match node_tree.configured_write(&mut output, &config, &buffer) {
-                Err(_) => println!("An error occured while formatting: {:?}", node_tree),
-                _ => print!("{}", output),
+            let mut outbuffer = String::new();
+            match node_tree.configured_write(&mut outbuffer, &config, &content) {
+                Ok(_) => match config.inplace {
+                    Some(true) => fs::write(file_path, outbuffer)
+                        .expect(&format!("An error occured while writing file `{}`", file_path.display())),
+                    _ => (), //print!("{}", outbuffer),
+                },
+                Err(_) => println!("An error occured while formatting file `{}`: {:?}", file_path.display(), node_tree),
             };
         }
-        Err(err) => println!("An error occured while parsing: {}", err),
+        Err(err) => println!("An error occured while parsing file `{}`: {}", file_path.display(), err),
+    }
+}
+
+fn main() -> Result<(), std::io::Error> {
+    let (options, rel_paths) = get_options_and_filenames();
+    let config = get_config_with_options(&options);
+
+    println!("Paths: {:?}", rel_paths);
+    println!("Options: {:?}", options);
+    println!("Config: {:?}\n", config);
+
+    for rel_path in &rel_paths {
+        let path_buf = Path::new(rel_path).to_path_buf();
+
+        match file_util::get_path_files(&path_buf, config.recursive == Some(true)) {
+            Ok(file_paths) => {
+                for file_path in &file_paths {
+                    process_file(&file_path, &config);
+                }
+            }
+            Err(_) => println!("An error occured while reading file/dir `{}`", rel_path),
+        }
     }
 
     Ok(())
