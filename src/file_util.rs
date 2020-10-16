@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
 use std::fs;
-use std::io::{self};
+use std::io::{self, Error, ErrorKind};
 use std::path::PathBuf;
 
 pub fn get_path_files(path: &PathBuf, recursive: bool) -> io::Result<Vec<PathBuf>> {
@@ -18,6 +18,8 @@ pub fn get_path_files(path: &PathBuf, recursive: bool) -> io::Result<Vec<PathBuf
         }
     } else if path.is_file() {
         paths.push(path.to_path_buf());
+    } else {
+        return Err(Error::new(ErrorKind::Other, ""));
     }
 
     Ok(paths)

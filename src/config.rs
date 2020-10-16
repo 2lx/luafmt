@@ -74,7 +74,7 @@ impl Config {
             ($field:expr, $type:ty) => {
                 match value_str.parse::<$type>() {
                     Ok(value) => $field = Some(value),
-                    _ => eprintln!("Invalid config `{}` option value `{}`", option_name, value_str),
+                    _ => eprintln!("Invalid `{}` option value `{}`", option_name, value_str),
                 }
             };
         }
@@ -87,13 +87,13 @@ impl Config {
             "hint_after_multiline_comment" => set_param_value_as!(self.hint_after_multiline_comment, String),
             "hint_after_multiline_comment_text" => set_param_value_as!(self.hint_after_multiline_comment_text, String),
             "hint_before_comment" => set_param_value_as!(self.hint_before_comment, String),
-            "hint_before_multiline_comment_text" => set_param_value_as!(self.hint_before_multiline_comment_text, String),
+            "hint_before_multiline_comment_text" => {
+                set_param_value_as!(self.hint_before_multiline_comment_text, String)
+            }
             "hint_before_oneline_comment_text" => set_param_value_as!(self.hint_before_oneline_comment_text, String),
             "remove_comments" => set_param_value_as!(self.remove_comments, bool),
             "remove_newlines" => set_param_value_as!(self.remove_newlines, bool),
-            "remove_spaces_between_tokens" => {
-                set_param_value_as!(self.remove_spaces_between_tokens, bool)
-            }
+            "remove_spaces_between_tokens" => set_param_value_as!(self.remove_spaces_between_tokens, bool),
             "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
 
             // lua

@@ -70,7 +70,7 @@ fn main() -> Result<(), std::io::Error> {
                     process_file(&file_path, &config);
                 }
             }
-            Err(_) => println!("An error occured while reading file/dir `{}`", rel_path),
+            Err(_) => println!("Unresolved path: `{}`", rel_path),
         }
     }
 
