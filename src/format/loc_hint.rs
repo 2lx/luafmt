@@ -25,26 +25,26 @@ impl<'a, 'b> LocHintConstructor<'a, 'b> for SpaceLocHint<'a, 'b> {
 impl CommentLocHint<'_, '_> {
     fn write_formatted_comment_block(&self, f: &mut dyn fmt::Write, cfg: &Config, _buf: &str, comment_block: &str) -> fmt::Result {
 
-        if cfg.replace_zero_spaces_with_hint == Some(true) {
-            // hint before comment block, starting with '-'
-            if comment_block.is_empty() {
+        // if `comment_block` is empty
+        if comment_block.is_empty() {
+            if cfg.replace_zero_spaces_with_hint == Some(true) {
                 write!(f, "{}", self.1)?;
-            } else if cfg.hint_before_comment.is_some() && comment_block.chars().next() == Some('-') {
-                write!(f, "{}", cfg.hint_before_comment.as_ref().unwrap())?;
             }
-
-            write!(f, "{}", comment_block)?;
-
-            // hint after comment block, ending with ']'
-            if !comment_block.is_empty() && cfg.hint_after_multiline_comment.is_some()
-                    && comment_block.chars().last() == Some(']') {
-                write!(f, "{}", cfg.hint_after_multiline_comment.as_ref().unwrap())?;
-            }
-
             return Ok(());
         }
 
+        // hint before comment block, starting with '-'
+        if cfg.hint_before_comment.is_some() && comment_block.chars().next() == Some('-') {
+            write!(f, "{}", cfg.hint_before_comment.as_ref().unwrap())?;
+        }
+
         write!(f, "{}", comment_block)?;
+
+        // hint after comment block, ending with ']'
+        if cfg.hint_after_multiline_comment.is_some() && comment_block.chars().last() == Some(']') {
+            write!(f, "{}", cfg.hint_after_multiline_comment.as_ref().unwrap())?;
+        }
+
         Ok(())
     }
 }
@@ -67,7 +67,7 @@ impl ConfiguredWrite for CommentLocHint<'_, '_> {
 
 impl ConfiguredWrite for SpaceLocHint<'_, '_> {
     fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, _state: &State) -> fmt::Result {
-        if cfg.replace_spaces_between_comment_tokens_with_hint == Some(true) {
+        if cfg.remove_spaces_between_tokens == Some(true) {
             write!(f, "{}", self.1)?;
             return Ok(());
         }

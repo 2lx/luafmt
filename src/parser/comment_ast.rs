@@ -22,12 +22,10 @@ impl<'a> util::PrefixHintInList<'a> for Node {
     fn prefix_hint_in_list(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
-            MultiLineComment(_, _, _) | OneLineComment(_, _) => {
-                match cfg.hint_before_comment.as_ref() {
-                    Some(s) => s,
-                    None => "",
-                }
-            }
+            MultiLineComment(_, _, _) | OneLineComment(_, _) => match cfg.hint_before_comment.as_ref() {
+                Some(s) => s,
+                None => "",
+            },
             _ => "",
         }
     }
@@ -37,12 +35,10 @@ impl<'a> util::SuffixHintInList<'a> for Node {
     fn suffix_hint_in_list(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
-            MultiLineComment(_, _, _) => {
-                match cfg.hint_after_multiline_comment.as_ref() {
-                    Some(s) => s,
-                    None => "",
-                }
-            }
+            MultiLineComment(_, _, _) => match cfg.hint_after_multiline_comment.as_ref() {
+                Some(s) => s,
+                None => "",
+            },
             _ => "",
         }
     }
@@ -67,14 +63,31 @@ impl ConfiguredWrite for Node {
                     Some(true) => Ok(()),
                     _ => write!(f, "\n"),
                 },
-                _ => write!(f, "--{}\n", s),
+                _ => match cfg.hint_before_oneline_comment_text.as_ref() {
+                    Some(prefix) => write!(f, "--{}{}\n", prefix, s.trim_start()),
+                    None => write!(f, "--{}\n", s),
+                },
             },
 
             MultiLineComment(_, level, s) => match cfg.remove_comments {
                 Some(true) => Ok(()),
                 _ => {
                     let level_str = (0..*level).map(|_| "=").collect::<String>();
-                    write!(f, "--[{}[{}]{}]", level_str, s, level_str)
+                    match (
+                        cfg.hint_before_multiline_comment_text.as_ref(),
+                        cfg.hint_after_multiline_comment_text.as_ref(),
+                    ) {
+                        (Some(prefix), Some(suffix)) => {
+                            write!(f, "--[{}[{}{}{}]{}]", level_str, prefix, s.trim(), suffix, level_str)
+                        }
+                        (Some(prefix), None) => {
+                            write!(f, "--[{}[{}{}]{}]", level_str, prefix, s.trim_start(), level_str)
+                        }
+                        (None, Some(suffix)) => {
+                            write!(f, "--[{}[{}{}]{}]", level_str, s.trim_start(), suffix, level_str)
+                        }
+                        _ => write!(f, "--[{}[{}]{}]", level_str, s, level_str),
+                    }
                 }
             },
             NewLine(_) => match cfg.remove_newlines {

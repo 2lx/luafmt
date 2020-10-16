@@ -28,7 +28,7 @@ fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
 fn test_spaces_between_tokens_ops() {
     let cfg = Config {
         replace_zero_spaces_with_hint: Some(true),
-        replace_spaces_between_comment_tokens_with_hint: Some(true),
+        remove_spaces_between_tokens: Some(true),
         hint_before_comment: Some(" ".to_string()),
         hint_after_multiline_comment: Some(" ".to_string()),
         ..Config::default()
@@ -65,7 +65,7 @@ fn test_spaces_between_tokens_ops() {
 fn test_spaces_between_tokens_other() {
     let cfg = Config {
         replace_zero_spaces_with_hint: Some(true),
-        replace_spaces_between_comment_tokens_with_hint: Some(true),
+        remove_spaces_between_tokens: Some(true),
         hint_before_comment: Some(" ".to_string()),
         hint_after_multiline_comment: Some(" ".to_string()),
         ..Config::default()
@@ -333,7 +333,7 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
 fn test_spaces_between_tokens_special() {
     let cfg = Config {
         replace_zero_spaces_with_hint: Some(true),
-        replace_spaces_between_comment_tokens_with_hint: Some(true),
+        remove_spaces_between_tokens: Some(true),
         hint_before_comment: Some(" ".to_string()),
         hint_after_multiline_comment: Some(" ".to_string()),
         ..Config::default()

@@ -30,10 +30,13 @@ pub struct Config {
 
     // comments
     pub hint_after_multiline_comment: Option<String>,
+    pub hint_after_multiline_comment_text: Option<String>,
     pub hint_before_comment: Option<String>,
+    pub hint_before_multiline_comment_text: Option<String>,
+    pub hint_before_oneline_comment_text: Option<String>,
     pub remove_comments: Option<bool>,
     pub remove_newlines: Option<bool>,
-    pub replace_spaces_between_comment_tokens_with_hint: Option<bool>,
+    pub remove_spaces_between_tokens: Option<bool>,
     pub replace_zero_spaces_with_hint: Option<bool>,
 
     // lua
@@ -51,10 +54,13 @@ impl Config {
 
             // comments
             hint_after_multiline_comment: None,
+            hint_after_multiline_comment_text: None,
             hint_before_comment: None,
+            hint_before_multiline_comment_text: None,
+            hint_before_oneline_comment_text: None,
             remove_comments: None,
             remove_newlines: None,
-            replace_spaces_between_comment_tokens_with_hint: None,
+            remove_spaces_between_tokens: None,
             replace_zero_spaces_with_hint: None,
 
             // lua
@@ -79,11 +85,14 @@ impl Config {
 
             // comments
             "hint_after_multiline_comment" => set_param_value_as!(self.hint_after_multiline_comment, String),
+            "hint_after_multiline_comment_text" => set_param_value_as!(self.hint_after_multiline_comment_text, String),
             "hint_before_comment" => set_param_value_as!(self.hint_before_comment, String),
+            "hint_before_multiline_comment_text" => set_param_value_as!(self.hint_before_multiline_comment_text, String),
+            "hint_before_oneline_comment_text" => set_param_value_as!(self.hint_before_oneline_comment_text, String),
             "remove_comments" => set_param_value_as!(self.remove_comments, bool),
             "remove_newlines" => set_param_value_as!(self.remove_newlines, bool),
-            "replace_spaces_between_comment_tokens_with_hint" => {
-                set_param_value_as!(self.replace_spaces_between_comment_tokens_with_hint, bool)
+            "remove_spaces_between_tokens" => {
+                set_param_value_as!(self.remove_spaces_between_tokens, bool)
             }
             "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
 
