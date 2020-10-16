@@ -18,8 +18,8 @@ pub enum Node {
     Chunk(Loc, Box<Node>, Loc),
 }
 
-impl<'a> util::PrefixHintInList<'a> for Node {
-    fn prefix_hint_in_list(&self, cfg: &'a Config) -> &'a str {
+impl<'a> util::NoSepListItem<'a> for Node {
+    fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
             MultiLineComment(_, _, _) | OneLineComment(_, _) => match cfg.hint_before_comment.as_ref() {
@@ -29,10 +29,8 @@ impl<'a> util::PrefixHintInList<'a> for Node {
             _ => "",
         }
     }
-}
 
-impl<'a> util::SuffixHintInList<'a> for Node {
-    fn suffix_hint_in_list(&self, cfg: &'a Config) -> &'a str {
+    fn list_item_suffix_hint(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
             MultiLineComment(_, _, _) => match cfg.hint_after_multiline_comment.as_ref() {
@@ -50,7 +48,7 @@ impl ConfiguredWrite for Node {
 
         #[allow(non_snake_case)]
         let Hint = SpaceLocHint;
-        let cfg_write_vector = util::cfg_write_vector::<Node, SpaceLocHint>;
+        let cfg_write_vector = util::cfg_write_no_sep_list_items::<Node, SpaceLocHint>;
 
         match self {
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),

@@ -101,8 +101,8 @@ pub enum Node {
     SheBang(Loc, String),
 }
 
-impl<'a> util::PrefixHintInList<'a> for Node {
-    fn prefix_hint_in_list(&self, _: &'a Config) -> &'a str {
+impl<'a> util::NoSepListItem<'a> for Node {
+    fn list_item_prefix_hint(&self, _: &'a Config) -> &'a str {
         use Node::*;
         match self {
             Semicolon(_) | ArgsRoundBrackets(_, _, _) | ArgsRoundBracketsEmpty(_, _) | TableIndex(_, _, _)
@@ -111,10 +111,8 @@ impl<'a> util::PrefixHintInList<'a> for Node {
             _ => " ",
         }
     }
-}
 
-impl<'a> util::SuffixHintInList<'a> for Node {
-    fn suffix_hint_in_list(&self, _: &'a Config) -> &'a str {
+    fn list_item_suffix_hint(&self, _: &'a Config) -> &'a str {
         // use Node::*;
         match self {
             _ => "",
@@ -122,23 +120,69 @@ impl<'a> util::SuffixHintInList<'a> for Node {
     }
 }
 
+impl<'a> util::ListOfItems<'a, Node> for Node {
+    fn items(&self) -> Option<&Vec::<(Loc, Node, Loc, String)>> {
+        use Node::*;
+        match self {
+            Fields(_, items) | ExpList(_, items) | NameList(_, items) | VarList(_, items) | ParList(_, items)
+                | FuncName(_, items) | FuncNameSelf(_, _, items, _) => Some(items),
+            _ => None,
+        }
+    }
+
+    fn element_prefix_hint(&self) -> &str {
+        use Node::*;
+        match self {
+            Fields(..) | ExpList(..) | NameList(..) | VarList(..) | ParList(..) => " ",
+            FuncName(..) | FuncNameSelf(..) => "",
+            _ => "",
+        }
+    }
+
+    fn separator(&self, cfg: &Config) -> Option<String> {
+        use Node::*;
+        match self {
+            Fields(..) => cfg.field_separator.clone(),
+            ExpList(..) | NameList(..) | VarList(..) | ParList(..) => Some(",".to_string()),
+            FuncName(..) | FuncNameSelf(..) => Some(".".to_string()),
+            _ => None,
+        }
+    }
+
+    fn trailing_separator(&self, cfg: &Config) -> Option<bool> {
+        use Node::*;
+        match self {
+            Fields(..) => cfg.trailing_field_separator.clone(),
+            ExpList(..) | NameList(..) | VarList(..) | ParList(..) | FuncName(..) | FuncNameSelf(..) => Some(false),
+            _ => None,
+        }
+    }
+}
+
+
 impl ConfiguredWrite for Node {
     fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &State) -> fmt::Result {
         use Node::*;
 
         #[allow(non_snake_case)]
         let Hint = CommentLocHint;
-        let cfg_write_vector = util::cfg_write_vector::<Node, CommentLocHint>;
-        let cfg_write_sep_vector = util::cfg_write_sep_vector::<Node, CommentLocHint>;
+        let cfg_write_list = util::cfg_write_no_sep_list_items::<Node, CommentLocHint>;
+        let cfg_write_sep_list = util::cfg_write_sep_list::<Node, CommentLocHint>;
 
         match self {
-            BinaryOp(_, locs, tok, l, r) => cfg_write!(f, cfg, buf, state, l, Hint(&locs[0], " "), tok, Hint(&locs[1], " "), r),
+            BinaryOp(_, locs, tok, l, r) => {
+                cfg_write!(f, cfg, buf, state, l, Hint(&locs[0], " "), tok, Hint(&locs[1], " "), r)
+            }
             UnaryOp(_, locs, tok, r) => cfg_write!(f, cfg, buf, state, tok, Hint(&locs[0], ""), r),
             UnaryNot(_, locs, r) => cfg_write!(f, cfg, buf, state, "not", Hint(&locs[0], " "), r),
 
             Var(_, locs, n1, n2) => cfg_write!(f, cfg, buf, state, n1, Hint(&locs[0], ""), n2),
-            RoundBrackets(_, locs, r) => cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), r, Hint(&locs[1], ""), ")"),
-            ArgsRoundBrackets(_, locs, r) => cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), r, Hint(&locs[1], ""), ")"),
+            RoundBrackets(_, locs, r) => {
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), r, Hint(&locs[1], ""), ")")
+            }
+            ArgsRoundBrackets(_, locs, r) => {
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), r, Hint(&locs[1], ""), ")")
+            }
             ArgsRoundBracketsEmpty(_, locs) => cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")"),
 
             Nil(_) => write!(f, "nil"),
@@ -160,47 +204,58 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "{{", Hint(&locs[0], " "), r, Hint(&locs[1], " "), "}}")
             }
             TableConstructorEmpty(_, locs) => cfg_write!(f, cfg, buf, state, "{{", Hint(&locs[0], ""), "}}"),
-            Fields(_, fields) => {
-                cfg_write_sep_vector(f, cfg, buf, state, fields, " ", &cfg.field_separator, cfg.trailing_field_separator)
+            Fields(..) => {
+                cfg_write_sep_list(f, cfg, buf, state, self)
             }
             FieldNamedBracket(_, locs, e1, e2) => {
-                cfg_write!(f, cfg, buf, state, "[", Hint(&locs[0], ""), e1, Hint(&locs[1], ""), "]", Hint(&locs[2], " "), "=",
-                           Hint(&locs[3], " "), e2)
+                cfg_write!(f, cfg, buf, state, "[", Hint(&locs[0], ""), e1, Hint(&locs[1], ""), "]", Hint(&locs[2], " "),
+                           "=", Hint(&locs[3], " "), e2)
             }
-            FieldNamed(_, locs, e1, e2) => cfg_write!(f, cfg, buf, state, e1, Hint(&locs[0], " "), "=", Hint(&locs[1], " "), e2),
+            FieldNamed(_, locs, e1, e2) => {
+                cfg_write!(f, cfg, buf, state, e1, Hint(&locs[0], " "), "=", Hint(&locs[1], " "), e2)
+            }
             FieldSequential(_, e) => cfg_write!(f, cfg, buf, state, e),
 
             TableIndex(_, locs, e) => cfg_write!(f, cfg, buf, state, "[", Hint(&locs[0], ""), e, Hint(&locs[1], ""), "]"),
             TableMember(_, locs, n) => cfg_write!(f, cfg, buf, state, ".", Hint(&locs[0], ""), n),
-            ExpList(_, exps) => cfg_write_sep_vector(f, cfg, buf, state, exps, " ", &Some(",".to_string()), Some(false)),
-            NameList(_, names) => cfg_write_sep_vector(f, cfg, buf, state, names, " ", &Some(",".to_string()), Some(false)),
-            VarList(_, vars) => cfg_write_sep_vector(f, cfg, buf, state, vars, " ", &Some(",".to_string()), Some(false)),
-            StatementList(_, stts) => cfg_write_vector(f, cfg, buf, state, stts),
+            ExpList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
+            NameList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
+            VarList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
+            StatementList(_, stts) => cfg_write_list(f, cfg, buf, state, stts),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
-            DoBEnd(_, locs, b) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), b, Hint(&locs[1], " "), "end"),
-            VarsExprs(_, locs, n1, n2) => cfg_write!(f, cfg, buf, state, n1, Hint(&locs[0], " "), "=", Hint(&locs[1], " "), n2),
+            DoBEnd(_, locs, b) => {
+                cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), b, Hint(&locs[1], " "), "end")
+            }
+            VarsExprs(_, locs, n1, n2) => {
+                cfg_write!(f, cfg, buf, state, n1, Hint(&locs[0], " "), "=", Hint(&locs[1], " "), n2)
+            }
 
             VarRoundSuffix(_, locs, n1, n2) => {
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], ""), n2)
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], ""),
+                           n2)
             }
-            VarSuffixList(_, suffs) => cfg_write_vector(f, cfg, buf, state, suffs),
-            FnMethodCall(_, locs, n1, n2) => cfg_write!(f, cfg, buf, state, ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2),
-            ParList(_, pars) => cfg_write_sep_vector(f, cfg, buf, state, pars, " ", &Some(",".to_string()), Some(false)),
+            VarSuffixList(_, suffs) => cfg_write_list(f, cfg, buf, state, suffs),
+            FnMethodCall(_, locs, n1, n2) => {
+                cfg_write!(f, cfg, buf, state, ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2)
+            }
+            ParList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n),
             FuncBody(_, locs) => cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", Hint(&locs[1], " "), "end"),
             FuncBodyB(_, locs, n2) => {
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", Hint(&locs[1], " "), n2, Hint(&locs[2], " "), "end")
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", Hint(&locs[1], " "), n2, Hint(&locs[2], " "),
+                           "end")
             }
             FuncPBody(_, locs, n1) => {
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], " "), "end")
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], " "),
+                           "end")
             }
             FuncPBodyB(_, locs, n1, n2) => {
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], " "), n2,
-                           Hint(&locs[3], " "), "end")
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], " "),
+                           n2, Hint(&locs[3], " "), "end")
             }
-            FuncName(_, names) => cfg_write_sep_vector(f, cfg, buf, state, names, "", &Some(".".to_string()), Some(false)),
-            FuncNameSelf(_, locs, names, n) => {
-                cfg_write_sep_vector(f, cfg, buf, state, names, "", &Some(".".to_string()), Some(false))?;
+            FuncName(..) => cfg_write_sep_list(f, cfg, buf, state, self),
+            FuncNameSelf(_, locs, _, n) => {
+                cfg_write_sep_list(f, cfg, buf, state, self)?;
                 cfg_write!(f, cfg, buf, state, Hint(&locs[0], ""), ":", Hint(&locs[1], ""), n)
             }
             FuncDecl(_, locs, n1, n2) => {
@@ -213,61 +268,64 @@ impl ConfiguredWrite for Node {
 
             LocalNames(_, locs, n) => cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), n),
             LocalNamesExprs(_, locs, n1, n2) => {
-                cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), n1, Hint(&locs[1], " "), "=", Hint(&locs[2], " "),
-                           n2)
+                cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), n1, Hint(&locs[1], " "), "=",
+                           Hint(&locs[2], " "), n2)
             }
 
             // if
             IfThen(_, locs, e1) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), "end")
             }
             IfThenB(_, locs, e1, b1) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           b1, Hint(&locs[3], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "end")
             }
             IfThenElse(_, locs, e1) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           "else", Hint(&locs[3], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), "else", Hint(&locs[3], " "), "end")
             }
             IfThenBElse(_, locs, e1, b1) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           b1, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), "end")
             }
             IfThenElseB(_, locs, e1, b2) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           "else", Hint(&locs[3], " "), b2, Hint(&locs[4], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), "else", Hint(&locs[3], " "), b2, Hint(&locs[4], " "), "end")
             }
             IfThenBElseB(_, locs, e1, b1, b2) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           b1, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), b2, Hint(&locs[5], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "else", Hint(&locs[4], " "),
+                           b2, Hint(&locs[5], " "), "end")
             }
             IfThenElseIf(_, locs, e1, n) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           n, Hint(&locs[3], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), n, Hint(&locs[3], " "), "end")
             }
             IfThenBElseIf(_, locs, e1, b1, n) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "end")
             }
             IfThenElseIfElse(_, locs, e1, n) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           n, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), n, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), "end")
             }
             IfThenBElseIfElse(_, locs, e1, b1, n) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "else", Hint(&locs[5], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "else",
+                           Hint(&locs[5], " "), "end")
             }
             IfThenElseIfElseB(_, locs, e1, n, b2) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           n, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), b2, Hint(&locs[5], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), n, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), b2,
+                           Hint(&locs[5], " "), "end")
             }
             IfThenBElseIfElseB(_, locs, e1, b1, n, b2) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then", Hint(&locs[2], " "),
-                           b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "else", Hint(&locs[5], " "), b2,
-                           Hint(&locs[6], " "), "end")
+                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "else",
+                           Hint(&locs[5], " "), b2, Hint(&locs[6], " "), "end")
             }
-            ElseIfThenVec(_, elems) => cfg_write_vector(f, cfg, buf, state, elems),
+            ElseIfThenVec(_, elems) => cfg_write_list(f, cfg, buf, state, elems),
             ElseIfThen(_, locs, e) => {
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then")
             }
@@ -280,12 +338,12 @@ impl ConfiguredWrite for Node {
             Label(_, locs, n) => cfg_write!(f, cfg, buf, state, "::", Hint(&locs[0], ""), n, Hint(&locs[1], ""), "::"),
             GoTo(_, locs, n) => cfg_write!(f, cfg, buf, state, "goto", Hint(&locs[0], " "), n),
             WhileDo(_, locs, e) => {
-                cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do", Hint(&locs[2], " "),
-                           "end")
+                cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
+                           Hint(&locs[2], " "), "end")
             }
             WhileDoB(_, locs, e, n) => {
-                cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do", Hint(&locs[2], " "),
-                           n, Hint(&locs[3], " "), "end")
+                cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
+                           Hint(&locs[2], " "), n, Hint(&locs[3], " "), "end")
             }
             RepeatUntil(_, locs, e) => {
                 cfg_write!(f, cfg, buf, state, "repeat", Hint(&locs[0], " "), "until", Hint(&locs[1], " "), e)
@@ -296,32 +354,34 @@ impl ConfiguredWrite for Node {
             }
 
             ForInt(_, locs, n, e1, e2) => {
-                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=", Hint(&locs[2], " "), e1,
-                           Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], " "), "do",
-                           Hint(&locs[6], " "), "end")
+                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
+                           Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], " "),
+                           "do", Hint(&locs[6], " "), "end")
             }
             ForIntB(_, locs, n, e1, e2, b) => {
-                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=", Hint(&locs[2], " "), e1,
-                           Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], " "), "do",
-                           Hint(&locs[6], " "), b, Hint(&locs[7], " "), "end")
+                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
+                           Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], " "),
+                           "do", Hint(&locs[6], " "), b, Hint(&locs[7], " "), "end")
             }
             ForIntStep(_, locs, n, e1, e2, e3) => {
-                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=", Hint(&locs[2], " "), e1,
-                           Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], ""), ",", Hint(&locs[6], " "),
-                           e3, Hint(&locs[7], " "), "do", Hint(&locs[8], " "), "end")
+                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
+                           Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], ""),
+                           ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do", Hint(&locs[8], " "), "end")
             },
             ForIntStepB(_, locs, n, e1, e2, e3, b) => {
-                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=", Hint(&locs[2], " "), e1,
-                           Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], ""), ",", Hint(&locs[6], " "),
-                           e3, Hint(&locs[7], " "), "do", Hint(&locs[8], " "), b, Hint(&locs[9], " "), "end")
+                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
+                           Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], ""),
+                           ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do", Hint(&locs[8], " "), b,
+                           Hint(&locs[9], " "), "end")
             },
             ForRange(_, locs, n, e) => {
-                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in", Hint(&locs[2], " "), e,
-                           Hint(&locs[3], " "), "do", Hint(&locs[4], " "), "end")
+                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in",
+                           Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", Hint(&locs[4], " "), "end")
             }
             ForRangeB(_, locs, n, e, b) => {
-                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in", Hint(&locs[2], " "), e,
-                           Hint(&locs[3], " "), "do", Hint(&locs[4], " "), b, Hint(&locs[5], " "), "end")
+                cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in",
+                           Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", Hint(&locs[4], " "), b, Hint(&locs[5], " "),
+                           "end")
             }
 
             RetStatNone(_) => write!(f, "return"),
