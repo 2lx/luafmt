@@ -101,15 +101,23 @@ pub enum Node {
     SheBang(Loc, String),
 }
 
-impl util::PrefixHintInNoSepList for Node {
-    fn prefix_hint_in_no_sep_list(&self, _: &Config) -> &str {
+impl<'a> util::PrefixHintInList<'a> for Node {
+    fn prefix_hint_in_list(&self, _: &'a Config) -> &'a str {
         use Node::*;
-
         match self {
             Semicolon(_) | ArgsRoundBrackets(_, _, _) | ArgsRoundBracketsEmpty(_, _) | TableIndex(_, _, _)
                 | TableMember(_, _, _) | FnMethodCall(_, _, _, _) | TableConstructor(_, _, _)
                 | TableConstructorEmpty(_, _) => "",
             _ => " ",
+        }
+    }
+}
+
+impl<'a> util::SuffixHintInList<'a> for Node {
+    fn suffix_hint_in_list(&self, _: &'a Config) -> &'a str {
+        // use Node::*;
+        match self {
+            _ => "",
         }
     }
 }

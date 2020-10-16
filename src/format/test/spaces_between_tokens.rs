@@ -25,8 +25,14 @@ fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
 }
 
 #[test]
-fn test_normalize_ws_ops() {
-    let cfg = Config { normalize_ws: Some(true), ..Config::default() };
+fn test_spaces_between_tokens_ops() {
+    let cfg = Config {
+        replace_zero_spaces_with_hint: Some(true),
+        replace_spaces_between_comment_tokens_with_hint: Some(true),
+        hint_before_comment: Some(" ".to_string()),
+        hint_after_multiline_comment: Some(" ".to_string()),
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     // binary ops
@@ -35,7 +41,7 @@ fn test_normalize_ws_ops() {
         "^",
     ] {
         let left = format!("c   --1\n   --1.3\n =  --[=[2]=]   a  --3\n  {}   --[[4]]   b", op);
-        let right = format!("c --1\n--1.3\n= --[=[2]=] a --3\n{} --[[4]] b", op);
+        let right = format!("c --1\n --1.3\n= --[=[2]=] a --3\n{} --[[4]] b", op);
         assert_eq!(ts(&left), Ok(right));
 
         let left = format!("c = a--\n{} --[[342]]b", op);
@@ -56,8 +62,14 @@ fn test_normalize_ws_ops() {
 }
 
 #[test]
-fn test_normalize_ws_other() {
-    let cfg = Config { normalize_ws: Some(true), ..Config::default() };
+fn test_spaces_between_tokens_other() {
+    let cfg = Config {
+        replace_zero_spaces_with_hint: Some(true),
+        replace_spaces_between_comment_tokens_with_hint: Some(true),
+        hint_before_comment: Some(" ".to_string()),
+        hint_after_multiline_comment: Some(" ".to_string()),
+        ..Config::default()
+    };
     let ts = |s: &'static str| ts_base(s, &cfg);
 
     // TableConstructor
@@ -253,7 +265,7 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
         ts("local --[[0]] function  --[[1]] b--[[4]](--5\na --6\n,--[[7]] b--[[8]])--[[9]] print(a)--[[10]]end"),
         Ok("local --[[0]] function --[[1]] b --[[4]] ( --5\na --6\n, --[[7]] b --[[8]] ) --[[9]] print(a) --[[10]] end".to_string())
     );
-    assert_eq!(ts("function fn(  --5\n   --[[6]] )end"), Ok("function fn( --5\n--[[6]] ) end".to_string()));
+    assert_eq!(ts("function fn(  --5\n   --[[6]] )end"), Ok("function fn( --5\n --[[6]] ) end".to_string()));
 
     // For
     assert_eq!(
@@ -263,15 +275,15 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
     );
     assert_eq!(
         ts("for --[[1]]a--[[2]] =--[[3]] 1--4\n, --5\n9--6\n, --7\n1 --8\ndo--9\n --[[10]]end"),
-        Ok("for --[[1]] a --[[2]] = --[[3]] 1 --4\n, --5\n9 --6\n, --7\n1 --8\ndo --9\n--[[10]] end".to_string())
+        Ok("for --[[1]] a --[[2]] = --[[3]] 1 --4\n, --5\n9 --6\n, --7\n1 --8\ndo --9\n --[[10]] end".to_string())
     );
     assert_eq!(
-        ts("for --[[1]]a--[[2]] =--[[3]] 1--4\n, --5\n9--6\ndo--9\n print(a) --[[10]]end"),
-        Ok("for --[[1]] a --[[2]] = --[[3]] 1 --4\n, --5\n9 --6\ndo --9\nprint(a) --[[10]] end".to_string())
+        ts("for --[[1]]a--[[2]] =--[[3]]--[[35]]1--4\n, --5\n9--6\ndo--9\n print(a) --[[10]]end"),
+        Ok("for --[[1]] a --[[2]] = --[[3]] --[[35]] 1 --4\n, --5\n9 --6\ndo --9\nprint(a) --[[10]] end".to_string())
     );
     assert_eq!(
         ts("for --[[1]]a--[[2]] =--[[3]] 1--4\n, --5\n9--6\ndo--9\n --[[10]]end"),
-        Ok("for --[[1]] a --[[2]] = --[[3]] 1 --4\n, --5\n9 --6\ndo --9\n--[[10]] end".to_string())
+        Ok("for --[[1]] a --[[2]] = --[[3]] 1 --4\n, --5\n9 --6\ndo --9\n --[[10]] end".to_string())
     );
     assert_eq!(
         ts("for --[[1]]a--[[2]] in--[[3]] ipairs(t)--4\ndo--9\n print(a) --[[10]]end"),
@@ -279,7 +291,7 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
     );
     assert_eq!(
         ts("for --[[1]]a--[[2]] in--[[3]] ipairs(t)--4\ndo--9\n --[[10]]end"),
-        Ok("for --[[1]] a --[[2]] in --[[3]] ipairs(t) --4\ndo --9\n--[[10]] end".to_string())
+        Ok("for --[[1]] a --[[2]] in --[[3]] ipairs(t) --4\ndo --9\n --[[10]] end".to_string())
     );
 
     // WhileDo
@@ -289,12 +301,12 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
     );
     assert_eq!(
         ts("while --1\n a < 3 --[[2]]do--5\n --[[3]]end"),
-        Ok("while --1\na < 3 --[[2]] do --5\n--[[3]] end".to_string())
+        Ok("while --1\na < 3 --[[2]] do --5\n --[[3]] end".to_string())
     );
 
     // DoEnd
     assert_eq!(ts("do--1\n print(a)--[[2]]end"), Ok("do --1\nprint(a) --[[2]] end".to_string()));
-    assert_eq!(ts("do--1\n --[[2]] end"), Ok("do --1\n--[[2]] end".to_string()));
+    assert_eq!(ts("do--1\n --[[2]] end"), Ok("do --1\n --[[2]] end".to_string()));
 
     // RepeatUntil
     assert_eq!(
@@ -303,7 +315,7 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
     );
     assert_eq!(
         ts("repeat--[[1]] --2\nuntil --[[3]]  a < 4"),
-        Ok("repeat --[[1]]--2\nuntil --[[3]] a < 4".to_string())
+        Ok("repeat --[[1]] --2\nuntil --[[3]] a < 4".to_string())
     );
 
     // VarsExprs
@@ -318,12 +330,18 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
 }
 
 #[test]
-fn test_normalize_ws_special() {
-    let cfg = Config { normalize_ws: Some(true), ..Config::default() };
+fn test_spaces_between_tokens_special() {
+    let cfg = Config {
+        replace_zero_spaces_with_hint: Some(true),
+        replace_spaces_between_comment_tokens_with_hint: Some(true),
+        hint_before_comment: Some(" ".to_string()),
+        hint_after_multiline_comment: Some(" ".to_string()),
+        ..Config::default()
+    };
     let ts = |s: &'static str| ts_base(s, &cfg);
 
     assert_eq!(ts("   "), Ok("".to_string()));
-    assert_eq!(ts("--[[1]]"), Ok(" --[[1]] ".to_string()));
+    assert_eq!(ts(" --[[1]] "), Ok(" --[[1]] ".to_string()));
     assert_eq!(ts("--[[1]] ; --2\n "), Ok(" --[[1]] ; --2\n".to_string()));
     assert_eq!(ts("--[[1]] print(a) --2\n "), Ok(" --[[1]] print(a) --2\n".to_string()));
     assert_eq!(ts("#!/usr/bin/lua\n--[[1]] print(a) --2\n "), Ok("#!/usr/bin/lua\n --[[1]] print(a) --2\n".to_string()));

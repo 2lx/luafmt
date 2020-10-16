@@ -18,12 +18,31 @@ pub enum Node {
     Chunk(Loc, Box<Node>, Loc),
 }
 
-impl util::PrefixHintInNoSepList for Node {
-    fn prefix_hint_in_no_sep_list(&self, _: &Config) -> &str {
+impl<'a> util::PrefixHintInList<'a> for Node {
+    fn prefix_hint_in_list(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
-
         match self {
-            MultiLineComment(_, _, _) | OneLineComment(_, _) => "",
+            MultiLineComment(_, _, _) | OneLineComment(_, _) => {
+                match cfg.hint_before_comment.as_ref() {
+                    Some(s) => s,
+                    None => "",
+                }
+            }
+            _ => "",
+        }
+    }
+}
+
+impl<'a> util::SuffixHintInList<'a> for Node {
+    fn suffix_hint_in_list(&self, cfg: &'a Config) -> &'a str {
+        use Node::*;
+        match self {
+            MultiLineComment(_, _, _) => {
+                match cfg.hint_after_multiline_comment.as_ref() {
+                    Some(s) => s,
+                    None => "",
+                }
+            }
             _ => "",
         }
     }
@@ -47,9 +66,9 @@ impl ConfiguredWrite for Node {
                 Some(true) => match cfg.remove_newlines {
                     Some(true) => Ok(()),
                     _ => write!(f, "\n"),
-                }
+                },
                 _ => write!(f, "--{}\n", s),
-            }
+            },
 
             MultiLineComment(_, level, s) => match cfg.remove_comments {
                 Some(true) => Ok(()),
@@ -57,11 +76,11 @@ impl ConfiguredWrite for Node {
                     let level_str = (0..*level).map(|_| "=").collect::<String>();
                     write!(f, "--[{}[{}]{}]", level_str, s, level_str)
                 }
-            }
+            },
             NewLine(_) => match cfg.remove_newlines {
                 Some(true) => Ok(()),
                 _ => write!(f, "\n"),
-            }
+            },
         }
     }
 }

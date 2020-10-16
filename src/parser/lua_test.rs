@@ -29,7 +29,8 @@ fn tscln(source: &'static str) -> Result<String, TestError> {
     let cfg = Config {
         remove_comments: Some(true),
         remove_newlines: Some(true),
-        normalize_ws: Some(true),
+        replace_zero_spaces_with_hint: Some(true),
+        replace_spaces_between_comment_tokens_with_hint: Some(true),
         ..Config::default()
     };
     ts_base(source, &cfg)

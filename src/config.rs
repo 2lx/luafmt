@@ -28,11 +28,18 @@ pub struct Config {
     pub inplace: Option<bool>,
     pub recursive: Option<bool>,
 
-    pub field_separator: Option<String>,
-    // pub indent_str: Option<String>,
-    pub normalize_ws: Option<bool>,
+    // comments
+    pub hint_after_multiline_comment: Option<String>,
+    pub hint_before_comment: Option<String>,
     pub remove_comments: Option<bool>,
     pub remove_newlines: Option<bool>,
+    pub replace_spaces_between_comment_tokens_with_hint: Option<bool>,
+    pub replace_zero_spaces_with_hint: Option<bool>,
+
+    // lua
+    // replace_tabs_with: Option<String>,
+    // pub indent_str: Option<String>,
+    pub field_separator: Option<String>,
     pub trailing_field_separator: Option<bool>,
 }
 
@@ -42,11 +49,16 @@ impl Config {
             inplace: None,
             recursive: None,
 
-            field_separator: None,
-            // indent_str: None,
-            normalize_ws: None,
+            // comments
+            hint_after_multiline_comment: None,
+            hint_before_comment: None,
             remove_comments: None,
             remove_newlines: None,
+            replace_spaces_between_comment_tokens_with_hint: None,
+            replace_zero_spaces_with_hint: None,
+
+            // lua
+            field_separator: None,
             trailing_field_separator: None,
         }
     }
@@ -58,17 +70,25 @@ impl Config {
                     Ok(value) => $field = Some(value),
                     _ => eprintln!("Invalid config `{}` option value `{}`", option_name, value_str),
                 }
-            }
+            };
         }
 
         match option_name {
             "inplace" => set_param_value_as!(self.inplace, bool),
             "recursive" => set_param_value_as!(self.recursive, bool),
 
-            "field_separator" => set_param_value_as!(self.field_separator, String),
-            "normalize_ws" => set_param_value_as!(self.normalize_ws, bool),
+            // comments
+            "hint_after_multiline_comment" => set_param_value_as!(self.hint_after_multiline_comment, String),
+            "hint_before_comment" => set_param_value_as!(self.hint_before_comment, String),
             "remove_comments" => set_param_value_as!(self.remove_comments, bool),
             "remove_newlines" => set_param_value_as!(self.remove_newlines, bool),
+            "replace_spaces_between_comment_tokens_with_hint" => {
+                set_param_value_as!(self.replace_spaces_between_comment_tokens_with_hint, bool)
+            }
+            "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
+
+            // lua
+            "field_separator" => set_param_value_as!(self.field_separator, String),
             "trailing_field_separator" => set_param_value_as!(self.trailing_field_separator, bool),
             _ => eprintln!("Invalid option name `{}`", option_name),
         };
