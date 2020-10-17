@@ -1,9 +1,9 @@
 use super::loc_hint::*;
+use super::util::*;
 use crate::config::*;
-use crate::parser::basics::Loc;
+use crate::parser::common::*;
 use crate::{cfg_write, cfg_write_helper};
 use std::fmt;
-use std::cmp::Ordering;
 
 pub trait NoSepListItem<'a> {
     fn list_item_prefix_hint(&self, config: &'a Config) -> &'a str;
@@ -11,18 +11,10 @@ pub trait NoSepListItem<'a> {
 }
 
 pub trait SepListOfItems<Node> {
-    fn items(&self) -> Option<&Vec::<(Loc, Node, Loc, String)>>;
+    fn items(&self) -> Option<&Vec<(Loc, Node, Loc, String)>>;
     fn element_prefix_hint(&self) -> &str;
     fn separator(&self, cfg: &Config) -> Option<String>;
     fn trailing_separator(&self, cfg: &Config) -> Option<bool>;
-}
-
-pub fn longest_hint<'a>(hint1: &'a str, hint2: &'a str) -> &'a str {
-    return match hint1.len().cmp(&hint2.len()) {
-        Ordering::Less => hint2,
-        Ordering::Greater => hint1,
-        Ordering::Equal => hint1,
-    }
 }
 
 pub fn cfg_write_sep_list<'a, 'b, 'c, 'd, 'n: 'a + 'b + 'c, Node, Hint>(
@@ -37,33 +29,42 @@ where
     Hint: ConfiguredWrite + LocHintConstructor<'a, 'b>,
 {
     match list_node.items() {
-        Some(items) => if !items.is_empty() {
-            let sep_opt = list_node.separator(cfg);
-            let get_sep = |item: &'n (Loc, Node, Loc, String)| -> &'c str {
-                match &sep_opt {
-                    Some(sep) => &sep,
-                    None => &item.3,
+        Some(items) => {
+            if !items.is_empty() {
+                let sep_opt = list_node.separator(cfg);
+                let get_sep = |item: &'n (Loc, Node, Loc, String)| -> &'c str {
+                    match &sep_opt {
+                        Some(sep) => &sep,
+                        None => &item.3,
+                    }
+                };
+
+                let first = &items[0];
+                cfg_write!(f, cfg, buf, state, Hint::new(&first.0, ""), first.1, Hint::new(&first.2, ""))?;
+
+                for i in 1..items.len() {
+                    write!(f, "{}", get_sep(&items[i - 1]))?;
+
+                    let item = &items[i];
+                    cfg_write!(
+                        f,
+                        cfg,
+                        buf,
+                        state,
+                        Hint::new(&item.0, list_node.element_prefix_hint()),
+                        item.1,
+                        Hint::new(&item.2, "")
+                    )?;
                 }
-            };
 
-            let first = &items[0];
-            cfg_write!(f, cfg, buf, state, Hint::new(&first.0, ""), first.1, Hint::new(&first.2, ""))?;
-
-            for i in 1..items.len() {
-                write!(f, "{}", get_sep(&items[i - 1]))?;
-
-                let item = &items[i];
-                cfg_write!(f, cfg, buf, state, Hint::new(&item.0, list_node.element_prefix_hint()), item.1,
-                           Hint::new(&item.2, ""))?;
-            }
-
-            let last = &items[items.len() - 1];
-            let trailing_sep = list_node.trailing_separator(cfg);
-            if trailing_sep.is_none() && !last.3.is_empty() || trailing_sep == Some(true) {
-                write!(f, "{}", get_sep(&last))?;
+                let last = &items[items.len() - 1];
+                let trailing_sep = list_node.trailing_separator(cfg);
+                if trailing_sep.is_none() && !last.3.is_empty() || trailing_sep == Some(true) {
+                    write!(f, "{}", get_sep(&last))?;
+                }
             }
         }
-        None => {},
+        None => {}
     }
     Ok(())
 }

@@ -1,9 +1,9 @@
 use std::fmt;
 
-use super::basics::*;
+use super::common::*;
 use crate::config::*;
-use crate::format::loc_hint::SpaceLocHint;
-use crate::format::util;
+use crate::formatting::loc_hint::SpaceLocHint;
+use crate::formatting::list;
 use crate::{cfg_write, cfg_write_helper};
 
 #[derive(Debug)]
@@ -18,7 +18,7 @@ pub enum Node {
     Chunk(Loc, Box<Node>, Loc),
 }
 
-impl<'a> util::NoSepListItem<'a> for Node {
+impl<'a> list::NoSepListItem<'a> for Node {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
@@ -48,7 +48,7 @@ impl ConfiguredWrite for Node {
 
         #[allow(non_snake_case)]
         let Hint = SpaceLocHint;
-        let cfg_write_vector = util::cfg_write_no_sep_list_items::<Node, SpaceLocHint>;
+        let cfg_write_vector = list::cfg_write_no_sep_list_items::<Node, SpaceLocHint>;
 
         match self {
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),

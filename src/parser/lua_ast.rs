@@ -1,10 +1,10 @@
 use std::fmt;
 
+use super::common::*;
 use crate::config::*;
 use crate::{cfg_write, cfg_write_helper};
-use crate::format::loc_hint::CommentLocHint;
-use crate::format::util;
-use super::basics::*;
+use crate::formatting::loc_hint::CommentLocHint;
+use crate::formatting::list;
 
 #[derive(Debug)]
 pub enum Node {
@@ -101,7 +101,7 @@ pub enum Node {
     SheBang(Loc, String),
 }
 
-impl<'a> util::NoSepListItem<'a> for Node {
+impl<'a> list::NoSepListItem<'a> for Node {
     fn list_item_prefix_hint(&self, _: &'a Config) -> &'a str {
         use Node::*;
         match self {
@@ -119,7 +119,7 @@ impl<'a> util::NoSepListItem<'a> for Node {
     }
 }
 
-impl util::SepListOfItems<Node> for Node {
+impl list::SepListOfItems<Node> for Node {
     fn items(&self) -> Option<&Vec::<(Loc, Node, Loc, String)>> {
         use Node::*;
         match self {
@@ -165,8 +165,8 @@ impl ConfiguredWrite for Node {
 
         #[allow(non_snake_case)]
         let Hint = CommentLocHint;
-        let cfg_write_list = util::cfg_write_no_sep_list_items::<Node, CommentLocHint>;
-        let cfg_write_sep_list = util::cfg_write_sep_list::<Node, CommentLocHint>;
+        let cfg_write_list = list::cfg_write_no_sep_list_items::<Node, CommentLocHint>;
+        let cfg_write_sep_list = list::cfg_write_sep_list::<Node, CommentLocHint>;
 
         match self {
             BinaryOp(_, locs, tok, l, r) => {

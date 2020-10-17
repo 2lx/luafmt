@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 mod config;
 mod file_util;
-mod format;
+mod formatting;
 mod parser;
 use config::{Config, ConfiguredWrite};
 

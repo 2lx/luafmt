@@ -1,6 +1,6 @@
 use std::fmt;
 use crate::config::*;
-use crate::parser::basics::*;
+use crate::parser::common::*;
 use crate::parser::parse_comment;
 
 pub struct CommentLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
