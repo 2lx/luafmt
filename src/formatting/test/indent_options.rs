@@ -44,6 +44,32 @@ end"#.to_string()));
 }
 
 #[test]
+fn test_indent_every_statement() {
+    let cfg = Config::default();
+    let ts = |s: &str| ts_base(s, &cfg);
+    assert_eq!(ts("do print(a) print(b) print(c) end"), Ok("do print(a) print(b) print(c) end".to_string()));
+    assert_eq!(ts("for i = 1, 3 do --[[1]] print(a) --2\n print(b) --3\n print(c) --[[4]] end"),
+               Ok("for i = 1, 3 do --[[1]] print(a) --2\n print(b) --3\n print(c) --[[4]] end".to_string()));
+    assert_eq!(ts("while a > 4 do --[[1]] print(a) --2\n print(b) --3\n print(c) --[[4]] end"),
+               Ok("while a > 4 do --[[1]] print(a) --2\n print(b) --3\n print(c) --[[4]] end".to_string()));
+
+    let cfg =
+        Config { indent_every_statement: Some(true), ..Config::default() };
+    let ts = |s: &str| ts_base(s, &cfg);
+    assert_eq!(ts("do print(a) print(b) print(c) end"), Ok(r#"do print(a)
+print(b)
+print(c) end"#.to_string()));
+    assert_eq!(ts("for i = 1, 3 do --[[1]] print(a) --2\n print(b) --[[3]] print(c) --[[4]] end"),
+               Ok("for i = 1, 3 do --[[1]] print(a) --2
+print(b) --[[3]]
+print(c) --[[4]] end".to_string()));
+    assert_eq!(ts("while a > 4 do --[[1]] print(a) --2\n print(b) --3\n print(c) --[[4]] end"),
+               Ok("while a > 4 do --[[1]] print(a) --2
+print(b) --3
+print(c) --[[4]] end".to_string()));
+}
+
+#[test]
 fn test_indent_if_then_else() {
     let cfg = Config::default();
     let ts = |s: &str| ts_base(s, &cfg);

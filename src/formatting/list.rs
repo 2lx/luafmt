@@ -6,8 +6,9 @@ use crate::{cfg_write, cfg_write_helper};
 use std::fmt;
 
 pub trait NoSepListItem<'a> {
-    fn list_item_prefix_hint(&self, config: &'a Config) -> &'a str;
-    fn list_item_suffix_hint(&self, config: &'a Config) -> &'a str;
+    fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str;
+    fn list_item_suffix_hint(&self, cfg: &'a Config) -> &'a str;
+    fn need_indent(&self, cfg: &'a Config) -> bool;
 }
 
 pub trait SepListOfItems<Node> {
@@ -62,7 +63,7 @@ where
     Ok(())
 }
 
-pub fn cfg_write_no_sep_list_items<'a, 'b, 'c: 'a + 'b, Node, Hint>(
+pub fn cfg_write_list_items<'a, 'b, 'c: 'a + 'b, Node, Hint>(
     f: &mut dyn fmt::Write,
     cfg: &'c Config,
     buf: &str,
@@ -78,11 +79,15 @@ where
 
         cfg_write!(f, cfg, buf, state, Hint::new(&first.0, ""), first.1)?;
         for i in 1..elems.len() {
-            let suffix = elems[i - 1].1.list_item_suffix_hint(cfg);
-            let prefix = elems[i].1.list_item_prefix_hint(cfg);
-            let hint = longest_hint(prefix, suffix);
+            if elems[i].1.need_indent(cfg) {
+                cfg_write!(f, cfg, buf, state, NewLineDecorator(Hint::new(&elems[i].0, "")), elems[i].1)?;
+            } else {
+                let suffix = elems[i - 1].1.list_item_suffix_hint(cfg);
+                let prefix = elems[i].1.list_item_prefix_hint(cfg);
+                let hint = longest_hint(prefix, suffix);
 
-            cfg_write!(f, cfg, buf, state, Hint::new(&elems[i].0, hint), elems[i].1)?;
+                cfg_write!(f, cfg, buf, state, Hint::new(&elems[i].0, hint), elems[i].1)?;
+            }
         }
     }
     Ok(())

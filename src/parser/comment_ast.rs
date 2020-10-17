@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::common::*;
 use crate::config::*;
-use crate::formatting::loc_hint::SpaceLocHint;
+use crate::formatting::loc_hint::*;
 use crate::formatting::list;
 use crate::{cfg_write, cfg_write_helper};
 
@@ -40,6 +40,10 @@ impl<'a> list::NoSepListItem<'a> for Node {
             _ => "",
         }
     }
+
+    fn need_indent(&self, _cfg: &'a Config) -> bool {
+        false
+    }
 }
 
 impl ConfiguredWrite for Node {
@@ -48,7 +52,7 @@ impl ConfiguredWrite for Node {
 
         #[allow(non_snake_case)]
         let Hint = SpaceLocHint;
-        let cfg_write_vector = list::cfg_write_no_sep_list_items::<Node, SpaceLocHint>;
+        let cfg_write_vector = list::cfg_write_list_items::<Node, SpaceLocHint>;
 
         match self {
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),

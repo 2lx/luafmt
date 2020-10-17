@@ -7,9 +7,10 @@ use super::util::*;
 pub struct CommentLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
 pub struct SpaceLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
 
-pub struct NewLineDecorator<'a, 'b>(pub CommentLocHint<'a, 'b>);
+pub struct NewLineDecorator<LocHint>(pub LocHint);
 
-impl ConfiguredWrite for NewLineDecorator<'_, '_> {
+impl<LocHint> ConfiguredWrite for NewLineDecorator<LocHint>
+where LocHint: ConfiguredWrite {
     fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &mut State) -> fmt::Result {
         let mut comment_block = String::new();
         match self.0.configured_write(&mut comment_block, cfg, buf, state) {

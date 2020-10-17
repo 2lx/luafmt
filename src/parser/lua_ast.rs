@@ -3,7 +3,7 @@ use std::fmt;
 use super::common::*;
 use crate::config::*;
 use crate::{cfg_write, cfg_write_helper};
-use crate::formatting::loc_hint::{CommentLocHint, NewLineDecorator};
+use crate::formatting::loc_hint::*;
 use crate::formatting::list;
 
 #[derive(Debug)]
@@ -117,6 +117,20 @@ impl<'a> list::NoSepListItem<'a> for Node {
             _ => "",
         }
     }
+
+    fn need_indent(&self, cfg: &'a Config) -> bool {
+        use Node::*;
+        match self {
+            VarsExprs(..) | RepeatUntil(..) | RepeatBUntil(..) | LocalNames(..) | LocalNamesExprs(..) | Break(..)
+                | GoTo(..) | DoEnd(..) | DoBEnd(..) | WhileDo(..) | WhileDoB(..) | IfThen(..) | IfThenB(..)
+                | IfThenElse(..) | IfThenBElse(..) | IfThenElseB(..) | IfThenBElseB(..) | IfThenElseIf(..)
+                | IfThenBElseIf(..) | IfThenElseIfElse(..) | IfThenBElseIfElse(..) | IfThenElseIfElseB(..)
+                | IfThenBElseIfElseB(..) | ForInt(..) | ForIntB(..) | ForIntStep(..) | ForIntStepB(..)
+                | ForRange(..) | ForRangeB(..) | FuncDecl(..) | LocalFuncDecl(..) | Var(..) | VarRoundSuffix(..)
+                | RoundBrackets(..) => cfg.indent_every_statement.unwrap_or(false),
+            _ => false,
+        }
+    }
 }
 
 impl list::SepListOfItems<Node> for Node {
@@ -165,7 +179,7 @@ impl ConfiguredWrite for Node {
 
         #[allow(non_snake_case)]
         let Hint = CommentLocHint;
-        let cfg_write_list = list::cfg_write_no_sep_list_items::<Node, CommentLocHint>;
+        let cfg_write_list = list::cfg_write_list_items::<Node, CommentLocHint>;
         let cfg_write_sep_list = list::cfg_write_sep_list::<Node, CommentLocHint>;
 
         match self {
@@ -224,7 +238,7 @@ impl ConfiguredWrite for Node {
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => {
                 match (&cfg.indentation_string, &cfg.do_end_format) {
-                    (Some(_), Some(_)) => {
+                    (Some(_), Some(1)) => {
                         state.indent_level += 1;
                         cfg_write!(f, cfg, buf, state, "do", NewLineDecorator(Hint(&locs[0], "")), b)?;
 

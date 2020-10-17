@@ -41,10 +41,10 @@ pub struct Config {
 
     // indent
     pub indentation_string: Option<String>,
-    pub indent_statements: Option<bool>,
-    pub indent_comments: Option<bool>,
+    // pub indent_comments: Option<bool>,
+    pub indent_every_statement: Option<bool>,
     pub do_end_format: Option<usize>,
-    pub for_do_format: Option<usize>,
+    pub for_format: Option<usize>,
     pub function_def_format: Option<usize>,
     pub if_then_else_format: Option<usize>,
     pub repeat_until_format: Option<usize>,
@@ -75,10 +75,10 @@ impl Config {
 
             // indent
             indentation_string: None,
-            indent_statements: None,
-            indent_comments: None,
+            indent_every_statement: None,
+            // indent_comments: None,
             do_end_format: None,
-            for_do_format: None,
+            for_format: None,
             function_def_format: None,
             if_then_else_format: None,
             repeat_until_format: None,
@@ -119,8 +119,9 @@ impl Config {
 
             // indent
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
+            "indent_every_statement" => set_param_value_as!(self.indent_every_statement, bool),
             "do_end_format" => set_param_value_as!(self.do_end_format, usize),
-            "for_do_format" => set_param_value_as!(self.for_do_format, usize),
+            "for_format" => set_param_value_as!(self.for_format, usize),
             "function_def_format" => set_param_value_as!(self.function_def_format, usize),
             "if_then_else_format" => set_param_value_as!(self.if_then_else_format, usize),
             "repeat_until_format" => set_param_value_as!(self.repeat_until_format, usize),
