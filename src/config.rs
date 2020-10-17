@@ -20,7 +20,7 @@ macro_rules! cfg_write {
 }
 
 pub trait ConfiguredWrite {
-    fn configured_write(&self, f: &mut dyn fmt::Write, config: &Config, buf: &str, state: &State) -> fmt::Result;
+    fn configured_write(&self, f: &mut dyn fmt::Write, config: &Config, buf: &str, state: &mut State) -> fmt::Result;
 }
 
 #[derive(Debug)]
@@ -39,9 +39,19 @@ pub struct Config {
     pub remove_spaces_between_tokens: Option<bool>,
     pub replace_zero_spaces_with_hint: Option<bool>,
 
-    // lua
+    // indent
+    pub indentation_string: Option<String>,
+    pub indent_statements: Option<bool>,
+    pub indent_comments: Option<bool>,
+    pub do_end_format: Option<usize>,
+    pub for_do_format: Option<usize>,
+    pub function_def_format: Option<usize>,
+    pub if_then_else_format: Option<usize>,
+    pub repeat_until_format: Option<usize>,
+    pub while_do_format: Option<usize>,
+
+    // other
     // replace_tabs_with: Option<String>,
-    // pub indent_str: Option<String>,
     pub field_separator: Option<String>,
     pub write_trailing_field_separator: Option<bool>,
 }
@@ -63,7 +73,18 @@ impl Config {
             remove_spaces_between_tokens: None,
             replace_zero_spaces_with_hint: None,
 
-            // lua
+            // indent
+            indentation_string: None,
+            indent_statements: None,
+            indent_comments: None,
+            do_end_format: None,
+            for_do_format: None,
+            function_def_format: None,
+            if_then_else_format: None,
+            repeat_until_format: None,
+            while_do_format: None,
+
+            // other
             field_separator: None,
             write_trailing_field_separator: None,
         }
@@ -96,7 +117,16 @@ impl Config {
             "remove_spaces_between_tokens" => set_param_value_as!(self.remove_spaces_between_tokens, bool),
             "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
 
-            // lua
+            // indent
+            "indentation_string" => set_param_value_as!(self.indentation_string, String),
+            "do_end_format" => set_param_value_as!(self.do_end_format, usize),
+            "for_do_format" => set_param_value_as!(self.for_do_format, usize),
+            "function_def_format" => set_param_value_as!(self.function_def_format, usize),
+            "if_then_else_format" => set_param_value_as!(self.if_then_else_format, usize),
+            "repeat_until_format" => set_param_value_as!(self.repeat_until_format, usize),
+            "while_do_format" => set_param_value_as!(self.while_do_format, usize),
+
+            // other
             "field_separator" => set_param_value_as!(self.field_separator, String),
             "write_trailing_field_separator" => set_param_value_as!(self.write_trailing_field_separator, bool),
             _ => eprintln!("Invalid option name `{}`", option_name),
@@ -104,15 +134,17 @@ impl Config {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct State {
-    // pub remove_comments_is_printable: bool,
+    pub no_format_indent: String,
+    pub indent_level: usize,
 }
 
 impl State {
     pub const fn default() -> Self {
         State {
-            // remove_comments_is_printable: false,
+            no_format_indent: String::new(),
+            indent_level: 0,
         }
     }
 }

@@ -21,7 +21,7 @@ pub fn cfg_write_sep_list<'a, 'b, 'c, 'd, 'n: 'a + 'b + 'c, Node, Hint>(
     f: &mut dyn fmt::Write,
     cfg: &'d Config,
     buf: &str,
-    state: &State,
+    state: &mut State,
     list_node: &'n Node,
 ) -> Result<(), core::fmt::Error>
 where
@@ -46,15 +46,8 @@ where
                     write!(f, "{}", get_sep(&items[i - 1]))?;
 
                     let item = &items[i];
-                    cfg_write!(
-                        f,
-                        cfg,
-                        buf,
-                        state,
-                        Hint::new(&item.0, list_node.element_prefix_hint()),
-                        item.1,
-                        Hint::new(&item.2, "")
-                    )?;
+                    cfg_write!(f, cfg, buf, state, Hint::new(&item.0, list_node.element_prefix_hint()), item.1,
+                               Hint::new(&item.2, ""))?;
                 }
 
                 let last = &items[items.len() - 1];
@@ -73,7 +66,7 @@ pub fn cfg_write_no_sep_list_items<'a, 'b, 'c: 'a + 'b, Node, Hint>(
     f: &mut dyn fmt::Write,
     cfg: &'c Config,
     buf: &str,
-    state: &State,
+    state: &mut State,
     elems: &'c Vec<(Loc, Node)>,
 ) -> Result<(), core::fmt::Error>
 where

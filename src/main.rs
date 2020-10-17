@@ -39,8 +39,8 @@ fn process_file(file_path: &PathBuf, config: &Config) {
     match parser::parse_lua(&content) {
         Ok(node_tree) => {
             let mut outbuffer = String::new();
-            let state = config::State::default();
-            match node_tree.configured_write(&mut outbuffer, &config, &content, &state) {
+            let mut state = config::State::default();
+            match node_tree.configured_write(&mut outbuffer, &config, &content, &mut state) {
                 Ok(_) => match config.inplace {
                     Some(true) => fs::write(file_path, outbuffer)
                         .expect(&format!("An error occured while writing file `{}`", file_path.display())),
@@ -53,7 +53,7 @@ fn process_file(file_path: &PathBuf, config: &Config) {
     }
 }
 
-fn main() -> Result<(), std::io::Error> {
+fn main() {
     let (options, rel_paths) = get_options_and_filenames();
     let config = get_config_with_options(&options);
 
@@ -73,6 +73,4 @@ fn main() -> Result<(), std::io::Error> {
             Err(_) => println!("Unresolved path: `{}`", rel_path),
         }
     }
-
-    Ok(())
 }

@@ -43,7 +43,7 @@ impl<'a> list::NoSepListItem<'a> for Node {
 }
 
 impl ConfiguredWrite for Node {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &State) -> fmt::Result {
+    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &mut State) -> fmt::Result {
         use Node::*;
 
         #[allow(non_snake_case)]

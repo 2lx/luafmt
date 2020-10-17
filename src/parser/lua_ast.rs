@@ -3,7 +3,7 @@ use std::fmt;
 use super::common::*;
 use crate::config::*;
 use crate::{cfg_write, cfg_write_helper};
-use crate::formatting::loc_hint::CommentLocHint;
+use crate::formatting::loc_hint::{CommentLocHint, NewLineDecorator};
 use crate::formatting::list;
 
 #[derive(Debug)]
@@ -160,7 +160,7 @@ impl list::SepListOfItems<Node> for Node {
 
 
 impl ConfiguredWrite for Node {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &State) -> fmt::Result {
+    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &mut State) -> fmt::Result {
         use Node::*;
 
         #[allow(non_snake_case)]
@@ -223,7 +223,18 @@ impl ConfiguredWrite for Node {
             StatementList(_, stts) => cfg_write_list(f, cfg, buf, state, stts),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => {
-                cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), b, Hint(&locs[1], " "), "end")
+                match (&cfg.indentation_string, &cfg.do_end_format) {
+                    (Some(_), Some(_)) => {
+                        state.indent_level += 1;
+                        cfg_write!(f, cfg, buf, state, "do", NewLineDecorator(Hint(&locs[0], "")), b)?;
+
+                        state.indent_level -= 1;
+                        cfg_write!(f, cfg, buf, state, NewLineDecorator(Hint(&locs[1], "")), "end")?;
+
+                        Ok(())
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), b, Hint(&locs[1], " "), "end"),
+                }
             }
             VarsExprs(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, state, n1, Hint(&locs[0], " "), "=", Hint(&locs[1], " "), n2)

@@ -2,9 +2,32 @@ use std::fmt;
 use crate::config::*;
 use crate::parser::common::*;
 use crate::parser::parse_comment;
+use super::util::*;
 
 pub struct CommentLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
 pub struct SpaceLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
+
+pub struct NewLineDecorator<'a, 'b>(pub CommentLocHint<'a, 'b>);
+
+impl ConfiguredWrite for NewLineDecorator<'_, '_> {
+    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &mut State) -> fmt::Result {
+        let mut comment_block = String::new();
+        match self.0.configured_write(&mut comment_block, cfg, buf, state) {
+            Ok(..) => {
+                let trimmed = trim_end_spaces_and_tabs(&comment_block);
+                write!(f, "{}", &trimmed)?;
+
+                if trimmed.chars().last() != Some('\n') {
+                    write!(f, "\n")?;
+                }
+
+                write_indent(f, cfg, state)?;
+            },
+            err@Err(..) => return err,
+        }
+        Ok(())
+    }
+}
 
 pub trait LocHintConstructor<'a, 'b> {
     fn new(loc: &'a Loc, s: &'b str) -> Self;
@@ -50,7 +73,7 @@ impl CommentLocHint<'_, '_> {
 }
 
 impl ConfiguredWrite for CommentLocHint<'_, '_> {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &State) -> fmt::Result {
+    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &mut State) -> fmt::Result {
         let comment_buffer = &buf[self.0.0..self.0.1];
         match parse_comment(comment_buffer) {
             Ok(node_tree) => {
@@ -66,7 +89,7 @@ impl ConfiguredWrite for CommentLocHint<'_, '_> {
 }
 
 impl ConfiguredWrite for SpaceLocHint<'_, '_> {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, _state: &State) -> fmt::Result {
+    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, _state: &mut State) -> fmt::Result {
         if cfg.remove_spaces_between_tokens == Some(true) {
             write!(f, "{}", self.1)?;
             return Ok(());

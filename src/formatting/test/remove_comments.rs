@@ -1,28 +1,5 @@
 use crate::config::*;
-use crate::parser::parse_lua;
-
-#[allow(dead_code)]
-#[derive(PartialEq, Debug)]
-enum TestError {
-    ErrorWhileParsing,
-    ErrorWhileWriting,
-}
-
-#[allow(dead_code)]
-fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
-    match parse_lua(source) {
-        Err(_) => Err(TestError::ErrorWhileParsing),
-        Ok(node_tree) => {
-            let mut output = String::new();
-            let state = State::default();
-
-            match node_tree.configured_write(&mut output, cfg, source, &state) {
-                Ok(_) => Ok(output),
-                _ => Err(TestError::ErrorWhileWriting),
-            }
-        }
-    }
-}
+use super::common::*;
 
 #[test]
 fn test_remove_comments_ops() {

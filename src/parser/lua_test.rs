@@ -14,9 +14,9 @@ fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
         Err(_) => Err(TestError::ErrorWhileParsing),
         Ok(result) => {
             let mut output = String::new();
-            let state = State::default();
+            let mut state = State::default();
 
-            match result.configured_write(&mut output, cfg, source, &state) {
+            match result.configured_write(&mut output, cfg, source, &mut state) {
                 Ok(_) => Ok(output),
                 _ => Err(TestError::ErrorWhileWriting),
             }
