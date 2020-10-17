@@ -209,11 +209,93 @@ fn test_indent_if_then_else() {
     );
 
     let cfg =
-        Config { indentation_string: Some("    ".to_string()), if_then_else_format: Some(1), ..Config::default() };
+        Config { indentation_string: Some("INDENT".to_string()), if_format: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
-    assert_eq!(ts("if a > b then print(a) print(b) end"), Ok("if a > b then print(a) print(b) end".to_string()));
     assert_eq!(
-        ts("if a > b --comment\n then print(a) print(b) end"),
-        Ok("if a > b --comment\n then print(a) print(b) end".to_string())
-    );
+        ts(r#"if a > 3 then --[[3]] print(4) --[[4]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]] elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] else--[[13]] print(0) --[[14]]end"#),
+        Ok(r#"if a > 3 then --[[3]]
+INDENTprint(4) --[[4]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+INDENTprint(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+INDENTprint(3)--[[12]]
+else--[[13]]
+INDENTprint(0) --[[14]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] elseif --[[5]]a<3--[[6]] then --[[7]] elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] else--[[13]] print(0) --[[14]]end"#),
+        Ok(r#"if a > 3 then --[[3]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+INDENTprint(3)--[[12]]
+else--[[13]]
+INDENTprint(0) --[[14]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] print(4) --[[4]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]] elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] else--[[13]] end"#),
+        Ok(r#"if a > 3 then --[[3]]
+INDENTprint(4) --[[4]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+INDENTprint(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+INDENTprint(3)--[[12]]
+else--[[13]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]] elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] else--[[13]] end"#),
+        Ok(r#"if a > 3 then --[[3]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+INDENTprint(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+INDENTprint(3)--[[12]]
+else--[[13]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] print(4) --[[4]] else--[[13]] print(0) --[[14]]end"#),
+        Ok(r#"if a > 3 then --[[3]]
+INDENTprint(4) --[[4]]
+else--[[13]]
+INDENTprint(0) --[[14]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] else--[[13]] print(0) --[[14]]end"#),
+        Ok(r#"if a > 3 then --[[3]] else--[[13]]
+INDENTprint(0) --[[14]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] print(4) --[[4]] else--[[13]] end"#),
+        Ok(r#"if a > 3 then --[[3]]
+INDENTprint(4) --[[4]]
+else--[[13]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] else--[[13]] end"#),
+        Ok(r#"if a > 3 then --[[3]] else--[[13]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] print(4) --[[4]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]] elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] end"#),
+        Ok(r#"if a > 3 then --[[3]]
+INDENTprint(4) --[[4]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+INDENTprint(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+INDENTprint(3)--[[12]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]] elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] end"#),
+        Ok(r#"if a > 3 then --[[3]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+INDENTprint(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+INDENTprint(3)--[[12]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] print(4) --[[4]] end"#),
+        Ok(r#"if a > 3 then --[[3]]
+INDENTprint(4) --[[4]]
+end"#.to_string()));
+    assert_eq!(
+        ts(r#"if a > 3 then --[[3]] end"#),
+        Ok(r#"if a > 3 then --[[3]]
+end"#.to_string()));
 }

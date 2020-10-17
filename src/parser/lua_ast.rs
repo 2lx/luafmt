@@ -135,6 +135,13 @@ impl<'a> list::NoSepListItem<'a> for Node {
                         false
                     }
                 }
+            ElseIfThen(..) | ElseIfThenB(..) => {
+                if cfg.indentation_string.is_some() {
+                    cfg.if_format.unwrap_or(0) == 1
+                } else {
+                    false
+                }
+            }
             _ => false,
         }
     }
@@ -186,7 +193,7 @@ impl ConfiguredWrite for Node {
 
         #[allow(non_snake_case)]
         let Hint = CommentLocHint;
-        let cfg_write_list = list::cfg_write_list_items::<Node, CommentLocHint>;
+        let cfg_write_list_items = list::cfg_write_list_items::<Node, CommentLocHint>;
         let cfg_write_sep_list = list::cfg_write_sep_list::<Node, CommentLocHint>;
 
         match self {
@@ -241,7 +248,7 @@ impl ConfiguredWrite for Node {
             ExpList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             NameList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             VarList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
-            StatementList(_, stts) => cfg_write_list(f, cfg, buf, state, stts),
+            StatementList(_, stts) => cfg_write_list_items(f, cfg, buf, state, stts),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => {
                 match (&cfg.indentation_string, &cfg.do_end_format) {
@@ -260,7 +267,7 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], ""),
                            n2)
             }
-            VarSuffixList(_, suffs) => cfg_write_list(f, cfg, buf, state, suffs),
+            VarSuffixList(_, suffs) => cfg_write_list_items(f, cfg, buf, state, suffs),
             FnMethodCall(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, state, ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2)
             }
@@ -300,64 +307,164 @@ impl ConfiguredWrite for Node {
 
             // if
             IfThen(_, locs, e1) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   NewLineDecorator(Hint(&locs[2], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                Hint(&locs[2], " "), "end")
+                }
             }
             IfThenB(_, locs, e1, b1) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[2], "")), b1,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[3], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "end")
+                }
             }
             IfThenElse(_, locs, e1) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), "else", Hint(&locs[3], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   Hint(&locs[2], " "), "else", NewLineDecorator(Hint(&locs[3], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), "else", Hint(&locs[3], " "), "end")
+                }
             }
             IfThenBElse(_, locs, e1, b1) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[2], "")), b1,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[3], "")), "else",
+                                   NewLineDecorator(Hint(&locs[4], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), "end")
+                }
             }
             IfThenElseB(_, locs, e1, b2) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), "else", Hint(&locs[3], " "), b2, Hint(&locs[4], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   Hint(&locs[2], " "), "else", IndentHint(1), NewLineDecorator(Hint(&locs[3], "")), b2,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[4], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), "else", Hint(&locs[3], " "), b2, Hint(&locs[4], " "), "end")
+                }
             }
             IfThenBElseB(_, locs, e1, b1, b2) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "else", Hint(&locs[4], " "),
-                           b2, Hint(&locs[5], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[2], "")), b1,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[3], "")), "else",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[4], "")), b2,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[5], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), b1, Hint(&locs[3], " "), "else", Hint(&locs[4], " "),
+                                    b2, Hint(&locs[5], " "), "end")
+                }
             }
             IfThenElseIf(_, locs, e1, n) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), n, Hint(&locs[3], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   NewLineDecorator(Hint(&locs[2], "")), n,
+                                   NewLineDecorator(Hint(&locs[3], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), n, Hint(&locs[3], " "), "end")
+                }
             }
             IfThenBElseIf(_, locs, e1, b1, n) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[2], "")), b1,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[3], "")), n,
+                                   NewLineDecorator(Hint(&locs[4], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "end")
+                }
             }
             IfThenElseIfElse(_, locs, e1, n) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), n, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   NewLineDecorator(Hint(&locs[2], "")), n,
+                                   NewLineDecorator(Hint(&locs[3], "")), "else",
+                                   NewLineDecorator(Hint(&locs[4], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), n, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), "end")
+                }
             }
             IfThenBElseIfElse(_, locs, e1, b1, n) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "else",
-                           Hint(&locs[5], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[2], "")), b1,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[3], "")), n,
+                                   NewLineDecorator(Hint(&locs[4], "")), "else",
+                                   NewLineDecorator(Hint(&locs[5], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "else",
+                                    Hint(&locs[5], " "), "end")
+                }
             }
             IfThenElseIfElseB(_, locs, e1, n, b2) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), n, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), b2,
-                           Hint(&locs[5], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   NewLineDecorator(Hint(&locs[2], "")), n,
+                                   NewLineDecorator(Hint(&locs[3], "")), "else",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[4], "")), b2,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[5], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), n, Hint(&locs[3], " "), "else", Hint(&locs[4], " "), b2,
+                                    Hint(&locs[5], " "), "end")
+                }
             }
             IfThenBElseIfElseB(_, locs, e1, b1, n, b2) => {
-                cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "else",
-                           Hint(&locs[5], " "), b2, Hint(&locs[6], " "), "end")
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[2], "")), b1,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[3], "")), n,
+                                   NewLineDecorator(Hint(&locs[4], "")), "else",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[5], "")), b2,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[6], "")), "end")
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), b1, Hint(&locs[3], " "), n, Hint(&locs[4], " "), "else",
+                                    Hint(&locs[5], " "), b2, Hint(&locs[6], " "), "end")
+                }
             }
-            ElseIfThenVec(_, elems) => cfg_write_list(f, cfg, buf, state, elems),
+            ElseIfThenVec(_, elems) => cfg_write_list_items(f, cfg, buf, state, elems),
             ElseIfThen(_, locs, e) => {
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then")
             }
             ElseIfThenB(_, locs, e, b) => {
-                cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), b)
+                match (&cfg.indentation_string, &cfg.if_format) {
+                    (Some(_), Some(1)) => {
+                        cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then",
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[2], "")), b, IndentHint(-1))
+                    }
+                    _ => cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then",
+                                    Hint(&locs[2], " "), b)
+                }
             }
 
             Name(_, s) => write!(f, "{}", s),

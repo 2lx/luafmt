@@ -46,7 +46,7 @@ pub struct Config {
     pub do_end_format: Option<usize>,
     pub for_format: Option<usize>,
     pub function_def_format: Option<usize>,
-    pub if_then_else_format: Option<usize>,
+    pub if_format: Option<usize>,
     pub repeat_until_format: Option<usize>,
     pub while_do_format: Option<usize>,
 
@@ -80,7 +80,7 @@ impl Config {
             do_end_format: None,
             for_format: None,
             function_def_format: None,
-            if_then_else_format: None,
+            if_format: None,
             repeat_until_format: None,
             while_do_format: None,
 
@@ -123,7 +123,7 @@ impl Config {
             "do_end_format" => set_param_value_as!(self.do_end_format, usize),
             "for_format" => set_param_value_as!(self.for_format, usize),
             "function_def_format" => set_param_value_as!(self.function_def_format, usize),
-            "if_then_else_format" => set_param_value_as!(self.if_then_else_format, usize),
+            "if_format" => set_param_value_as!(self.if_format, usize),
             "repeat_until_format" => set_param_value_as!(self.repeat_until_format, usize),
             "while_do_format" => set_param_value_as!(self.while_do_format, usize),
 
