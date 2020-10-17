@@ -138,7 +138,7 @@ impl Config {
 #[derive(Debug)]
 pub struct State {
     pub no_format_indent: String,
-    pub indent_level: usize,
+    pub indent_level: isize,
 }
 
 impl State {

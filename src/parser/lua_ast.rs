@@ -5,6 +5,7 @@ use crate::config::*;
 use crate::{cfg_write, cfg_write_helper};
 use crate::formatting::loc_hint::*;
 use crate::formatting::list;
+use crate::formatting::indent_hint::*;
 
 #[derive(Debug)]
 pub enum Node {
@@ -245,13 +246,8 @@ impl ConfiguredWrite for Node {
             DoBEnd(_, locs, b) => {
                 match (&cfg.indentation_string, &cfg.do_end_format) {
                     (Some(_), Some(1)) => {
-                        state.indent_level += 1;
-                        cfg_write!(f, cfg, buf, state, "do", NewLineDecorator(Hint(&locs[0], "")), b)?;
-
-                        state.indent_level -= 1;
-                        cfg_write!(f, cfg, buf, state, NewLineDecorator(Hint(&locs[1], "")), "end")?;
-
-                        Ok(())
+                        cfg_write!(f, cfg, buf, state, "do", IndentHint(1), NewLineDecorator(Hint(&locs[0], "")), b,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[1], "")), "end")
                     }
                     _ => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), b, Hint(&locs[1], " "), "end"),
                 }
@@ -391,13 +387,10 @@ impl ConfiguredWrite for Node {
             ForIntB(_, locs, n, e1, e2, b) => {
                 match (&cfg.indentation_string, &cfg.for_format) {
                     (Some(_), Some(1)) => {
-                        state.indent_level += 1;
                         cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
-                                    Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
-                                    Hint(&locs[5], " "), "do", NewLineDecorator(Hint(&locs[6], "")), b)?;
-
-                        state.indent_level -= 1;
-                        cfg_write!(f, cfg, buf, state, Hint(&locs[7], ""), "end")
+                                   Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
+                                   Hint(&locs[5], " "), "do", IndentHint(1), NewLineDecorator(Hint(&locs[6], "")), b,
+                                   IndentHint(-1), NewLineDecorator(Hint(&locs[7], "")), "end")
                     }
                     _ => cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                                     Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
@@ -412,14 +405,11 @@ impl ConfiguredWrite for Node {
             ForIntStepB(_, locs, n, e1, e2, e3, b) => {
                 match (&cfg.indentation_string, &cfg.for_format) {
                     (Some(_), Some(1)) => {
-                        state.indent_level += 1;
                         cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                                    Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
                                    Hint(&locs[5], ""), ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do",
-                                   NewLineDecorator(Hint(&locs[8], "")), b)?;
-
-                        state.indent_level -= 1;
-                        cfg_write!(f, cfg, buf, state, Hint(&locs[9], " "), "end")
+                                   IndentHint(1), NewLineDecorator(Hint(&locs[8], "")), b, IndentHint(-1),
+                                   NewLineDecorator(Hint(&locs[9], "")), "end")
                     }
                     _ => cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                                     Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
@@ -434,13 +424,10 @@ impl ConfiguredWrite for Node {
             ForRangeB(_, locs, n, e, b) => {
                 match (&cfg.indentation_string, &cfg.for_format) {
                     (Some(_), Some(1)) => {
-                        state.indent_level += 1;
                         cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in",
-                                   Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do",
-                                   NewLineDecorator(Hint(&locs[4], "")), b)?;
-
-                        state.indent_level -= 1;
-                        cfg_write!(f, cfg, buf, state, Hint(&locs[5], " "), "end")
+                                   Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", IndentHint(1),
+                                   NewLineDecorator(Hint(&locs[4], "")), b, IndentHint(-1),
+                                   NewLineDecorator(Hint(&locs[5], "")), "end")
                     }
                     _ => cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in",
                                     Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", Hint(&locs[4], " "), b,
