@@ -105,9 +105,8 @@ impl<'a> util::NoSepListItem<'a> for Node {
     fn list_item_prefix_hint(&self, _: &'a Config) -> &'a str {
         use Node::*;
         match self {
-            Semicolon(_) | ArgsRoundBrackets(_, _, _) | ArgsRoundBracketsEmpty(_, _) | TableIndex(_, _, _)
-                | TableMember(_, _, _) | FnMethodCall(_, _, _, _) | TableConstructor(_, _, _)
-                | TableConstructorEmpty(_, _) => "",
+            Semicolon(..) | ArgsRoundBrackets(..) | ArgsRoundBracketsEmpty(..) | TableIndex(..)
+                | TableMember(..) | FnMethodCall(..) | TableConstructor(..) | TableConstructorEmpty(..) => "",
             _ => " ",
         }
     }
@@ -120,7 +119,7 @@ impl<'a> util::NoSepListItem<'a> for Node {
     }
 }
 
-impl<'a> util::ListOfItems<'a, Node> for Node {
+impl util::SepListOfItems<Node> for Node {
     fn items(&self) -> Option<&Vec::<(Loc, Node, Loc, String)>> {
         use Node::*;
         match self {
@@ -152,7 +151,7 @@ impl<'a> util::ListOfItems<'a, Node> for Node {
     fn trailing_separator(&self, cfg: &Config) -> Option<bool> {
         use Node::*;
         match self {
-            Fields(..) => cfg.trailing_field_separator.clone(),
+            Fields(..) => cfg.write_trailing_field_separator.clone(),
             ExpList(..) | NameList(..) | VarList(..) | ParList(..) | FuncName(..) | FuncNameSelf(..) => Some(false),
             _ => None,
         }

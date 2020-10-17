@@ -82,7 +82,7 @@ impl ConfiguredWrite for Node {
                             write!(f, "--[{}[{}{}]{}]", level_str, prefix, s.trim_start(), level_str)
                         }
                         (None, Some(suffix)) => {
-                            write!(f, "--[{}[{}{}]{}]", level_str, s.trim_start(), suffix, level_str)
+                            write!(f, "--[{}[{}{}]{}]", level_str, s.trim_end(), suffix, level_str)
                         }
                         _ => write!(f, "--[{}[{}]{}]", level_str, s, level_str),
                     }

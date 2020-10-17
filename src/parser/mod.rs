@@ -12,14 +12,15 @@ mod lua_test;
 
 use lalrpop_util::ParseError;
 
-pub fn parse_lua(src: &str) -> Result<lua_ast::Node, ParseError<usize, lua_lexer::Token, lua_lexer::LexicalError>> {
+type LuaParserError<'a> = ParseError<usize, lua_lexer::Token<'a>, lua_lexer::LexicalError>;
+type CommentParserError<'a> = ParseError<usize, comment_lexer::Token<'a>, comment_lexer::LexicalError>;
+
+pub fn parse_lua(src: &str) -> Result<lua_ast::Node, LuaParserError> {
     let lexer = lua_lexer::Lexer::new(src);
     lua_syntax::ChunkParser::new().parse(src, lexer)
 }
 
-pub fn parse_comment(
-    src: &str,
-) -> Result<comment_ast::Node, ParseError<usize, comment_lexer::Token, comment_lexer::LexicalError>> {
+pub fn parse_comment(src: &str) -> Result<comment_ast::Node, CommentParserError> {
     let lexer = comment_lexer::Lexer::new(src);
     comment_syntax::ChunkParser::new().parse(src, lexer)
 }

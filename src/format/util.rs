@@ -10,7 +10,7 @@ pub trait NoSepListItem<'a> {
     fn list_item_suffix_hint(&self, config: &'a Config) -> &'a str;
 }
 
-pub trait ListOfItems<'a, Node: NoSepListItem<'a>> {
+pub trait SepListOfItems<Node> {
     fn items(&self) -> Option<&Vec::<(Loc, Node, Loc, String)>>;
     fn element_prefix_hint(&self) -> &str;
     fn separator(&self, cfg: &Config) -> Option<String>;
@@ -33,7 +33,7 @@ pub fn cfg_write_sep_list<'a, 'b, 'c, 'd, 'n: 'a + 'b + 'c, Node, Hint>(
     list_node: &'n Node,
 ) -> Result<(), core::fmt::Error>
 where
-    Node: ConfiguredWrite + ListOfItems<'n, Node> + NoSepListItem<'n>,
+    Node: ConfiguredWrite + SepListOfItems<Node>,
     Hint: ConfiguredWrite + LocHintConstructor<'a, 'b>,
 {
     match list_node.items() {

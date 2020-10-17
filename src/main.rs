@@ -20,11 +20,11 @@ fn get_options_and_filenames() -> (Vec<String>, Vec<String>) {
 fn get_config_with_options(options: &Vec<String>) -> Config {
     let mut config = Config::default();
 
-    for param in options.iter() {
-        let re = Regex::new(r"^[-]+([a-zA-Z_0-9]+)\s*=\s*(.*)$").unwrap();
-        match re.captures_iter(param).next() {
+    for option in options.iter() {
+        let re = Regex::new(r"^[-]+([a-zA-Z_0-9]+)\s*=(.*)$").unwrap();
+        match re.captures_iter(option).next() {
             Some(cap) => config.set(&cap[1], &cap[2]),
-            None => eprintln!("Unrecognized param `{}`", param),
+            None => eprintln!("Unrecognized option `{}`", option),
         }
     }
 

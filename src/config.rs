@@ -43,7 +43,7 @@ pub struct Config {
     // replace_tabs_with: Option<String>,
     // pub indent_str: Option<String>,
     pub field_separator: Option<String>,
-    pub trailing_field_separator: Option<bool>,
+    pub write_trailing_field_separator: Option<bool>,
 }
 
 impl Config {
@@ -65,7 +65,7 @@ impl Config {
 
             // lua
             field_separator: None,
-            trailing_field_separator: None,
+            write_trailing_field_separator: None,
         }
     }
 
@@ -98,7 +98,7 @@ impl Config {
 
             // lua
             "field_separator" => set_param_value_as!(self.field_separator, String),
-            "trailing_field_separator" => set_param_value_as!(self.trailing_field_separator, bool),
+            "write_trailing_field_separator" => set_param_value_as!(self.write_trailing_field_separator, bool),
             _ => eprintln!("Invalid option name `{}`", option_name),
         };
     }
