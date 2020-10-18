@@ -20,7 +20,7 @@ pub fn write_indent(f: &mut dyn fmt::Write, cfg: &Config, state: &State) -> fmt:
         None => String::new(),
     };
 
-    write!(f, "{}{}", state.no_format_indent, indentation)
+    write!(f, "{}", indentation)
 }
 
 #[test]

@@ -43,12 +43,12 @@ pub struct Config {
     pub indentation_string: Option<String>,
     // pub indent_comments: Option<bool>,
     pub indent_every_statement: Option<bool>,
-    pub do_end_format: Option<usize>,
-    pub for_format: Option<usize>,
-    pub function_def_format: Option<usize>,
-    pub if_format: Option<usize>,
-    pub repeat_until_format: Option<usize>,
-    pub while_do_format: Option<usize>,
+    pub do_end_indent_format: Option<usize>,
+    pub for_indent_format: Option<usize>,
+    pub function_indent_format: Option<usize>,
+    pub if_indent_format: Option<usize>,
+    pub repeat_until_indent_format: Option<usize>,
+    pub while_indent_format: Option<usize>,
 
     // other
     // replace_tabs_with: Option<String>,
@@ -77,12 +77,12 @@ impl Config {
             indentation_string: None,
             indent_every_statement: None,
             // indent_comments: None,
-            do_end_format: None,
-            for_format: None,
-            function_def_format: None,
-            if_format: None,
-            repeat_until_format: None,
-            while_do_format: None,
+            do_end_indent_format: None,
+            for_indent_format: None,
+            function_indent_format: None,
+            if_indent_format: None,
+            repeat_until_indent_format: None,
+            while_indent_format: None,
 
             // other
             field_separator: None,
@@ -120,12 +120,12 @@ impl Config {
             // indent
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
             "indent_every_statement" => set_param_value_as!(self.indent_every_statement, bool),
-            "do_end_format" => set_param_value_as!(self.do_end_format, usize),
-            "for_format" => set_param_value_as!(self.for_format, usize),
-            "function_def_format" => set_param_value_as!(self.function_def_format, usize),
-            "if_format" => set_param_value_as!(self.if_format, usize),
-            "repeat_until_format" => set_param_value_as!(self.repeat_until_format, usize),
-            "while_do_format" => set_param_value_as!(self.while_do_format, usize),
+            "do_end_indent_format" => set_param_value_as!(self.do_end_indent_format, usize),
+            "for_indent_format" => set_param_value_as!(self.for_indent_format, usize),
+            "function_indent_format" => set_param_value_as!(self.function_indent_format, usize),
+            "if_indent_format" => set_param_value_as!(self.if_indent_format, usize),
+            "repeat_until_indent_format" => set_param_value_as!(self.repeat_until_indent_format, usize),
+            "while_indent_format" => set_param_value_as!(self.while_indent_format, usize),
 
             // other
             "field_separator" => set_param_value_as!(self.field_separator, String),
@@ -137,14 +137,16 @@ impl Config {
 
 #[derive(Debug)]
 pub struct State {
-    pub no_format_indent: String,
+    // pub static_indent: String,
+    // pub static_indent_counter: isize,
     pub indent_level: isize,
 }
 
 impl State {
     pub const fn default() -> Self {
         State {
-            no_format_indent: String::new(),
+            // static_indent: String::new(),
+            // static_indent_counter: 0,
             indent_level: 0,
         }
     }

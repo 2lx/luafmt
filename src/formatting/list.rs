@@ -1,3 +1,4 @@
+use super::decoration::*;
 use super::loc_hint::*;
 use super::util::*;
 use crate::config::*;
@@ -27,7 +28,7 @@ pub fn cfg_write_sep_list<'a, 'b, 'c, 'd, 'n: 'a + 'b + 'c, Node, Hint>(
 ) -> Result<(), core::fmt::Error>
 where
     Node: ConfiguredWrite + SepListOfItems<Node>,
-    Hint: ConfiguredWrite + LocHintConstructor<'a, 'b>,
+    Hint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
     match list_node.items() {
         Some(items) => {
@@ -72,22 +73,19 @@ pub fn cfg_write_list_items<'a, 'b, 'c: 'a + 'b, Node, Hint>(
 ) -> Result<(), core::fmt::Error>
 where
     Node: ConfiguredWrite + NoSepListItem<'c>,
-    Hint: ConfiguredWrite + LocHintConstructor<'a, 'b>,
+    Hint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
     if !elems.is_empty() {
         let first = &elems[0];
 
         cfg_write!(f, cfg, buf, state, Hint::new(&first.0, ""), first.1)?;
         for i in 1..elems.len() {
-            if elems[i].1.need_indent(cfg) {
-                cfg_write!(f, cfg, buf, state, NewLineDecorator(Hint::new(&elems[i].0, "")), elems[i].1)?;
-            } else {
-                let suffix = elems[i - 1].1.list_item_suffix_hint(cfg);
-                let prefix = elems[i].1.list_item_prefix_hint(cfg);
-                let hint = longest_hint(prefix, suffix);
+            let suffix = elems[i - 1].1.list_item_suffix_hint(cfg);
+            let prefix = elems[i].1.list_item_prefix_hint(cfg);
+            let hint = longest_hint(prefix, suffix);
 
-                cfg_write!(f, cfg, buf, state, Hint::new(&elems[i].0, hint), elems[i].1)?;
-            }
+            let need_indent = elems[i].1.need_indent(cfg);
+            cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&elems[i].0, hint), need_indent), elems[i].1)?;
         }
     }
     Ok(())
