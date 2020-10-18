@@ -1,4 +1,3 @@
-use std::fmt;
 use std::fmt::Debug;
 
 #[macro_export]
@@ -20,7 +19,7 @@ macro_rules! cfg_write {
 }
 
 pub trait ConfiguredWrite {
-    fn configured_write(&self, f: &mut dyn fmt::Write, config: &Config, buf: &str, state: &mut State) -> fmt::Result;
+    fn configured_write(&self, f: &mut String, config: &Config, buf: &str, state: &mut State) -> std::fmt::Result;
 }
 
 #[derive(Debug)]
@@ -41,7 +40,10 @@ pub struct Config {
 
     // indent
     pub indentation_string: Option<String>,
-    // pub indent_comments: Option<bool>,
+    pub indent_oneline_comments: Option<bool>,
+    pub indent_multiline_comments: Option<bool>,
+    pub indent_first_oneline_comment: Option<bool>,
+    pub indent_first_multiline_comment: Option<bool>,
     pub indent_every_statement: Option<bool>,
     pub do_end_indent_format: Option<usize>,
     pub for_indent_format: Option<usize>,
@@ -76,7 +78,10 @@ impl Config {
             // indent
             indentation_string: None,
             indent_every_statement: None,
-            // indent_comments: None,
+            indent_oneline_comments: None,
+            indent_multiline_comments: None,
+            indent_first_oneline_comment: None,
+            indent_first_multiline_comment: None,
             do_end_indent_format: None,
             for_indent_format: None,
             function_indent_format: None,
@@ -120,6 +125,10 @@ impl Config {
             // indent
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
             "indent_every_statement" => set_param_value_as!(self.indent_every_statement, bool),
+            "indent_oneline_comments" => set_param_value_as!(self.indent_oneline_comments, bool),
+            "indent_multiline_comments" => set_param_value_as!(self.indent_multiline_comments, bool),
+            "indent_first_oneline_comment" => set_param_value_as!(self.indent_first_oneline_comment, bool),
+            "indent_first_multiline_comment" => set_param_value_as!(self.indent_first_multiline_comment, bool),
             "do_end_indent_format" => set_param_value_as!(self.do_end_indent_format, usize),
             "for_indent_format" => set_param_value_as!(self.for_indent_format, usize),
             "function_indent_format" => set_param_value_as!(self.function_indent_format, usize),
@@ -137,16 +146,12 @@ impl Config {
 
 #[derive(Debug)]
 pub struct State {
-    // pub static_indent: String,
-    // pub static_indent_counter: isize,
     pub indent_level: isize,
 }
 
 impl State {
     pub const fn default() -> Self {
         State {
-            // static_indent: String::new(),
-            // static_indent_counter: 0,
             indent_level: 0,
         }
     }

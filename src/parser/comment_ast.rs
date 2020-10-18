@@ -1,9 +1,10 @@
-use std::fmt;
+use std::fmt::Write;
 
 use super::common::*;
 use crate::config::*;
 use crate::formatting::loc_hint::*;
 use crate::formatting::list;
+use crate::formatting::decoration::*;
 use crate::{cfg_write, cfg_write_helper};
 
 #[derive(Debug)]
@@ -33,7 +34,7 @@ impl<'a> list::NoSepListItem<'a> for Node {
     fn list_item_suffix_hint(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
-            MultiLineComment(_, _, _) => match cfg.hint_after_multiline_comment.as_ref() {
+            MultiLineComment(..) => match cfg.hint_after_multiline_comment.as_ref() {
                 Some(s) => s,
                 None => "",
             },
@@ -41,13 +42,18 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_indent(&self, _cfg: &'a Config) -> bool {
-        false
+    fn need_indent(&self, cfg: &'a Config) -> bool {
+        use Node::*;
+        match self {
+            OneLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_oneline_comments == Some(true),
+            MultiLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_multiline_comments == Some(true),
+            _ => false,
+        }
     }
 }
 
 impl ConfiguredWrite for Node {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &mut State) -> fmt::Result {
+    fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
         use Node::*;
 
         #[allow(non_snake_case)]
@@ -55,7 +61,28 @@ impl ConfiguredWrite for Node {
         let cfg_write_vector = list::cfg_write_list_items::<Node, SpaceLocHint>;
 
         match self {
-            Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),
+            Chunk(locl, n, locr) => {
+                let mut nl = false;
+                if let VariantList(_, lists) = &**n {
+                    // check `indentation_string` in advance
+                    if !lists.is_empty() && cfg.indentation_string.is_some() {
+                        if let (_, CommentList(_, comments)) = &lists[0] {
+                            if !comments.is_empty() {
+                                match &comments[0] {
+                                    (_, OneLineComment(..)) if cfg.indent_first_oneline_comment == Some(true) => {
+                                            nl = true;
+                                    }
+                                    (_, MultiLineComment(..)) if cfg.indent_first_multiline_comment == Some(true) => {
+                                            nl = true;
+                                    }
+                                    _ => {},
+                                }
+                            }
+                        }
+                    }
+                };
+                cfg_write!(f, cfg, buf, state, NewLineDecor(Hint(&locl, ""), nl), n, Hint(&locr, ""))
+            }
             VariantList(_, variants) => cfg_write_vector(f, cfg, buf, state, variants),
             CommentList(_, comments) => cfg_write_vector(f, cfg, buf, state, comments),
             NewLineList(_, newlines) => cfg_write_vector(f, cfg, buf, state, newlines),

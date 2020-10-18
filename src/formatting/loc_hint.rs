@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::Write;
 use crate::config::*;
 use crate::parser::common::*;
 use crate::parser::parse_comment;
@@ -32,7 +32,7 @@ impl<'a, 'b> LocHintConstructible<'a, 'b> for SpaceLocHint<'a, 'b> {
 }
 
 impl CommentLocHint<'_, '_> {
-    fn write_formatted_comment_block(&self, f: &mut dyn fmt::Write, cfg: &Config, _buf: &str, comment_block: &str) -> fmt::Result {
+    fn write_formatted_comment_block(&self, f: &mut String, cfg: &Config, _buf: &str, comment_block: &str) -> std::fmt::Result {
 
         // if `comment_block` is empty
         if comment_block.is_empty() {
@@ -59,13 +59,15 @@ impl CommentLocHint<'_, '_> {
 }
 
 impl ConfiguredWrite for CommentLocHint<'_, '_> {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, state: &mut State) -> fmt::Result {
+    fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
         let comment_buffer = &buf[self.0.0..self.0.1];
         match parse_comment(comment_buffer) {
             Ok(node_tree) => {
                 let mut formatted_comment_block = String::new();
+                formatted_comment_block.push(f.chars().last().unwrap_or(' '));
+
                 match node_tree.configured_write(&mut formatted_comment_block, cfg, comment_buffer, state) {
-                    Ok(_) => self.write_formatted_comment_block(f, cfg, buf, &formatted_comment_block),
+                    Ok(_) => self.write_formatted_comment_block(f, cfg, buf, &formatted_comment_block[1..]),
                     Err(err) => Err(err),
                 }
             }
@@ -75,7 +77,7 @@ impl ConfiguredWrite for CommentLocHint<'_, '_> {
 }
 
 impl ConfiguredWrite for SpaceLocHint<'_, '_> {
-    fn configured_write(&self, f: &mut dyn fmt::Write, cfg: &Config, buf: &str, _state: &mut State) -> fmt::Result {
+    fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, _state: &mut State) -> std::fmt::Result {
         if cfg.remove_spaces_between_tokens == Some(true) {
             write!(f, "{}", self.1)?;
             return Ok(());

@@ -1,6 +1,6 @@
 use crate::config::*;
 use std::cmp::Ordering;
-use std::fmt;
+use std::fmt::Write;
 
 pub fn longest_hint<'a>(hint1: &'a str, hint2: &'a str) -> &'a str {
     return match hint1.len().cmp(&hint2.len()) {
@@ -14,7 +14,7 @@ pub fn trim_end_spaces_and_tabs<'a>(string: &'a String) -> &'a str {
     string.trim_end_matches(|ch: char| return ch == ' ' || ch == '\t')
 }
 
-pub fn write_indent(f: &mut dyn fmt::Write, cfg: &Config, state: &State) -> fmt::Result {
+pub fn write_indent(f: &mut String, cfg: &Config, state: &State) -> std::fmt::Result {
     let indentation = match &cfg.indentation_string {
         Some(indent_str) => (0..state.indent_level).map(|_| &indent_str[..]).collect::<String>(),
         None => String::new(),

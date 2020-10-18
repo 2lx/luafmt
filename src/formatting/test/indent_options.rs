@@ -486,3 +486,293 @@ INDENTprint(c) --456
 end"#.to_string())
     );
 }
+
+#[test]
+fn test_indent_all() {
+    let cfg = Config {
+        indentation_string: Some("I     ".to_string()),
+        indent_every_statement: Some(true),
+        do_end_indent_format: Some(1),
+        for_indent_format: Some(1),
+        function_indent_format: Some(1),
+        if_indent_format: Some(1),
+        repeat_until_indent_format: Some(1),
+        while_do_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("print(a) --123\n --1234\nprint(b) do print(c) --1\n  --2\n  --3\n while a<c do print(d) print(e) repeat print(a) until c<d --123123\nend --werewr\nprint(f) --3243\nend print(h)"),
+        Ok(r#"print(a) --123
+ --1234
+print(b)
+do
+I     print(c) --1
+  --2
+  --3
+I     while a<c do
+I     I     print(d)
+I     I     print(e)
+I     I     repeat
+I     I     I     print(a)
+I     I     until c<d --123123
+I     end --werewr
+I     print(f) --3243
+end
+print(h)"#.to_string())
+    );
+
+    // oneline one
+    let cfg = Config {
+        indentation_string: Some("I     ".to_string()),
+        indent_every_statement: Some(true),
+        indent_oneline_comments: Some(true),
+        do_end_indent_format: Some(1),
+        for_indent_format: Some(1),
+        function_indent_format: Some(1),
+        if_indent_format: Some(1),
+        repeat_until_indent_format: Some(1),
+        while_do_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("print(a) --123\n --1234\nprint(b) do print(c) --1\n  --2\n  --3\n while a<c do print(d) print(e) repeat print(a) until c<d --123123\n --345\nend --werewr\nprint(f) --3243\nend print(h)"),
+        Ok(r#"print(a) --123
+--1234
+print(b)
+do
+I     print(c) --1
+I     --2
+I     --3
+I     while a<c do
+I     I     print(d)
+I     I     print(e)
+I     I     repeat
+I     I     I     print(a)
+I     I     until c<d --123123
+I     --345
+I     end --werewr
+I     print(f) --3243
+end
+print(h)"#.to_string())
+    );
+
+    // oneline both
+    let cfg = Config {
+        indentation_string: Some("I     ".to_string()),
+        indent_every_statement: Some(true),
+        indent_first_oneline_comment: Some(true),
+        indent_oneline_comments: Some(true),
+        do_end_indent_format: Some(1),
+        for_indent_format: Some(1),
+        function_indent_format: Some(1),
+        if_indent_format: Some(1),
+        repeat_until_indent_format: Some(1),
+        while_do_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("print(a) --123\n --1234\nprint(b) do print(c) --1\n  --2\n  --3\n while a<c do print(d) print(e) repeat print(a) until c<d --123123\n --345\nend --werewr\nprint(f) --3243\nend print(h)"),
+        Ok(r#"print(a)
+--123
+--1234
+print(b)
+do
+I     print(c)
+I     --1
+I     --2
+I     --3
+I     while a<c do
+I     I     print(d)
+I     I     print(e)
+I     I     repeat
+I     I     I     print(a)
+I     I     until c<d
+I     --123123
+I     --345
+I     end
+I     --werewr
+I     print(f)
+--3243
+end
+print(h)"#.to_string())
+    );
+
+    assert_eq!(
+        ts("#!/usr/bin/lua\n --123\nprint(a) --[[123]] --1234\nprint(b) do print(c) --[[0]]--1\n  --2\n  --3\n while a<c do print(d) print(e) repeat print(a) until c<d --123123\n --345\nend --werewr\nprint(f) --[[141242]] --3243\nend print(h)"),
+        Ok(r#"#!/usr/bin/lua
+--123
+print(a) --[[123]]
+--1234
+print(b)
+do
+I     print(c) --[[0]]
+I     --1
+I     --2
+I     --3
+I     while a<c do
+I     I     print(d)
+I     I     print(e)
+I     I     repeat
+I     I     I     print(a)
+I     I     until c<d
+I     --123123
+I     --345
+I     end
+I     --werewr
+I     print(f) --[[141242]]
+--3243
+end
+print(h)"#.to_string())
+    );
+
+    // multiline one
+    let cfg = Config {
+        indentation_string: Some("I     ".to_string()),
+        indent_every_statement: Some(true),
+        // indent_first_multiline_comment: Some(true),
+        indent_multiline_comments: Some(true),
+        do_end_indent_format: Some(1),
+        for_indent_format: Some(1),
+        function_indent_format: Some(1),
+        if_indent_format: Some(1),
+        repeat_until_indent_format: Some(1),
+        while_do_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("#!/usr/bin/lua\n --[[123]] --[[234]] --123\nprint(a) --[[123]] --1234\n   --[=[234]=]print(b) do print(c) --[[0]]--1\n  --[==[2]==]--[[3]]--4\n  --[[5]] while a<c do print(d) print(e) repeat print(a) until c<d --[[123123]] --[[345]]\nend --werewr\nprint(f) --[[141242]] --[[]] --3243\nend print(h)"),
+        Ok(r#"#!/usr/bin/lua
+ --[[123]]
+--[[234]] --123
+print(a) --[[123]] --1234
+--[=[234]=]
+print(b)
+do
+I     print(c) --[[0]]--1
+I     --[==[2]==]
+I     --[[3]]--4
+I     --[[5]]
+I     while a<c do
+I     I     print(d)
+I     I     print(e)
+I     I     repeat
+I     I     I     print(a)
+I     I     until c<d --[[123123]]
+I     --[[345]]
+I     end --werewr
+I     print(f) --[[141242]]
+--[[]] --3243
+end
+print(h)"#.to_string())
+    );
+
+    // multiline both
+    let cfg = Config {
+        indentation_string: Some("I     ".to_string()),
+        indent_every_statement: Some(true),
+        indent_first_multiline_comment: Some(true),
+        indent_multiline_comments: Some(true),
+        do_end_indent_format: Some(1),
+        for_indent_format: Some(1),
+        function_indent_format: Some(1),
+        if_indent_format: Some(1),
+        repeat_until_indent_format: Some(1),
+        while_do_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("#!/usr/bin/lua\n --[[123]] --[[234]] --123\nprint(a) --[[123]] --1234\n   --[=[234]=]print(b) do print(c) --[[0]]--1\n  --[==[2]==]--[[3]]--4\n  --[[5]] while a<c do print(d) print(e) repeat print(a) until c<d --[[123123]] --[[345]]\nend --werewr\nprint(f) --[[141242]] --[[]] --3243\nend print(h)"),
+        Ok(r#"#!/usr/bin/lua
+--[[123]]
+--[[234]] --123
+print(a)
+--[[123]] --1234
+--[=[234]=]
+print(b)
+do
+I     print(c)
+I     --[[0]]--1
+I     --[==[2]==]
+I     --[[3]]--4
+I     --[[5]]
+I     while a<c do
+I     I     print(d)
+I     I     print(e)
+I     I     repeat
+I     I     I     print(a)
+I     I     until c<d
+I     --[[123123]]
+I     --[[345]]
+I     end --werewr
+I     print(f)
+--[[141242]]
+--[[]] --3243
+end
+print(h)"#.to_string())
+    );
+
+    // multiline and oneline all
+    let cfg = Config {
+        indentation_string: Some("I     ".to_string()),
+        indent_every_statement: Some(true),
+        indent_first_oneline_comment: Some(true),
+        indent_oneline_comments: Some(true),
+        indent_first_multiline_comment: Some(true),
+        indent_multiline_comments: Some(true),
+        do_end_indent_format: Some(1),
+        for_indent_format: Some(1),
+        function_indent_format: Some(1),
+        if_indent_format: Some(1),
+        repeat_until_indent_format: Some(1),
+        while_do_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("#!/usr/bin/lua\n --[[123]] --[[234]] --123\nprint(a) --[[123]] --1234\n   --[=[234]=]print(b) do print(c) --[[0]]--1\n  --[==[2]==]--[[3]]--4\n  --[[5]] while a<c do print(d) print(e) repeat print(a) until c<d --[[123123]] --[[345]]\nend --werewr\nprint(f) --[[141242]] --[[]] --3243\nend print(h)"),
+        Ok(r#"#!/usr/bin/lua
+--[[123]]
+--[[234]]
+--123
+print(a)
+--[[123]]
+--1234
+--[=[234]=]
+print(b)
+do
+I     print(c)
+I     --[[0]]
+I     --1
+I     --[==[2]==]
+I     --[[3]]
+I     --4
+I     --[[5]]
+I     while a<c do
+I     I     print(d)
+I     I     print(e)
+I     I     repeat
+I     I     I     print(a)
+I     I     until c<d
+I     --[[123123]]
+I     --[[345]]
+I     end
+I     --werewr
+I     print(f)
+--[[141242]]
+--[[]]
+--3243
+end
+print(h)"#.to_string())
+    );
+}

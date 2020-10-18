@@ -52,7 +52,7 @@ TAltListHelper<T1, T2>: Vec<(Loc, Node)> = {
 // syntax
 pub Chunk: Node = {
     <rs:@L> EOF => {
-        let node = Node::CommentList(Loc(0, 0), Vec::new());
+        let node = Node::VariantList(Loc(0, 0), Vec::new());
         Node::Chunk(Loc(0, rs), Box::new(node), Loc(0, 0))
     },
     <r1:@L> <b:VariantList> <l2:@R> <r2:@L> EOF => {

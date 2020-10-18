@@ -4,7 +4,7 @@ use super::util::*;
 use crate::config::*;
 use crate::parser::common::*;
 use crate::{cfg_write, cfg_write_helper};
-use std::fmt;
+use std::fmt::Write;
 
 pub trait NoSepListItem<'a> {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str;
@@ -20,7 +20,7 @@ pub trait SepListOfItems<Node> {
 }
 
 pub fn cfg_write_sep_list<'a, 'b, 'c, 'd, 'n: 'a + 'b + 'c, Node, Hint>(
-    f: &mut dyn fmt::Write,
+    f: &mut String,
     cfg: &'d Config,
     buf: &str,
     state: &mut State,
@@ -65,7 +65,7 @@ where
 }
 
 pub fn cfg_write_list_items<'a, 'b, 'c: 'a + 'b, Node, Hint>(
-    f: &mut dyn fmt::Write,
+    f: &mut String,
     cfg: &'c Config,
     buf: &str,
     state: &mut State,
