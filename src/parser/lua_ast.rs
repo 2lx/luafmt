@@ -261,10 +261,16 @@ impl ConfiguredWrite for Node {
             }
             ParList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n),
-            FuncBody(_, locs) => cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", Hint(&locs[1], " "), "end"),
-            FuncBodyB(_, locs, n2) => {
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", Hint(&locs[1], " "), n2, Hint(&locs[2], " "),
+            FuncBody(_, locs) => {
+                let nl = cfg.indentation_string.is_some() && cfg.function_indent_format == Some(1);
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", NewLineDecor(Hint(&locs[1], " "), nl),
                            "end")
+            }
+            FuncBodyB(_, locs, n2) => {
+                let nl = cfg.indentation_string.is_some() && cfg.function_indent_format == Some(1);
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")",
+                           IndentDecor(1), NewLineDecor(Hint(&locs[1], " "), nl), n2,
+                           IndentDecor(-1), NewLineDecor(Hint(&locs[2], " "), nl), "end")
             }
             FuncPBody(_, locs, n1) => {
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], " "),
@@ -390,18 +396,25 @@ impl ConfiguredWrite for Node {
             Label(_, locs, n) => cfg_write!(f, cfg, buf, state, "::", Hint(&locs[0], ""), n, Hint(&locs[1], ""), "::"),
             GoTo(_, locs, n) => cfg_write!(f, cfg, buf, state, "goto", Hint(&locs[0], " "), n),
             WhileDo(_, locs, e) => {
+                let nl = cfg.indentation_string.is_some() && cfg.while_do_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
-                           Hint(&locs[2], " "), "end")
+                           NewLineDecor(Hint(&locs[2], " "), nl), "end")
             }
             WhileDoB(_, locs, e, n) => {
+                let nl = cfg.indentation_string.is_some() && cfg.while_do_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
-                           Hint(&locs[2], " "), n, Hint(&locs[3], " "), "end")
+                           IndentDecor(1), NewLineDecor(Hint(&locs[2], " "), nl), n,
+                           IndentDecor(-1), NewLineDecor(Hint(&locs[3], " "), nl), "end")
             }
             RepeatUntil(_, locs, e) => {
-                cfg_write!(f, cfg, buf, state, "repeat", Hint(&locs[0], " "), "until", Hint(&locs[1], " "), e)
+                let nl = cfg.indentation_string.is_some() && cfg.repeat_until_indent_format == Some(1);
+                cfg_write!(f, cfg, buf, state, "repeat", NewLineDecor(Hint(&locs[0], " "), nl), "until", Hint(&locs[1], " "), e)
             }
             RepeatBUntil(_, locs, b, e) => {
-                cfg_write!(f, cfg, buf, state, "repeat", Hint(&locs[0], " "), b, Hint(&locs[1], " "), "until",
+                let nl = cfg.indentation_string.is_some() && cfg.repeat_until_indent_format == Some(1);
+                cfg_write!(f, cfg, buf, state, "repeat",
+                           IndentDecor(1), NewLineDecor(Hint(&locs[0], " "), nl), b,
+                           IndentDecor(-1), NewLineDecor(Hint(&locs[1], " "), nl), "until",
                            Hint(&locs[2], " "), e)
             }
 

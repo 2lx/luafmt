@@ -91,13 +91,13 @@ INDENTprint(b) --[[3]]
 INDENTprint(c) --[[4]] end"
             .to_string())
     );
-//     assert_eq!(
-//         ts("while a > 4 do --[[1]] print(a) --2\n print(b) --3\n print(c) --[[4]] end"),
-//         Ok("while a > 4 do --[[1]] print(a) --2
-// INDENTprint(b) --3
-// INDENTprint(c) --[[4]] end"
-//             .to_string())
-//     );
+    //     assert_eq!(
+    //         ts("while a > 4 do --[[1]] print(a) --2\n print(b) --3\n print(c) --[[4]] end"),
+    //         Ok("while a > 4 do --[[1]] print(a) --2
+    // INDENTprint(b) --3
+    // INDENTprint(c) --[[4]] end"
+    //             .to_string())
+    //     );
 }
 
 #[test]
@@ -334,5 +334,155 @@ end"#
         Ok(r#"if a > 3 then --[[3]]
 end"#
             .to_string())
+    );
+}
+
+#[test]
+fn test_indent_function() {
+    let cfg = Config::default();
+    let ts = |s: &str| ts_base(s, &cfg);
+    assert_eq!(
+        ts("local function fn() --123\nprint(a) print(b) print(c) --[[345]] end"),
+        Ok("local function fn() --123\nprint(a) print(b) print(c) --[[345]] end".to_string())
+    );
+
+    let cfg =
+        Config { indentation_string: Some("INDENT".to_string()), function_indent_format: Some(1), ..Config::default() };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local function fn() --123\nprint(a) print(b) print(c) --[[345]] end"),
+        Ok(r#"local function fn() --123
+INDENTprint(a) print(b) print(c) --[[345]]
+end"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts("function fn() --[[123]]print(a)--a\n print(b) print(c) --345\n end"),
+        Ok(r#"function fn() --[[123]]
+INDENTprint(a)--a
+ print(b) print(c) --345
+end"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        indent_every_statement: Some(true),
+        indentation_string: Some("INDENT".to_string()),
+        function_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local function fn() --123\nprint(a) print(b) print(c) --[[345]] end"),
+        Ok(r#"local function fn() --123
+INDENTprint(a)
+INDENTprint(b)
+INDENTprint(c) --[[345]]
+end"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts("function fn() --[[123]]print(a)--a\n print(b) print(c) --345\n end"),
+        Ok(r#"function fn() --[[123]]
+INDENTprint(a)--a
+INDENTprint(b)
+INDENTprint(c) --345
+end"#
+            .to_string())
+    );
+}
+
+#[test]
+fn test_indent_repeat_until() {
+    let cfg = Config::default();
+    let ts = |s: &str| ts_base(s, &cfg);
+    assert_eq!(ts("repeat --abc\n until --[[123]] a>3"), Ok("repeat --abc\n until --[[123]] a>3".to_string()));
+    assert_eq!(
+        ts("repeat --abc\n print(a) print(b) print(c) --123\n until --[[123]] a>3"),
+        Ok("repeat --abc\n print(a) print(b) print(c) --123\n until --[[123]] a>3".to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("INDENT".to_string()),
+        repeat_until_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("repeat --abc\n until --[[123]] a>3"),
+        Ok(r#"repeat --abc
+until --[[123]] a>3"#.to_string()));
+    assert_eq!(
+        ts("repeat --abc\n print(a) print(b) print(c) --123\n until --[[123]] a>3"),
+        Ok(r#"repeat --abc
+INDENTprint(a) print(b) print(c) --123
+until --[[123]] a>3"#.to_string())
+    );
+
+    let cfg = Config {
+        indent_every_statement: Some(true),
+        indentation_string: Some("INDENT".to_string()),
+        repeat_until_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+    assert_eq!(
+        ts("repeat --abc\n print(a) print(b) print(c) --123\n until --[[123]] a>3"),
+        Ok(r#"repeat --abc
+INDENTprint(a)
+INDENTprint(b)
+INDENTprint(c) --123
+until --[[123]] a>3"#.to_string())
+    );
+
+}
+
+#[test]
+fn test_indent_while_do() {
+    let cfg = Config::default();
+    let ts = |s: &str| ts_base(s, &cfg);
+    assert_eq!(ts("while a < 3 --123\n do end"), Ok("while a < 3 --123\n do end".to_string()));
+    assert_eq!(
+        ts("while a < 3 --[[123]] do --234\n print(a) print(b) --[[345]] print(c) --456\n end"),
+        Ok("while a < 3 --[[123]] do --234\n print(a) print(b) --[[345]] print(c) --456\n end".to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("INDENT".to_string()),
+        while_do_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("while a < 3 --123\n do --234\n end"),
+        Ok("while a < 3 --123\n do --234\nend".to_string())
+    );
+    assert_eq!(
+        ts("while a < 3 --[[123]] do --234\n print(a) print(b) --[[345]] print(c) --456\n end"),
+        Ok(r#"while a < 3 --[[123]] do --234
+INDENTprint(a) print(b) --[[345]] print(c) --456
+end"#.to_string())
+    );
+
+    let cfg = Config {
+        indent_every_statement: Some(true),
+        indentation_string: Some("INDENT".to_string()),
+        while_do_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+    assert_eq!(
+        ts("while a < 3 --[[123]] do --234\n print(a) print(b) --[[345]] print(c) --456\n end"),
+        Ok(r#"while a < 3 --[[123]] do --234
+INDENTprint(a)
+INDENTprint(b) --[[345]]
+INDENTprint(c) --456
+end"#.to_string())
     );
 }

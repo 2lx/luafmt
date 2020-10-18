@@ -48,7 +48,7 @@ pub struct Config {
     pub function_indent_format: Option<usize>,
     pub if_indent_format: Option<usize>,
     pub repeat_until_indent_format: Option<usize>,
-    pub while_indent_format: Option<usize>,
+    pub while_do_indent_format: Option<usize>,
 
     // other
     // replace_tabs_with: Option<String>,
@@ -82,7 +82,7 @@ impl Config {
             function_indent_format: None,
             if_indent_format: None,
             repeat_until_indent_format: None,
-            while_indent_format: None,
+            while_do_indent_format: None,
 
             // other
             field_separator: None,
@@ -125,7 +125,7 @@ impl Config {
             "function_indent_format" => set_param_value_as!(self.function_indent_format, usize),
             "if_indent_format" => set_param_value_as!(self.if_indent_format, usize),
             "repeat_until_indent_format" => set_param_value_as!(self.repeat_until_indent_format, usize),
-            "while_indent_format" => set_param_value_as!(self.while_indent_format, usize),
+            "while_do_indent_format" => set_param_value_as!(self.while_do_indent_format, usize),
 
             // other
             "field_separator" => set_param_value_as!(self.field_separator, String),
