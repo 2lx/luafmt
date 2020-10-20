@@ -1,6 +1,6 @@
 [package]
-name = "lua-format"
-version = "0.1.0"
+name = "luafmt"
+version = "0.3.0"
 authors = ["Alexey Minchakov <lexaaim@gmail.com>"]
 edition = "2018"
 

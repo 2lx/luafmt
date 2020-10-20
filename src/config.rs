@@ -26,7 +26,7 @@ pub trait ConfiguredWrite {
     fn configured_write(&self, f: &mut String, config: &Config, buf: &str, state: &mut State) -> std::fmt::Result;
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Config {
     #[doc(hidden)]
     pub _empty: bool,

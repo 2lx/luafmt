@@ -3,7 +3,7 @@ use std::fs;
 use std::io::{self, Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
-pub fn get_path_files(path: &PathBuf, recursive: bool) -> io::Result<Vec<PathBuf>> {
+pub fn get_path_files(path: &PathBuf, ext: &str, recursive: bool) -> io::Result<Vec<PathBuf>> {
     let mut paths = Vec::new();
 
     if path.is_dir() {
@@ -11,8 +11,8 @@ pub fn get_path_files(path: &PathBuf, recursive: bool) -> io::Result<Vec<PathBuf
             let inner_path = entry?.path();
 
             if inner_path.is_dir() && recursive {
-                paths.append(&mut get_path_files(&inner_path, true)?);
-            } else if inner_path.is_file() && inner_path.extension().and_then(OsStr::to_str) == Some("lua") {
+                paths.append(&mut get_path_files(&inner_path, ext, true)?);
+            } else if inner_path.is_file() && inner_path.extension().and_then(OsStr::to_str) == Some(ext) {
                 paths.push(inner_path);
             }
         }
