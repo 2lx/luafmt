@@ -1,4 +1,8 @@
+use crate::parser;
+use std::fmt;
 use std::fmt::Debug;
+use std::fs;
+use std::path::PathBuf;
 
 #[macro_export]
 macro_rules! cfg_write_helper {
@@ -24,6 +28,9 @@ pub trait ConfiguredWrite {
 
 #[derive(Debug)]
 pub struct Config {
+    #[doc(hidden)]
+    pub _empty: bool,
+
     // comments
     pub hint_after_multiline_comment: Option<String>,
     pub hint_after_multiline_comment_text: Option<String>,
@@ -50,7 +57,8 @@ pub struct Config {
     pub while_do_indent_format: Option<usize>,
 
     // other
-    // replace_tabs_with: Option<String>,
+    // replace_tabs_with_spaces: Option<String>,
+    // tabs_as_spaces_count
     pub field_separator: Option<String>,
     pub write_trailing_field_separator: Option<bool>,
 }
@@ -58,6 +66,8 @@ pub struct Config {
 impl Config {
     pub const fn default() -> Self {
         Config {
+            _empty: true,
+
             // comments
             hint_after_multiline_comment: None,
             hint_after_multiline_comment_text: None,
@@ -89,11 +99,18 @@ impl Config {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self._empty
+    }
+
     pub fn set(&mut self, option_name: &str, value_str: &str) {
         macro_rules! set_param_value_as {
             ($field:expr, $type:ty) => {
                 match value_str.parse::<$type>() {
-                    Ok(value) => $field = Some(value),
+                    Ok(value) => {
+                        $field = Some(value);
+                        self._empty = false;
+                    }
                     _ => eprintln!("Invalid `{}` option value `{}`", option_name, value_str),
                 }
             };
@@ -131,7 +148,101 @@ impl Config {
             "field_separator" => set_param_value_as!(self.field_separator, String),
             "write_trailing_field_separator" => set_param_value_as!(self.write_trailing_field_separator, bool),
             _ => eprintln!("Invalid option name `{}`", option_name),
-        };
+        }
+    }
+
+    fn load_options_from_config(&mut self, node: &parser::lua_ast::Node) {
+        use parser::lua_ast::Node::*;
+        match node {
+            VarsExprs(_, _, varlist, exprlist) => match (&**varlist, &**exprlist) {
+                (VarList(_, vars), ExpList(_, exprs)) => match (vars.iter().next(), exprs.iter().next()) {
+                    (Some((_, var, _, _)), Some((_, expr, _, _))) => match (var, expr) {
+                        (Name(_, str_name), Numeral(_, str_expr))
+                        | (Name(_, str_name), NormalStringLiteral(_, str_expr))
+                        | (Name(_, str_name), CharStringLiteral(_, str_expr)) => self.set(str_name, str_expr),
+
+                        (Name(_, str_name), True(..)) => self.set(str_name, "true"),
+                        (Name(_, str_name), False(..)) => self.set(str_name, "false"),
+                        _ => {}
+                    },
+                    _ => {}
+                },
+                _ => {}
+            },
+            StatementList(_, stts) => {
+                for (_, node) in stts {
+                    self.load_options_from_config(node);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    pub fn load_from_file(file_path: &PathBuf) -> Self {
+        let content = fs::read_to_string(file_path)
+            .expect(&format!("An error occured while reading config file `{}`", file_path.display()));
+
+        let mut cfg = Config::default();
+
+        use parser::lua_ast::Node::*;
+        match parser::parse_lua(&content) {
+            Ok(node_tree) => {
+                match node_tree {
+                    Chunk(_, node, _) => cfg.load_options_from_config(&node),
+                    SheBangChunk(_, _, _, node, _) => cfg.load_options_from_config(&node),
+                    _ => {}
+                };
+            }
+            Err(err) => println!("An error occured while parsing config file `{}`: {}", file_path.display(), err),
+        }
+
+        cfg
+    }
+}
+
+impl fmt::Display for Config {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        macro_rules! print_opt {
+            ($field:expr, $name:literal) => {
+                if $field.is_some() {
+                    write!(f, "\t{}: {:?},\n", $name, $field.as_ref().unwrap())?;
+                }
+            };
+        }
+
+        write!(f, "{{\n")?;
+
+        // comments
+        print_opt!(self.hint_after_multiline_comment, "hint_after_multiline_comment");
+        print_opt!(self.hint_after_multiline_comment_text, "hint_after_multiline_comment_text");
+        print_opt!(self.hint_before_comment, "hint_before_comment");
+        print_opt!(self.hint_before_multiline_comment_text, "hint_before_multiline_comment_text");
+        print_opt!(self.hint_before_oneline_comment_text, "hint_before_oneline_comment_text");
+        print_opt!(self.remove_comments, "remove_comments");
+        print_opt!(self.remove_newlines, "remove_newlines");
+        print_opt!(self.remove_spaces_between_tokens, "remove_spaces_between_tokens");
+        print_opt!(self.replace_zero_spaces_with_hint, "replace_zero_spaces_with_hint");
+
+        // indent
+        print_opt!(self.indentation_string, "indentation_string");
+        print_opt!(self.indent_every_statement, "indent_every_statement");
+        print_opt!(self.indent_oneline_comments, "indent_oneline_comments");
+        print_opt!(self.indent_multiline_comments, "indent_multiline_comments");
+        print_opt!(self.indent_first_oneline_comment, "indent_first_oneline_comment");
+        print_opt!(self.indent_first_multiline_comment, "indent_first_multiline_comment");
+        print_opt!(self.do_end_indent_format, "do_end_indent_format");
+        print_opt!(self.for_indent_format, "for_indent_format");
+        print_opt!(self.function_indent_format, "function_indent_format");
+        print_opt!(self.if_indent_format, "if_indent_format");
+        print_opt!(self.repeat_until_indent_format, "repeat_until_indent_format");
+        print_opt!(self.while_do_indent_format, "while_do_indent_format");
+
+        // other
+        print_opt!(self.field_separator, "field_separator");
+        print_opt!(self.write_trailing_field_separator, "write_trailing_field_separator");
+
+        write!(f, "}}")?;
+        Ok(())
     }
 }
 
@@ -142,8 +253,6 @@ pub struct State {
 
 impl State {
     pub const fn default() -> Self {
-        State {
-            indent_level: 0,
-        }
+        State { indent_level: 0 }
     }
 }

@@ -25,10 +25,7 @@ pub struct ProgramOpts {
 
 impl ProgramOpts {
     pub const fn default() -> Self {
-        ProgramOpts {
-            inplace: false,
-            recursive: false,
-        }
+        ProgramOpts { inplace: false, recursive: false }
     }
 }
 
@@ -46,7 +43,7 @@ fn parse_options(options: &Vec<String>) -> (Config, ProgramOpts) {
                 Some(cap) if &cap[1] == "i" || &cap[1] == "inplace" => program_opts.inplace = true,
                 Some(cap) if &cap[1] == "r" || &cap[1] == "recursive" => program_opts.recursive = true,
                 _ => eprintln!("Unrecognized option `{}`", option),
-            }
+            },
         }
     }
 
@@ -54,10 +51,26 @@ fn parse_options(options: &Vec<String>) -> (Config, ProgramOpts) {
 }
 
 fn process_file(file_path: &PathBuf, config: &Config, program_opts: &ProgramOpts) {
+    println!("Process file: `{}`", file_path.display());
+    if config.is_empty() {
+        match file_util::get_file_config(file_path) {
+            Some(file_config) => {
+                let cfg = Config::load_from_file(&file_config);
+                process_file_with_config(&file_path, &cfg, &program_opts);
+            }
+            None => println!("Configure file was not found"),
+        }
+    } else {
+        process_file_with_config(&file_path, &config, &program_opts);
+    }
+}
+
+fn process_file_with_config(file_path: &PathBuf, config: &Config, program_opts: &ProgramOpts) {
+    println!("Format options: {}", config);
+
     let content =
         fs::read_to_string(file_path).expect(&format!("An error occured while reading file `{}`", file_path.display()));
 
-    println!("Process file: `{}`", file_path.display());
     match parser::parse_lua(&content) {
         Ok(node_tree) => {
             let mut outbuffer = String::new();
@@ -66,7 +79,7 @@ fn process_file(file_path: &PathBuf, config: &Config, program_opts: &ProgramOpts
                 Ok(_) => match program_opts.inplace {
                     true => fs::write(file_path, outbuffer)
                         .expect(&format!("An error occured while writing file `{}`", file_path.display())),
-                    false => print!("{}", outbuffer),
+                    false => print!("\n{}", outbuffer),
                 },
                 Err(_) => println!("An error occured while formatting file `{}`: {:?}", file_path.display(), node_tree),
             };
@@ -81,7 +94,6 @@ fn main() {
 
     println!("Paths: {:?}", rel_paths);
     println!("Program options: {:?}", program_opts);
-    println!("Format config: {:?}\n", config);
 
     for rel_path in &rel_paths {
         let path_buf = Path::new(rel_path).to_path_buf();
