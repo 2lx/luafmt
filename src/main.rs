@@ -1,6 +1,7 @@
 use regex::Regex;
 use std::env;
-use std::path::Path;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use luafmt::config::Config;
 use luafmt::file_util;
@@ -47,6 +48,21 @@ fn parse_options(options: &Vec<String>) -> (Config, ProgramOpts) {
     (config, program_opts)
 }
 
+fn process_file_path(file_path: &PathBuf, config: &Config, program_opts: &ProgramOpts) {
+    match formatter::process_file(&file_path, &config) {
+        Ok(output) => match program_opts.inplace {
+            true => match fs::write(file_path, output) {
+                Ok(..) => {}
+                Err(err) => {
+                    eprintln!("{}", format!("An error occured while writing file `{}`: {}", file_path.display(), err))
+                }
+            },
+            false => print!("\n{}", output),
+        },
+        Err(msg) => eprintln!("{:?}", msg),
+    }
+}
+
 fn main() {
     let (options, rel_paths) = get_options_and_filenames();
     let (config, program_opts) = parse_options(&options);
@@ -60,7 +76,7 @@ fn main() {
         match file_util::get_path_files(&path_buf, program_opts.recursive, "lua", luafmt::CFG_PREFIX) {
             Ok(file_paths) => {
                 for file_path in &file_paths {
-                    formatter::process_file(&file_path, &config, program_opts.inplace);
+                    process_file_path(file_path, &config, &program_opts);
                 }
             }
             Err(_) => println!("Unresolved path: `{}`", rel_path),
@@ -78,12 +94,12 @@ fn test_parse_options() {
         "-r".to_string(),
         "/home/files/file.txt".to_string(),
     ];
-    let cfg = Config { _empty: false, field_separator: Some(",".to_string()), ..Config::default() };
+    let cfg = Config { field_separator: Some(",".to_string()), ..Config::default() };
     let po = ProgramOpts { inplace: true, recursive: true };
     assert_eq!(parse_options(&options), (cfg, po));
 
     let options = vec!["-i".to_string(), "--recursive".to_string(), "--if_indent_format=1".to_string()];
-    let cfg = Config { _empty: false, if_indent_format: Some(1), ..Config::default() };
+    let cfg = Config { if_indent_format: Some(1), ..Config::default() };
     let po = ProgramOpts { inplace: true, recursive: true };
     assert_eq!(parse_options(&options), (cfg, po));
 

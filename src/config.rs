@@ -28,9 +28,6 @@ pub trait ConfiguredWrite {
 
 #[derive(Debug, PartialEq)]
 pub struct Config {
-    #[doc(hidden)]
-    pub _empty: bool,
-
     // comments
     pub hint_after_multiline_comment: Option<String>,
     pub hint_after_multiline_comment_text: Option<String>,
@@ -66,8 +63,6 @@ pub struct Config {
 impl Config {
     pub const fn default() -> Self {
         Config {
-            _empty: true,
-
             // comments
             hint_after_multiline_comment: None,
             hint_after_multiline_comment_text: None,
@@ -100,17 +95,14 @@ impl Config {
     }
 
     pub fn is_empty(&self) -> bool {
-        self._empty
+        *self == Config::default()
     }
 
     pub fn set(&mut self, option_name: &str, value_str: &str) {
         macro_rules! set_param_value_as {
             ($field:expr, $type:ty) => {
                 match value_str.parse::<$type>() {
-                    Ok(value) => {
-                        $field = Some(value);
-                        self._empty = false;
-                    }
+                    Ok(value) => $field = Some(value),
                     _ => eprintln!("Invalid `{}` option value `{}`", option_name, value_str),
                 }
             };
@@ -178,7 +170,7 @@ impl Config {
         }
     }
 
-    pub fn load_from_file(file_path: &PathBuf) -> Self {
+    pub fn load_from_file(file_path: &PathBuf) -> Result<Self, String> {
         let content = fs::read_to_string(file_path)
             .expect(&format!("An error occured while reading config file `{}`", file_path.display()));
 
@@ -193,10 +185,12 @@ impl Config {
                     _ => {}
                 };
             }
-            Err(err) => println!("An error occured while parsing config file `{}`: {}", file_path.display(), err),
+            Err(err) => {
+                return Err(format!("An error occured while parsing config file `{}`: {}", file_path.display(), err))
+            }
         }
 
-        cfg
+        Ok(cfg)
     }
 }
 

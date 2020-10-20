@@ -1,0 +1,10 @@
+#!/usr/bin/lua-all
+
+--[[first comment]]
+function fn1(arg1,arg2)
+for i = arg1, arg2, 1 do --[[comm]] print(i)
+
+    if arg1 + (arg2 //2) > i then print(arg1%arg2)end
+end --   end of for
+end
+

@@ -1,7 +1,7 @@
 extern crate luafmt;
 
-use std::path::Path;
 use luafmt::config::Config;
+use std::path::Path;
 
 #[test]
 fn test_load_from_file() {
@@ -9,7 +9,6 @@ fn test_load_from_file() {
     let actual = Config::load_from_file(&cfg_path_buf);
 
     let expected = Config {
-        _empty: false,
         hint_after_multiline_comment: Some(" ".to_string()),
         hint_after_multiline_comment_text: Some(" ".to_string()),
         hint_before_comment: Some(" ".to_string()),
@@ -29,19 +28,20 @@ fn test_load_from_file() {
         while_do_indent_format: Some(1),
         field_separator: Some(",".to_string()),
         write_trailing_field_separator: Some(true),
-        .. Config::default()
+        ..Config::default()
     };
 
-    assert_eq!(actual, expected);
+    assert!(actual.is_ok());
+    assert_eq!(actual.unwrap(), expected);
 
     let cfg_path_buf = Path::new("tests/scripts1/subdir1/subdir2/.luafmt_inner.lua").to_path_buf();
     let actual = Config::load_from_file(&cfg_path_buf);
 
-    let expected = Config {
-        _empty: true,
-        .. Config::default()
-    };
+    let expected = Config { ..Config::default() };
 
+    assert!(actual.is_ok());
+    let actual = actual.unwrap();
     assert_eq!(actual, expected);
     assert_eq!(actual, Config::default());
+    assert!(actual.is_empty());
 }
