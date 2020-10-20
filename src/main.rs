@@ -57,7 +57,7 @@ fn main() {
     for rel_path in &rel_paths {
         let path_buf = Path::new(rel_path).to_path_buf();
 
-        match file_util::get_path_files(&path_buf, "lua", program_opts.recursive) {
+        match file_util::get_path_files(&path_buf, program_opts.recursive, "lua", luafmt::CFG_PREFIX) {
             Ok(file_paths) => {
                 for file_path in &file_paths {
                     formatter::process_file(&file_path, &config, program_opts.inplace);

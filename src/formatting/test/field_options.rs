@@ -1,5 +1,5 @@
-use crate::config::*;
 use super::common::*;
+use crate::config::*;
 
 #[test]
 fn test_field_options() {
@@ -47,8 +47,11 @@ fn test_field_options() {
         Ok("local a = { t = { 1, 2, 3 }; b, c ={}, d = 5--[[ hoho ]]; e; }".to_string())
     );
 
-    let cfg =
-        Config { field_separator: Some(",".to_string()), write_trailing_field_separator: Some(true), ..Config::default() };
+    let cfg = Config {
+        field_separator: Some(",".to_string()),
+        write_trailing_field_separator: Some(true),
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(
         ts("local a = { a, b; c ={}, d = 5--[[]]; e }"),
@@ -59,8 +62,11 @@ fn test_field_options() {
         Ok("local a = { t = { 1, 2, 3, }, b, c ={}, d = 5--[[ hoho ]], e, }".to_string())
     );
 
-    let cfg =
-        Config { field_separator: Some(";".to_string()), write_trailing_field_separator: Some(true), ..Config::default() };
+    let cfg = Config {
+        field_separator: Some(";".to_string()),
+        write_trailing_field_separator: Some(true),
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(
         ts("local a = { a, b; c ={}, d = 5--[[]]; e }"),

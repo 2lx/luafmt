@@ -8,7 +8,7 @@ use std::path::PathBuf;
 pub fn process_file(file_path: &PathBuf, cfg: &Config, write_inplace: bool) {
     println!("Process file: `{}`", file_path.display());
     if cfg.is_empty() {
-        match file_util::get_file_config(file_path) {
+        match file_util::get_file_config(file_path, crate::CFG_PREFIX) {
             Some(file_config) => {
                 let cfg = Config::load_from_file(&file_config);
                 process_file_with_config(&file_path, &cfg, write_inplace);
