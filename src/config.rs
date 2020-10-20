@@ -24,9 +24,6 @@ pub trait ConfiguredWrite {
 
 #[derive(Debug)]
 pub struct Config {
-    pub inplace: Option<bool>,
-    pub recursive: Option<bool>,
-
     // comments
     pub hint_after_multiline_comment: Option<String>,
     pub hint_after_multiline_comment_text: Option<String>,
@@ -61,9 +58,6 @@ pub struct Config {
 impl Config {
     pub const fn default() -> Self {
         Config {
-            inplace: None,
-            recursive: None,
-
             // comments
             hint_after_multiline_comment: None,
             hint_after_multiline_comment_text: None,
@@ -106,9 +100,6 @@ impl Config {
         }
 
         match option_name {
-            "inplace" => set_param_value_as!(self.inplace, bool),
-            "recursive" => set_param_value_as!(self.recursive, bool),
-
             // comments
             "hint_after_multiline_comment" => set_param_value_as!(self.hint_after_multiline_comment, String),
             "hint_after_multiline_comment_text" => set_param_value_as!(self.hint_after_multiline_comment_text, String),

@@ -17,21 +17,43 @@ fn get_options_and_filenames() -> (Vec<String>, Vec<String>) {
     (options, sources)
 }
 
-fn get_config_with_options(options: &Vec<String>) -> Config {
+#[derive(Debug)]
+pub struct ProgramOpts {
+    pub inplace: bool,
+    pub recursive: bool,
+}
+
+impl ProgramOpts {
+    pub const fn default() -> Self {
+        ProgramOpts {
+            inplace: false,
+            recursive: false,
+        }
+    }
+}
+
+fn parse_options(options: &Vec<String>) -> (Config, ProgramOpts) {
     let mut config = Config::default();
+    let mut program_opts = ProgramOpts::default();
 
     for option in options.iter() {
-        let re = Regex::new(r"^[-]+([a-zA-Z_0-9]+)\s*=(.*)$").unwrap();
-        match re.captures_iter(option).next() {
+        let re_config_opt = Regex::new(r"^[-]+([a-zA-Z_0-9]+)\s*=(.*)$").unwrap();
+        let re_program_opt = Regex::new(r"^[-]+([a-zA-Z_0-9]+)$").unwrap();
+
+        match re_config_opt.captures_iter(option).next() {
             Some(cap) => config.set(&cap[1], &cap[2]),
-            None => eprintln!("Unrecognized option `{}`", option),
+            None => match re_program_opt.captures_iter(option).next() {
+                Some(cap) if &cap[1] == "i" || &cap[1] == "inplace" => program_opts.inplace = true,
+                Some(cap) if &cap[1] == "r" || &cap[1] == "recursive" => program_opts.recursive = true,
+                _ => eprintln!("Unrecognized option `{}`", option),
+            }
         }
     }
 
-    config
+    (config, program_opts)
 }
 
-fn process_file(file_path: &PathBuf, config: &Config) {
+fn process_file(file_path: &PathBuf, config: &Config, program_opts: &ProgramOpts) {
     let content =
         fs::read_to_string(file_path).expect(&format!("An error occured while reading file `{}`", file_path.display()));
 
@@ -41,10 +63,10 @@ fn process_file(file_path: &PathBuf, config: &Config) {
             let mut outbuffer = String::new();
             let mut state = config::State::default();
             match node_tree.configured_write(&mut outbuffer, &config, &content, &mut state) {
-                Ok(_) => match config.inplace {
-                    Some(true) => fs::write(file_path, outbuffer)
+                Ok(_) => match program_opts.inplace {
+                    true => fs::write(file_path, outbuffer)
                         .expect(&format!("An error occured while writing file `{}`", file_path.display())),
-                    _ => (), //print!("{}", outbuffer),
+                    false => print!("{}", outbuffer),
                 },
                 Err(_) => println!("An error occured while formatting file `{}`: {:?}", file_path.display(), node_tree),
             };
@@ -55,19 +77,19 @@ fn process_file(file_path: &PathBuf, config: &Config) {
 
 fn main() {
     let (options, rel_paths) = get_options_and_filenames();
-    let config = get_config_with_options(&options);
+    let (config, program_opts) = parse_options(&options);
 
     println!("Paths: {:?}", rel_paths);
-    println!("Options: {:?}", options);
-    println!("Config: {:?}\n", config);
+    println!("Program options: {:?}", program_opts);
+    println!("Format config: {:?}\n", config);
 
     for rel_path in &rel_paths {
         let path_buf = Path::new(rel_path).to_path_buf();
 
-        match file_util::get_path_files(&path_buf, config.recursive == Some(true)) {
+        match file_util::get_path_files(&path_buf, program_opts.recursive) {
             Ok(file_paths) => {
                 for file_path in &file_paths {
-                    process_file(&file_path, &config);
+                    process_file(&file_path, &config, &program_opts);
                 }
             }
             Err(_) => println!("Unresolved path: `{}`", rel_path),
