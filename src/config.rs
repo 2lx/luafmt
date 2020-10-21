@@ -51,13 +51,16 @@ pub struct Config {
     pub function_indent_format: Option<usize>,
     pub if_indent_format: Option<usize>,
     pub repeat_until_indent_format: Option<usize>,
+    pub table_indent_format: Option<usize>,
     pub while_do_indent_format: Option<usize>,
 
     // other
     // replace_tabs_with_spaces: Option<String>,
     // tabs_as_spaces_count
+    pub hint_table_constructor: Option<String>,
     pub field_separator: Option<String>,
     pub write_trailing_field_separator: Option<bool>,
+    pub max_width: Option<usize>,
 }
 
 impl Config {
@@ -86,11 +89,14 @@ impl Config {
             function_indent_format: None,
             if_indent_format: None,
             repeat_until_indent_format: None,
+            table_indent_format: None,
             while_do_indent_format: None,
 
             // other
+            hint_table_constructor: None,
             field_separator: None,
             write_trailing_field_separator: None,
+            max_width: None,
         }
     }
 
@@ -134,11 +140,14 @@ impl Config {
             "function_indent_format" => set_param_value_as!(self.function_indent_format, usize),
             "if_indent_format" => set_param_value_as!(self.if_indent_format, usize),
             "repeat_until_indent_format" => set_param_value_as!(self.repeat_until_indent_format, usize),
+            "table_indent_format" => set_param_value_as!(self.table_indent_format, usize),
             "while_do_indent_format" => set_param_value_as!(self.while_do_indent_format, usize),
 
             // other
+            "hint_table_constructor" => set_param_value_as!(self.hint_table_constructor, String),
             "field_separator" => set_param_value_as!(self.field_separator, String),
             "write_trailing_field_separator" => set_param_value_as!(self.write_trailing_field_separator, bool),
+            "max_width" => set_param_value_as!(self.max_width, usize),
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
     }
@@ -229,11 +238,14 @@ impl fmt::Display for Config {
         print_opt!(self.function_indent_format, "function_indent_format");
         print_opt!(self.if_indent_format, "if_indent_format");
         print_opt!(self.repeat_until_indent_format, "repeat_until_indent_format");
+        print_opt!(self.table_indent_format, "table_indent_format");
         print_opt!(self.while_do_indent_format, "while_do_indent_format");
 
         // other
+        print_opt!(self.hint_table_constructor, "hint_table_constructor");
         print_opt!(self.field_separator, "field_separator");
         print_opt!(self.write_trailing_field_separator, "write_trailing_field_separator");
+        print_opt!(self.max_width, "max_width");
 
         write!(f, "}}")?;
         Ok(())

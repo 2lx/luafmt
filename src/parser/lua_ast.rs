@@ -132,6 +132,8 @@ impl<'a> list::NoSepListItem<'a> for Node {
                 cfg.indentation_string.is_some() && cfg.indent_every_statement == Some(true),
             ElseIfThen(..) | ElseIfThenB(..)
                 => cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1),
+            FieldNamedBracket(..) | FieldNamed(..) | FieldSequential(..) =>
+                cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1),
             _ => false,
         }
     }
@@ -172,6 +174,14 @@ impl list::SepListOfItems<Node> for Node {
             Fields(..) => cfg.write_trailing_field_separator.clone(),
             ExpList(..) | NameList(..) | VarList(..) | ParList(..) | FuncName(..) | FuncNameSelf(..) => Some(false),
             _ => None,
+        }
+    }
+
+    fn need_indent_items(&self, cfg: &Config) -> bool {
+        use Node::*;
+        match self {
+            Fields(..) => cfg.table_indent_format == Some(1),
+            _ => false,
         }
     }
 }
@@ -223,9 +233,19 @@ impl ConfiguredWrite for Node {
             }
 
             TableConstructor(_, locs, r) => {
-                cfg_write!(f, cfg, buf, state, "{{", Hint(&locs[0], " "), r, Hint(&locs[1], " "), "}}")
+                let default_hint = String::new();
+                let hint = cfg.hint_table_constructor.as_ref().unwrap_or(&default_hint);
+                let nl = get_indent_type(cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1));
+
+                cfg_write!(f, cfg, buf, state, "{{", IndentDecor(1), NewLineDecor(Hint(&locs[0], &hint), nl), r,
+                           IndentDecor(-1), NewLineDecor(Hint(&locs[1], &hint), nl), "}}")
             }
-            TableConstructorEmpty(_, locs) => cfg_write!(f, cfg, buf, state, "{{", Hint(&locs[0], ""), "}}"),
+            TableConstructorEmpty(_, locs) => {
+                let default_hint = String::new();
+                let hint = cfg.hint_table_constructor.as_ref().unwrap_or(&default_hint);
+
+                cfg_write!(f, cfg, buf, state, "{{", Hint(&locs[0], &hint), "}}")
+            }
             Fields(..) => {
                 cfg_write_sep_list(f, cfg, buf, state, self)
             }
@@ -276,12 +296,15 @@ impl ConfiguredWrite for Node {
                            IndentDecor(-1), NewLineDecor(Hint(&locs[2], " "), nl), "end")
             }
             FuncPBody(_, locs, n1) => {
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], " "),
-                           "end")
+                let nl = get_indent_type(cfg.indentation_string.is_some() && cfg.function_indent_format == Some(1));
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")",
+                           NewLineDecor(Hint(&locs[2], " "), nl), "end")
             }
             FuncPBodyB(_, locs, n1, n2) => {
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], " "),
-                           n2, Hint(&locs[3], " "), "end")
+                let nl = get_indent_type(cfg.indentation_string.is_some() && cfg.function_indent_format == Some(1));
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")",
+                           IndentDecor(1), NewLineDecor(Hint(&locs[2], " "), nl), n2,
+                           IndentDecor(-1), NewLineDecor(Hint(&locs[3], " "), nl), "end")
             }
             FuncName(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FuncNameSelf(_, locs, _, n) => {
@@ -468,7 +491,10 @@ impl ConfiguredWrite for Node {
             RetStatExprComma(_, locs, n) => {
                 cfg_write!(f, cfg, buf, state, "return", Hint(&locs[0], " "), n, Hint(&locs[1], ""), ";")
             }
-            StatsRetStat(_, locs, n1, n2) => cfg_write!(f, cfg, buf, state, n1, Hint(&locs[0], " "), n2),
+            StatsRetStat(_, locs, n1, n2) => {
+                let nl = get_indent_type(cfg.indentation_string.is_some() && cfg.indent_every_statement == Some(true));
+                cfg_write!(f, cfg, buf, state, n1, NewLineDecor(Hint(&locs[0], " "), nl), n2)
+            }
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),
             SheBangChunk(locl, n, locm, b, locr) => {
                 cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locm, ""), b, Hint(&locr, ""))

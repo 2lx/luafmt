@@ -376,23 +376,44 @@ end"#
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
-        ts("local function fn() --123\nprint(a) print(b) print(c) --[[345]] end"),
+        ts("local function fn() --123\nprint(a) print(b) print(c) --[[345]] return 1 end"),
         Ok(r#"local function fn() --123
 INDENTprint(a)
 INDENTprint(b)
 INDENTprint(c) --[[345]]
+INDENTreturn 1
 end"#
             .to_string())
     );
 
     assert_eq!(
-        ts("function fn() --[[123]]print(a)--a\n print(b) print(c) --345\n end"),
+        ts("function fn() --[[123]]print(a)--a\n print(b) print(c) --345\n return; end"),
         Ok(r#"function fn() --[[123]]
 INDENTprint(a)--a
 INDENTprint(b)
 INDENTprint(c) --345
+INDENTreturn;
 end"#
             .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"-- function Value.new(value, compare_values, print_value)
+Value = class(function(self, value, compare_values, print_value)
+self._value_t = util.xtype(value)
+self._value = value
+self._compare_values = compare_values
+self._print_value = print_value
+end)
+"#),
+        Ok(r#"-- function Value.new(value, compare_values, print_value)
+Value = class(function(self, value, compare_values, print_value)
+INDENTself._value_t = util.xtype(value)
+INDENTself._value = value
+INDENTself._compare_values = compare_values
+INDENTself._print_value = print_value
+end)
+"#.to_string())
     );
 }
 
@@ -488,6 +509,112 @@ end"#.to_string())
 }
 
 #[test]
+fn test_indent_table() {
+    let cfg = Config::default();
+    let ts = |s: &str| ts_base(s, &cfg);
+    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"), Ok("local a = {a=3, b=23-1, c=a}".to_string()));
+    assert_eq!(
+        ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
+        Ok("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}".to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        table_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"),
+               Ok(r#"local a = {
+I   a=3,
+I   b=23-1,
+I   c=a
+}"#.to_string()));
+    assert_eq!(
+        ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
+        Ok(r#"local a = {
+I   b = 123,
+I   c={
+I   I   1,
+I   I   2,
+I   I   3,
+I   I   {
+I   I   I   a=1,
+I   I   I   b=2
+I   I   },
+I   I   5
+I   },
+I   d = {},
+I   e
+}"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        table_indent_format: Some(1),
+        indent_every_statement: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"return string.format("{ type = \"%s\" }", self._value_t)"#),
+        Ok(r#"return string.format("{ type = \"%s\" }", self._value_t)"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        hint_table_constructor: Some(" ".to_string()),
+        replace_zero_spaces_with_hint: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"),
+               Ok("local a = { a = 3, b = 23 - 1, c = a }".to_string()));
+    assert_eq!(
+        ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
+        Ok("local a = { b = 123, c = { 1, 2, 3, { a = 1, b = 2 }, 5 }, d = { }, e }".to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        table_indent_format: Some(1),
+        hint_table_constructor: Some(" ".to_string()),
+        replace_zero_spaces_with_hint: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"),
+               Ok(r#"local a = {
+I   a = 3,
+I   b = 23 - 1,
+I   c = a
+}"#.to_string()));
+    assert_eq!(
+        ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
+        Ok(r#"local a = {
+I   b = 123,
+I   c = {
+I   I   1,
+I   I   2,
+I   I   3,
+I   I   {
+I   I   I   a = 1,
+I   I   I   b = 2
+I   I   },
+I   I   5
+I   },
+I   d = { },
+I   e
+}"#.to_string())
+    );
+
+}
+
+#[test]
 fn test_indent_all() {
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
@@ -539,15 +666,17 @@ print(h)"#.to_string())
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
-        ts("print(a) --123\n --1234\nprint(b) do print(c) --1\n  --2\n  --3\n while a<c do print(d) print(e) repeat print(a) until c<d --123123\n --345\nend --werewr\nprint(f) --3243\nend print(h)"),
+        ts("print(a) --123\n --1234\nprint(b) do\n--com\nprint(c) --1\n  --2\n  --3\n while a<c do\n--135\n print(d) print(e) repeat print(a) until c<d --123123\n --345\nend --werewr\nprint(f) --3243\nend print(h)"),
         Ok(r#"print(a) --123
 --1234
 print(b)
 do
+I     --com
 I     print(c) --1
 I     --2
 I     --3
 I     while a<c do
+I     I     --135
 I     I     print(d)
 I     I     print(e)
 I     I     repeat

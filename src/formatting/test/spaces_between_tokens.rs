@@ -45,6 +45,7 @@ fn test_spaces_between_tokens_other() {
         remove_spaces_between_tokens: Some(true),
         hint_before_comment: Some(" ".to_string()),
         hint_after_multiline_comment: Some(" ".to_string()),
+        hint_table_constructor: Some(" ".to_string()),
         ..Config::default()
     };
     let ts = |s: &'static str| ts_base(s, &cfg);
@@ -140,11 +141,11 @@ fn test_spaces_between_tokens_other() {
     // ParStats
     assert_eq!(
         ts("a = ({})[a]--1\n() --2\n break --3\n ({})--4\n[1]"),
-        Ok("a = ({})[a] --1\n() --2\nbreak --3\n({}) --4\n[1]".to_string())
+        Ok("a = ({ })[a] --1\n() --2\nbreak --3\n({ }) --4\n[1]".to_string())
     );
     assert_eq!(
         ts("({})[a]--1\n() --2\n break --3\n ({})--4\n[1]"),
-        Ok("({})[a] --1\n() --2\nbreak --3\n({}) --4\n[1]".to_string())
+        Ok("({ })[a] --1\n() --2\nbreak --3\n({ }) --4\n[1]".to_string())
     );
 
     // If Then ElseIf Else End

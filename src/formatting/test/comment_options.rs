@@ -39,7 +39,7 @@ fn test_replace_zero_spaces_with_hint() {
 
     assert_eq!(
         ts("#!/usr/bin/lua\n local  b = {2, 3} for a=1,--[[  asd ]]  \n  4do print --1\n (1,4)end --[=[1232 ]=]"),
-        Ok("#!/usr/bin/lua\nlocal b = { 2, 3 } for a = 1,--[[  asd ]]\n4 do print--1\n(1, 4) end--[=[1232 ]=]"
+        Ok("#!/usr/bin/lua\nlocal b = {2, 3} for a = 1,--[[  asd ]]\n4 do print--1\n(1, 4) end--[=[1232 ]=]"
             .to_string())
     );
 }

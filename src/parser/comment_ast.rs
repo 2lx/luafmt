@@ -47,6 +47,17 @@ impl<'a> list::NoSepListItem<'a> for Node {
         match self {
             OneLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_oneline_comments == Some(true),
             MultiLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_multiline_comments == Some(true),
+            CommentList(_, comments) => {
+                // indentation of the first comment, if it is not the first token in the Loc
+                if !comments.is_empty() {
+                    if let (_, OneLineComment(..)) = &comments[0] {
+                        return cfg.indentation_string.is_some() && cfg.indent_oneline_comments == Some(true);
+                    } else if let (_, MultiLineComment(..)) = &comments[0] {
+                        return cfg.indentation_string.is_some() && cfg.indent_multiline_comments == Some(true);
+                    }
+                }
+                false
+            }
             _ => false,
         }
     }
@@ -93,7 +104,17 @@ impl ConfiguredWrite for Node {
                     _ => write!(f, "\n"),
                 },
                 _ => match cfg.hint_before_oneline_comment_text.as_ref() {
-                    Some(prefix) => write!(f, "--{}{}\n", prefix, s.trim_start()),
+                    Some(prefix) => {
+                        let strimmed = s.trim_start();
+
+                        // do not print the `prefix` if `s` is empty
+                        if s.is_empty() {
+                            write!(f, "--\n")?;
+                        } else {
+                            write!(f, "--{}{}\n", prefix, strimmed)?;
+                        }
+                        Ok(())
+                    }
                     None => write!(f, "--{}\n", s),
                 },
             },

@@ -31,6 +31,7 @@ fn tscln(source: &'static str) -> Result<String, TestError> {
         remove_newlines: Some(true),
         replace_zero_spaces_with_hint: Some(true),
         remove_spaces_between_tokens: Some(true),
+        hint_table_constructor: Some(" ".to_string()),
         ..Config::default()
     };
     ts_base(source, &cfg)
@@ -98,7 +99,7 @@ fn test_operation() {
 
 #[test]
 fn test_table() {
-    assert_eq!(tscln("a = { }"), Ok("a = {}".to_string()));
+    assert_eq!(tscln("a = { }"), Ok("a = { }".to_string()));
     assert_eq!(tscln("a = { 1 }"), Ok("a = { 1 }".to_string()));
     assert_eq!(tscln("a = { a, }"), Ok("a = { a, }".to_string()));
     assert_eq!(tscln("a = { a, b }"), Ok("a = { a, b }".to_string()));
@@ -128,7 +129,7 @@ fn test_function() {
     assert_eq!(tscln("fn_name{a1, a2}.field = fn().f4"), Ok("fn_name{ a1, a2 }.field = fn().f4".to_string()));
     assert_eq!(tscln("fn()()(fn2('abc'))(1, 2)()"), Ok("fn()()(fn2('abc'))(1, 2)()".to_string()));
     assert_eq!(tscln("a = fn()().field"), Ok("a = fn()().field".to_string()));
-    assert_eq!(tscln("a = fn{fn}{fn}{}(2){fn}.field(3).b"), Ok("a = fn{ fn }{ fn }{}(2){ fn }.field(3).b".to_string()));
+    assert_eq!(tscln("a = fn{fn}{fn}{}(2){fn}.field(3).b"), Ok("a = fn{ fn }{ fn }{ }(2){ fn }.field(3).b".to_string()));
 
     // RetStat
     assert_eq!(tscln("fn = function(a) return a end"), Ok("fn = function(a) return a end".to_string()));
@@ -221,7 +222,7 @@ fn test_round_prefix() {
     assert_eq!(tscln("a = (((fn2()))())"), Ok("a = (((fn2()))())".to_string()));
     assert_eq!(tscln("({ a = 2}).a = 3"), Ok("({ a = 2 }).a = 3".to_string()));
     assert_eq!(tscln("(fn()):fl().a = 3"), Ok("(fn()):fl().a = 3".to_string()));
-    assert_eq!(tscln("(fn()):fl().a, ({}).f = 3, (3&2)"), Ok("(fn()):fl().a, ({}).f = 3, (3 & 2)".to_string()));
+    assert_eq!(tscln("(fn()):fl().a, ({}).f = 3, (3&2)"), Ok("(fn()):fl().a, ({ }).f = 3, (3 & 2)".to_string()));
     assert_eq!(tscln("local str = ({ a = 3, b = 2 })[param]"), Ok("local str = ({ a = 3, b = 2 })[param]".to_string()));
 
     // assert_eq!(tscln("a = 3 (fn()):fl().a = 3"), Ok("a = 3 (fn()):fl().a = 3".to_string()));

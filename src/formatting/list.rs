@@ -17,17 +17,18 @@ pub trait SepListOfItems<Node> {
     fn element_prefix_hint(&self) -> &str;
     fn separator(&self, cfg: &Config) -> Option<String>;
     fn trailing_separator(&self, cfg: &Config) -> Option<bool>;
+    fn need_indent_items(&self, cfg: &Config) -> bool;
 }
 
-pub fn cfg_write_sep_list<'a, 'b, 'c, 'd, 'n: 'a + 'b + 'c, Node, Hint>(
+pub fn cfg_write_sep_list<'a, 'b, 'c, 'n: 'a + 'b + 'c, Node, Hint>(
     f: &mut String,
-    cfg: &'d Config,
+    cfg: &'n Config,
     buf: &str,
     state: &mut State,
     list_node: &'n Node,
 ) -> Result<(), core::fmt::Error>
 where
-    Node: ConfiguredWrite + SepListOfItems<Node>,
+    Node: ConfiguredWrite + SepListOfItems<Node> + NoSepListItem<'n>,
     Hint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
     match list_node.items() {
@@ -48,7 +49,8 @@ where
                     write!(f, "{}", get_sep(&items[i - 1]))?;
 
                     let item = &items[i];
-                    cfg_write!(f, cfg, buf, state, Hint::new(&item.0, list_node.element_prefix_hint()), item.1,
+                    let need_indent = list_node.need_indent_items(cfg) && item.1.need_indent(cfg);
+                    cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&item.0, list_node.element_prefix_hint()), need_indent), item.1,
                                Hint::new(&item.2, ""))?;
                 }
 
