@@ -120,7 +120,7 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_indent(&self, cfg: &'a Config) -> bool {
+    fn need_indent(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
         use Node::*;
         match self {
             VarsExprs(..) | RepeatUntil(..) | RepeatBUntil(..) | LocalNames(..) | LocalNamesExprs(..) | Break(..)
@@ -133,8 +133,54 @@ impl<'a> list::NoSepListItem<'a> for Node {
                 cfg.indentation_string.is_some() && cfg.indent_every_statement == Some(true),
             ElseIfThen(..) | ElseIfThenB(..)
                 => cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1),
-            FieldNamedBracket(..) | FieldNamed(..) | FieldSequential(..) =>
-                cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1),
+            FieldNamedBracket(..) | FieldNamed(..) => {
+                if cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1) {
+                    return true;
+                }
+                if cfg.indentation_string.is_some() && cfg.table_indent_format == Some(2) {
+                    return self.test_oneline_field(f, cfg, buf, state) == None;
+                }
+                false
+            }
+            // allow sequental table constructors keep the line
+            FieldSequential(_, e) => {
+                if cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1) {
+                    return true;
+                }
+                if cfg.indentation_string.is_some() && cfg.table_indent_format == Some(2) {
+                    match &**e {
+                        TableConstructor(..) | TableConstructorEmpty(..) => return false,
+                        _ => {},
+                    }
+                    return self.test_oneline_field(f, cfg, buf, state) == None;
+                }
+                false
+            }
+            _ => false,
+        }
+    }
+
+    fn need_first_indent(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
+        use Node::*;
+        match self {
+            FieldNamedBracket(..) | FieldNamed(..) => {
+                if cfg.indentation_string.is_some() && cfg.table_indent_format == Some(2) {
+                    return self.test_oneline_field(f, cfg, buf, state) == None;
+                }
+                false
+            }
+            // allow sequental table constructors keep the line
+            FieldSequential(_, e) => {
+                if cfg.indentation_string.is_some() && cfg.table_indent_format == Some(2) {
+                    match &**e {
+                        TableConstructor(..) | TableConstructorEmpty(..) => return false,
+                        _ => {},
+                    }
+                    return self.test_oneline_field(f, cfg, buf, state) == None;
+                }
+                false
+            }
+
             _ => false,
         }
     }
@@ -181,7 +227,7 @@ impl list::SepListOfItems<Node> for Node {
     fn need_indent_items(&self, cfg: &Config) -> bool {
         use Node::*;
         match self {
-            Fields(..) => cfg.table_indent_format == Some(1),
+            Fields(..) => cfg.table_indent_format == Some(1) || cfg.table_indent_format == Some(2),
             _ => false,
         }
     }
@@ -248,6 +294,25 @@ impl Node {
         }
         None
     }
+
+    fn test_oneline_field(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
+        if cfg.max_width.is_some() && cfg.table_indent_format == Some(2) {
+            let mut cfg_test = cfg.clone();
+
+            // disable NewLineDecor within table constructor
+            cfg_test.table_indent_format = None;
+            let mut buffer = String::new();
+
+            // if it fits, print the expression on one line
+            if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
+                if !util::has_newlines(&buffer)
+                 && util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
+                    return Some(buffer);
+                }
+            }
+        }
+        None
+    }
 }
 
 impl ConfiguredWrite for Node {
@@ -304,9 +369,14 @@ impl ConfiguredWrite for Node {
 
                 let default_hint = String::new();
                 let hint = cfg.hint_table_constructor.as_ref().unwrap_or(&default_hint);
-                let nl = cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1);
-                cfg_write!(f, cfg, buf, state, "{{", IndentDecor(1), NewLineDecor(Hint(&locs[0], &hint), nl), r,
-                           IndentDecor(-1), NewLineDecor(Hint(&locs[1], &hint), nl), "}}")
+                let nl1 = cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1);
+                let mut nl2 = cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1);
+
+                cfg_write!(f, cfg, buf, state, "{{", IndentDecor(1), NewLineDecor(Hint(&locs[0], &hint), nl1), r)?;
+                if cfg.max_width.is_some() && util::get_positon_after_newline(f, cfg) >= cfg.max_width.unwrap() {
+                    nl2 = true;
+                }
+                cfg_write!(f, cfg, buf, state, IndentDecor(-1), NewLineDecor(Hint(&locs[1], &hint), nl2), "}}")
             }
             TableConstructorEmpty(_, locs) => {
                 let default_hint = String::new();

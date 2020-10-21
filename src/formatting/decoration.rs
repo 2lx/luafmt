@@ -26,8 +26,15 @@ where
                         write!(f, "\n")?;
                     }
                 } else {
+                    // if there was trailing spaces in the line, we need remove them.
+                    // But if at this point we are in the CommentLocHint, we have a pseudo-string, and we cannot
+                    // remove the first letter.
+                    if f.len() > 1 && (f.chars().last() == Some(' ') || f.chars().last() == Some('\t')) {
+                        f.pop();
+                    }
+
                     // if the last lexem is one-line comment or shebang
-                    if f.chars().last().unwrap_or(' ') != '\n' {
+                    if f.chars().last() != Some('\n') {
                         write!(f, "\n")?;
                     }
                 }

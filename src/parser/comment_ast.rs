@@ -4,7 +4,6 @@ use super::common::*;
 use crate::config::*;
 use crate::formatting::loc_hint::*;
 use crate::formatting::list;
-use crate::formatting::decoration::*;
 use crate::{cfg_write, cfg_write_helper};
 
 #[derive(Debug)]
@@ -42,7 +41,7 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_indent(&self, cfg: &'a Config) -> bool {
+    fn need_indent(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
             OneLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_oneline_comments == Some(true),
@@ -61,6 +60,15 @@ impl<'a> list::NoSepListItem<'a> for Node {
             _ => false,
         }
     }
+
+    fn need_first_indent(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
+        use Node::*;
+        match self {
+            OneLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_first_oneline_comment == Some(true),
+            MultiLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_first_multiline_comment == Some(true),
+            _ => false,
+        }
+    }
 }
 
 impl ConfiguredWrite for Node {
@@ -73,26 +81,7 @@ impl ConfiguredWrite for Node {
 
         match self {
             Chunk(locl, n, locr) => {
-                let mut nl = false;
-                if let VariantList(_, lists) = &**n {
-                    // check `indentation_string` in advance
-                    if !lists.is_empty() && cfg.indentation_string.is_some() {
-                        if let (_, CommentList(_, comments)) = &lists[0] {
-                            if !comments.is_empty() {
-                                match &comments[0] {
-                                    (_, OneLineComment(..)) if cfg.indent_first_oneline_comment == Some(true) => {
-                                            nl = true;
-                                    }
-                                    (_, MultiLineComment(..)) if cfg.indent_first_multiline_comment == Some(true) => {
-                                            nl = true;
-                                    }
-                                    _ => {},
-                                }
-                            }
-                        }
-                    }
-                };
-                cfg_write!(f, cfg, buf, state, NewLineDecor(Hint(&locl, ""), nl), n, Hint(&locr, ""))
+                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, ""))
             }
             VariantList(_, variants) => {
                 if cfg.remove_single_newlines == Some(true) && variants.len() == 1 {
@@ -117,8 +106,8 @@ impl ConfiguredWrite for Node {
                     Some(prefix) => {
                         let strimmed = s.trim_start();
 
-                        // do not print the `prefix` if `s` is empty
-                        if s.is_empty() {
+                        // do not print the `prefix` if trimmed `s` is empty
+                        if strimmed.is_empty() {
                             write!(f, "--\n")?;
                         } else {
                             write!(f, "--{}{}\n", prefix, strimmed)?;

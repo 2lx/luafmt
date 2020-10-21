@@ -9,7 +9,8 @@ use std::fmt::Write;
 pub trait NoSepListItem<'a> {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str;
     fn list_item_suffix_hint(&self, cfg: &'a Config) -> &'a str;
-    fn need_indent(&self, cfg: &'a Config) -> bool;
+    fn need_indent(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
+    fn need_first_indent(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
 }
 
 pub trait SepListOfItems<Node> {
@@ -43,13 +44,15 @@ where
                 };
 
                 let first = &items[0];
-                cfg_write!(f, cfg, buf, state, Hint::new(&first.0, ""), first.1, Hint::new(&first.2, ""))?;
+                let need_indent = list_node.need_indent_items(cfg) && first.1.need_first_indent(f, cfg, buf, state);
+                cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&first.0, ""), need_indent), first.1,
+                           Hint::new(&first.2, ""))?;
 
                 for i in 1..items.len() {
                     write!(f, "{}", get_sep(&items[i - 1]))?;
 
                     let item = &items[i];
-                    let need_indent = list_node.need_indent_items(cfg) && item.1.need_indent(cfg);
+                    let need_indent = list_node.need_indent_items(cfg) && item.1.need_indent(f, cfg, buf, state);
                     cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&item.0, list_node.element_prefix_hint()), need_indent), item.1,
                                Hint::new(&item.2, ""))?;
                 }
@@ -80,13 +83,15 @@ where
     if !elems.is_empty() {
         let first = &elems[0];
 
-        cfg_write!(f, cfg, buf, state, Hint::new(&first.0, ""), first.1)?;
+        let need_indent = first.1.need_first_indent(f, cfg, buf, state);
+        cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&first.0, ""), need_indent), first.1)?;
+
         for i in 1..elems.len() {
             let suffix = elems[i - 1].1.list_item_suffix_hint(cfg);
             let prefix = elems[i].1.list_item_prefix_hint(cfg);
             let hint = longest_hint(prefix, suffix);
 
-            let need_indent = elems[i].1.need_indent(cfg);
+            let need_indent = elems[i].1.need_indent(f, cfg, buf, state);
             cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&elems[i].0, hint), need_indent), elems[i].1)?;
         }
     }

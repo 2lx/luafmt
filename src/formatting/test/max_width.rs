@@ -260,6 +260,32 @@ I   e;
 }"#
         .to_string())
     );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        table_indent_format: Some(2),
+        max_width: Some(27),
+        field_separator: Some(";".to_string()),
+        write_trailing_field_separator: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {a=3; b=23-1; c=a;
+}"#
+        .to_string())
+    );
+    assert_eq!(
+        ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
+        Ok(r#"local a = { b = 123;
+I   c={1; 2; 3; {a=1; b=2;
+I   I   }; 5;}; d = {}; e;
+}"#
+        .to_string())
+    );
 }
 
 #[test]
