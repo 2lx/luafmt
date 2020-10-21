@@ -35,7 +35,8 @@ pub struct Config {
     pub hint_before_multiline_comment_text: Option<String>,
     pub hint_before_oneline_comment_text: Option<String>,
     pub remove_comments: Option<bool>,
-    pub remove_newlines: Option<bool>,
+    pub remove_single_newlines: Option<bool>,
+    pub remove_all_newlines: Option<bool>,
     pub remove_spaces_between_tokens: Option<bool>,
     pub replace_zero_spaces_with_hint: Option<bool>,
 
@@ -53,6 +54,7 @@ pub struct Config {
     pub repeat_until_indent_format: Option<usize>,
     pub table_indent_format: Option<usize>,
     pub while_do_indent_format: Option<usize>,
+    pub binary_op_indent_format: Option<usize>,
 
     // other
     // replace_tabs_with_spaces: Option<String>,
@@ -73,7 +75,8 @@ impl Config {
             hint_before_multiline_comment_text: None,
             hint_before_oneline_comment_text: None,
             remove_comments: None,
-            remove_newlines: None,
+            remove_single_newlines: None,
+            remove_all_newlines: None,
             remove_spaces_between_tokens: None,
             replace_zero_spaces_with_hint: None,
 
@@ -91,6 +94,7 @@ impl Config {
             repeat_until_indent_format: None,
             table_indent_format: None,
             while_do_indent_format: None,
+            binary_op_indent_format: None,
 
             // other
             hint_table_constructor: None,
@@ -124,7 +128,8 @@ impl Config {
             }
             "hint_before_oneline_comment_text" => set_param_value_as!(self.hint_before_oneline_comment_text, String),
             "remove_comments" => set_param_value_as!(self.remove_comments, bool),
-            "remove_newlines" => set_param_value_as!(self.remove_newlines, bool),
+            "remove_single_newlines" => set_param_value_as!(self.remove_single_newlines, bool),
+            "remove_all_newlines" => set_param_value_as!(self.remove_all_newlines, bool),
             "remove_spaces_between_tokens" => set_param_value_as!(self.remove_spaces_between_tokens, bool),
             "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
 
@@ -142,6 +147,7 @@ impl Config {
             "repeat_until_indent_format" => set_param_value_as!(self.repeat_until_indent_format, usize),
             "table_indent_format" => set_param_value_as!(self.table_indent_format, usize),
             "while_do_indent_format" => set_param_value_as!(self.while_do_indent_format, usize),
+            "binary_op_indent_format" => set_param_value_as!(self.binary_op_indent_format, usize),
 
             // other
             "hint_table_constructor" => set_param_value_as!(self.hint_table_constructor, String),
@@ -222,7 +228,8 @@ impl fmt::Display for Config {
         print_opt!(self.hint_before_multiline_comment_text, "hint_before_multiline_comment_text");
         print_opt!(self.hint_before_oneline_comment_text, "hint_before_oneline_comment_text");
         print_opt!(self.remove_comments, "remove_comments");
-        print_opt!(self.remove_newlines, "remove_newlines");
+        print_opt!(self.remove_single_newlines, "remove_single_newlines");
+        print_opt!(self.remove_all_newlines, "remove_all_newlines");
         print_opt!(self.remove_spaces_between_tokens, "remove_spaces_between_tokens");
         print_opt!(self.replace_zero_spaces_with_hint, "replace_zero_spaces_with_hint");
 
@@ -240,6 +247,7 @@ impl fmt::Display for Config {
         print_opt!(self.repeat_until_indent_format, "repeat_until_indent_format");
         print_opt!(self.table_indent_format, "table_indent_format");
         print_opt!(self.while_do_indent_format, "while_do_indent_format");
+        print_opt!(self.binary_op_indent_format, "binary_op_indent_format");
 
         // other
         print_opt!(self.hint_table_constructor, "hint_table_constructor");

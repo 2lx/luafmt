@@ -94,12 +94,22 @@ impl ConfiguredWrite for Node {
                 };
                 cfg_write!(f, cfg, buf, state, NewLineDecor(Hint(&locl, ""), nl), n, Hint(&locr, ""))
             }
-            VariantList(_, variants) => cfg_write_vector(f, cfg, buf, state, variants),
+            VariantList(_, variants) => {
+                if cfg.remove_single_newlines == Some(true) && variants.len() == 1 {
+                    if let (_, NewLineList(_, newlines)) = &variants[0] {
+                        if newlines.len() == 1 {
+                            return Ok(())
+                        }
+                    }
+                }
+
+                cfg_write_vector(f, cfg, buf, state, variants)
+            }
             CommentList(_, comments) => cfg_write_vector(f, cfg, buf, state, comments),
             NewLineList(_, newlines) => cfg_write_vector(f, cfg, buf, state, newlines),
 
             OneLineComment(_, s) => match cfg.remove_comments {
-                Some(true) => match cfg.remove_newlines {
+                Some(true) => match cfg.remove_all_newlines {
                     Some(true) => Ok(()),
                     _ => write!(f, "\n"),
                 },
@@ -140,7 +150,7 @@ impl ConfiguredWrite for Node {
                     }
                 }
             },
-            NewLine(_) => match cfg.remove_newlines {
+            NewLine(_) => match cfg.remove_all_newlines {
                 Some(true) => Ok(()),
                 _ => write!(f, "\n"),
             },

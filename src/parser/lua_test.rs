@@ -28,7 +28,7 @@ fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
 fn tscln(source: &'static str) -> Result<String, TestError> {
     let cfg = Config {
         remove_comments: Some(true),
-        remove_newlines: Some(true),
+        remove_all_newlines: Some(true),
         replace_zero_spaces_with_hint: Some(true),
         remove_spaces_between_tokens: Some(true),
         hint_table_constructor: Some(" ".to_string()),

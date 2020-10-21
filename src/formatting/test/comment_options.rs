@@ -136,7 +136,7 @@ fn test_remove_comments_newlines() {
         Ok("#!/usr/bin/lua\n local \n b = {2, 3} for a=1,  \n  4do print\n (1,4)end".to_string())
     );
 
-    let cfg = Config { remove_newlines: Some(true), ..Config::default() };
+    let cfg = Config { remove_all_newlines: Some(true), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -150,7 +150,7 @@ fn test_remove_comments_newlines() {
             .to_string())
     );
 
-    let cfg = Config { remove_comments: Some(true), remove_newlines: Some(true), ..Config::default() };
+    let cfg = Config { remove_comments: Some(true), remove_all_newlines: Some(true), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
