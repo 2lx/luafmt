@@ -26,7 +26,7 @@ pub trait ConfiguredWrite {
     fn configured_write(&self, f: &mut String, config: &Config, buf: &str, state: &mut State) -> std::fmt::Result;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Config {
     // comments
     pub hint_after_multiline_comment: Option<String>,
@@ -63,6 +63,7 @@ pub struct Config {
     pub field_separator: Option<String>,
     pub write_trailing_field_separator: Option<bool>,
     pub max_width: Option<usize>,
+    pub enable_oneline_binary_op: Option<bool>,
 }
 
 impl Config {
@@ -101,6 +102,7 @@ impl Config {
             field_separator: None,
             write_trailing_field_separator: None,
             max_width: None,
+            enable_oneline_binary_op: None,
         }
     }
 
@@ -154,6 +156,7 @@ impl Config {
             "field_separator" => set_param_value_as!(self.field_separator, String),
             "write_trailing_field_separator" => set_param_value_as!(self.write_trailing_field_separator, bool),
             "max_width" => set_param_value_as!(self.max_width, usize),
+            "enable_oneline_binary_op" => set_param_value_as!(self.enable_oneline_binary_op, bool),
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
     }
@@ -254,6 +257,7 @@ impl fmt::Display for Config {
         print_opt!(self.field_separator, "field_separator");
         print_opt!(self.write_trailing_field_separator, "write_trailing_field_separator");
         print_opt!(self.max_width, "max_width");
+        print_opt!(self.enable_oneline_binary_op, "enable_oneline_binary_op");
 
         write!(f, "}}")?;
         Ok(())

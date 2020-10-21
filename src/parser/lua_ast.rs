@@ -5,6 +5,7 @@ use crate::config::*;
 use crate::{cfg_write, cfg_write_helper};
 use crate::formatting::loc_hint::*;
 use crate::formatting::list;
+use crate::formatting::util;
 use crate::formatting::decoration::*;
 
 #[derive(Debug)]
@@ -198,6 +199,22 @@ impl ConfiguredWrite for Node {
 
         match self {
             BinaryOp(_, locs, tok, l, r) => {
+                if cfg.max_width.is_some() && cfg.enable_oneline_binary_op == Some(true)
+                        && cfg.binary_op_indent_format.is_some() {
+                    let mut cfg_test = cfg.clone();
+
+                    // disable NewLineDecor within binary ops
+                    cfg_test.binary_op_indent_format = None;
+                    let mut buffer = String::new();
+
+                    // if it fits, print the expression on one line
+                    if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
+                        if util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
+                            return cfg_write!(f, cfg, buf, state, l, Hint(&locs[0], " "), tok, Hint(&locs[1], " "), r)
+                        }
+                    }
+                }
+
                 let nl1 = cfg.indentation_string.is_some() && cfg.binary_op_indent_format == Some(1);
                 let nl2 = cfg.indentation_string.is_some() && cfg.binary_op_indent_format == Some(2);
                 cfg_write!(f, cfg, buf, state, IndentDecor(1), l, NewLineDecor(Hint(&locs[0], " "), nl1), tok,
