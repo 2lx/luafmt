@@ -19,6 +19,10 @@ pub fn get_positon_after_newline(s: &str, _cfg: &Config) -> usize {
     return s.len() - idx_opt.unwrap_or(0);
 }
 
+pub fn has_newlines(s: &str) -> bool {
+    return s.find('\n').is_some();
+}
+
 pub fn write_indent(f: &mut String, cfg: &Config, state: &State) -> std::fmt::Result {
     let indentation = match &cfg.indentation_string {
         Some(indent_str) => (0..state.indent_level).map(|_| &indent_str[..]).collect::<String>(),
@@ -41,4 +45,10 @@ fn test_position_after_newline() {
     assert_eq!(get_positon_after_newline("abc\t  \n  ", &cfg), 3);
     assert_eq!(get_positon_after_newline("abc\t  \n  absdsrf", &cfg), 10);
     assert_eq!(get_positon_after_newline("\nabc\t dasdsadas \n  asdasdas\nabsdsrf", &cfg), 8);
+}
+
+#[test]
+fn test_has_newlines() {
+    assert_eq!(has_newlines("abc\t  \n  "), true);
+    assert_eq!(has_newlines("abc\t  \r\tasdas   "), false);
 }

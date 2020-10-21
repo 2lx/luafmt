@@ -520,9 +520,9 @@ Op6<T>: Node = {
     Op7<T>,
 }
 
-// right-associative
+// right-associative operation, but we make it left-associative
 Op7<T>: Node = {
-    <ls:@L> <e1:Op8<T>> <l1:@R> <r1:@L> ".." <l2:@R> <r2:@L> <e2:Op7<T>> <rs:@R>
+    <ls:@L> <e1:Op7<T>> <l1:@R> <r1:@L> ".." <l2:@R> <r2:@L> <e2:Op8<T>> <rs:@R>
         => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str(".."), Box::new(e1), Box::new(e2)),
     Op8<T>,
 }
@@ -559,9 +559,9 @@ Op10<T>: Node = {
     Op11<T>,
 }
 
-// right-associative
+// right-associative operation, but we make it left-associative
 Op11<T>: Node = {
-    <ls:@L> <e1:T> <l1:@R> <r1:@L> "^" <l2:@R> <r2:@L> <e2:Op11<T>> <rs:@R>
+    <ls:@L> <e1:Op11<T>> <l1:@R> <r1:@L> "^" <l2:@R> <r2:@L> <e2:T> <rs:@R>
         => Node::BinaryOp(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Str("^"), Box::new(e1), Box::new(e2)),
     T,
 }

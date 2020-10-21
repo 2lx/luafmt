@@ -187,6 +187,68 @@ impl list::SepListOfItems<Node> for Node {
     }
 }
 
+impl Node {
+    fn test_oneline_binary_op(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
+        if cfg.max_width.is_some() && cfg.enable_oneline_binary_op == Some(true)
+                && cfg.binary_op_indent_format.is_some() {
+            let mut cfg_test = cfg.clone();
+
+            // disable NewLineDecor within binary ops
+            cfg_test.binary_op_indent_format = None;
+            let mut buffer = String::new();
+
+            // if it fits, print the expression on one line
+            if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
+                if util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
+                    return Some(buffer);
+                }
+            }
+        }
+        None
+    }
+
+    fn test_oneline_table(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
+        if cfg.max_width.is_some() && cfg.enable_oneline_table == Some(true)
+                && cfg.table_indent_format.is_some() {
+            let mut cfg_test = cfg.clone();
+
+            // disable NewLineDecor within table constructor
+            cfg_test.table_indent_format = None;
+
+            // one-line tables are forced to have no trailing separator
+            cfg_test.write_trailing_field_separator = Some(false);
+            let mut buffer = String::new();
+
+            // if it fits, print the expression on one line
+            if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
+                if util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
+                    return Some(buffer);
+                }
+            }
+        }
+        None
+    }
+
+    fn test_oneline_if(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
+        if cfg.max_width.is_some() && cfg.enable_oneline_if == Some(true)
+                && cfg.if_indent_format.is_some() {
+            let mut cfg_test = cfg.clone();
+
+            // disable NewLineDecor within table constructor
+            cfg_test.if_indent_format = None;
+            let mut buffer = String::new();
+
+            // if it fits, print the expression on one line
+            if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
+                if !util::has_newlines(&buffer)
+                        && util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
+                    return Some(buffer);
+                }
+            }
+        }
+        None
+    }
+}
 
 impl ConfiguredWrite for Node {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
@@ -199,20 +261,8 @@ impl ConfiguredWrite for Node {
 
         match self {
             BinaryOp(_, locs, tok, l, r) => {
-                if cfg.max_width.is_some() && cfg.enable_oneline_binary_op == Some(true)
-                        && cfg.binary_op_indent_format.is_some() {
-                    let mut cfg_test = cfg.clone();
-
-                    // disable NewLineDecor within binary ops
-                    cfg_test.binary_op_indent_format = None;
-                    let mut buffer = String::new();
-
-                    // if it fits, print the expression on one line
-                    if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
-                        if util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
-                            return write!(f, "{}", buffer);
-                        }
-                    }
+                if let Some(line) = self.test_oneline_binary_op(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
                 }
 
                 let nl1 = cfg.indentation_string.is_some() && cfg.binary_op_indent_format == Some(1);
@@ -248,23 +298,8 @@ impl ConfiguredWrite for Node {
             }
 
             TableConstructor(_, locs, r) => {
-                if cfg.max_width.is_some() && cfg.enable_oneline_table == Some(true)
-                        && cfg.table_indent_format.is_some() {
-                    let mut cfg_test = cfg.clone();
-
-                    // disable NewLineDecor within table constructor
-                    cfg_test.table_indent_format = None;
-
-                    // one-line tables are forced to have no trailing separator
-                    cfg_test.write_trailing_field_separator = Some(false);
-                    let mut buffer = String::new();
-
-                    // if it fits, print the expression on one line
-                    if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
-                        if util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
-                            return write!(f, "{}", buffer);
-                        }
-                    }
+                if let Some(line) = self.test_oneline_table(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
                 }
 
                 let default_hint = String::new();
@@ -360,22 +395,38 @@ impl ConfiguredWrite for Node {
 
             // if
             IfThen(_, locs, e1) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            NewLineDecor(Hint(&locs[2], " "), nl), "end")
             }
             IfThenB(_, locs, e1, b1) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentDecor(1), NewLineDecor(Hint(&locs[2], " "), nl), b1,
                            IndentDecor(-1), NewLineDecor(Hint(&locs[3], " "), nl), "end")
             }
             IfThenElse(_, locs, e1) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            Hint(&locs[2], " "), "else", NewLineDecor(Hint(&locs[3], " "), nl), "end")
             }
             IfThenBElse(_, locs, e1, b1) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentDecor(1), NewLineDecor(Hint(&locs[2], " "), nl), b1,
@@ -383,12 +434,20 @@ impl ConfiguredWrite for Node {
                            NewLineDecor(Hint(&locs[4], " "), nl), "end")
             }
             IfThenElseB(_, locs, e1, b2) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            Hint(&locs[2], " "), "else", IndentDecor(1), NewLineDecor(Hint(&locs[3], " "), nl), b2,
                            IndentDecor(-1), NewLineDecor(Hint(&locs[4], " "), nl), "end")
             }
             IfThenBElseB(_, locs, e1, b1, b2) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentDecor(1), NewLineDecor(Hint(&locs[2], " "), nl), b1,
@@ -397,12 +456,20 @@ impl ConfiguredWrite for Node {
                            IndentDecor(-1), NewLineDecor(Hint(&locs[5], " "), nl), "end")
             }
             IfThenElseIf(_, locs, e1, n) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            NewLineDecor(Hint(&locs[2], " "), nl), n,
                            NewLineDecor(Hint(&locs[3], " "), nl), "end")
             }
             IfThenBElseIf(_, locs, e1, b1, n) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentDecor(1), NewLineDecor(Hint(&locs[2], " "), nl), b1,
@@ -410,6 +477,10 @@ impl ConfiguredWrite for Node {
                            NewLineDecor(Hint(&locs[4], " "), nl), "end")
             }
             IfThenElseIfElse(_, locs, e1, n) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            NewLineDecor(Hint(&locs[2], " "), nl), n,
@@ -417,6 +488,10 @@ impl ConfiguredWrite for Node {
                            NewLineDecor(Hint(&locs[4], " "), nl), "end")
             }
             IfThenBElseIfElse(_, locs, e1, b1, n) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentDecor(1), NewLineDecor(Hint(&locs[2], " "), nl), b1,
@@ -425,6 +500,10 @@ impl ConfiguredWrite for Node {
                            NewLineDecor(Hint(&locs[5], " "), nl), "end")
             }
             IfThenElseIfElseB(_, locs, e1, n, b2) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            NewLineDecor(Hint(&locs[2], " "), nl), n,
@@ -433,6 +512,10 @@ impl ConfiguredWrite for Node {
                            IndentDecor(-1), NewLineDecor(Hint(&locs[5], " "), nl), "end")
             }
             IfThenBElseIfElseB(_, locs, e1, b1, n, b2) => {
+                if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
+                    return write!(f, "{}", line);
+                }
+
                 let nl = cfg.indentation_string.is_some() && cfg.if_indent_format == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentDecor(1), NewLineDecor(Hint(&locs[2], " "), nl), b1,

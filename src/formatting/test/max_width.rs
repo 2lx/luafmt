@@ -136,11 +136,15 @@ fn test_table() {
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"), Ok(r#"local a = {
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {
 I   a=3,
 I   b=23-1,
 I   c=a
-}"#.to_string()));
+}"#
+        .to_string())
+    );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = {
@@ -157,7 +161,8 @@ I   I   5
 I   },
 I   d = {},
 I   e
-}"#.to_string())
+}"#
+        .to_string())
     );
 
     let cfg = Config {
@@ -178,7 +183,8 @@ I   b = 123,
 I   c={1, 2, 3, {a=1, b=2}, 5},
 I   d = {},
 I   e
-}"#.to_string())
+}"#
+        .to_string())
     );
 
     let cfg = Config {
@@ -191,11 +197,15 @@ I   e
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"), Ok(r#"local a = {
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {
 I   a=3,
 I   b=23-1,
 I   c=a
-}"#.to_string()));
+}"#
+        .to_string())
+    );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = {
@@ -209,7 +219,8 @@ I   I   5
 I   },
 I   d = {},
 I   e
-}"#.to_string())
+}"#
+        .to_string())
     );
 
     let cfg = Config {
@@ -224,11 +235,15 @@ I   e
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"), Ok(r#"local a = {
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {
 I   a=3;
 I   b=23-1;
 I   c=a;
-}"#.to_string()));
+}"#
+        .to_string())
+    );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = {
@@ -242,6 +257,128 @@ I   I   5;
 I   };
 I   d = {};
 I   e;
-}"#.to_string())
+}"#
+        .to_string())
+    );
+}
+
+#[test]
+fn test_if() {
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        if_indent_format: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"if --[[1]] a > 3 --[[2]] then print(4) else print(0) --[[14]]end"#),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then
+I   print(4)
+else
+I   print(0) --[[14]]
+end"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(
+            r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] else--[[13]] print(0) --[[14]]end"#
+        ),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then --[[3]]
+I   print(4) --[[4]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+I   print(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+I   print(3)--[[12]]
+else--[[13]]
+I   print(0) --[[14]]
+end"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        if_indent_format: Some(1),
+        max_width: Some(120),
+        enable_oneline_if: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"if --[[1]] a > 3 --[[2]] then print(4) else print(0) --[[14]]end"#),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then print(4) else print(0) --[[14]]end"#.to_string())
+    );
+
+    assert_eq!(
+        ts(
+            r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] else--[[13]] print(0) --[[14]]end"#
+        ),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then --[[3]]
+I   print(4) --[[4]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+I   print(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+I   print(3)--[[12]]
+else--[[13]]
+I   print(0) --[[14]]
+end"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        if_indent_format: Some(1),
+        max_width: Some(20),
+        enable_oneline_if: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"if --[[1]] a > 3 --[[2]] then print(4) else print(0) --[[14]]end"#),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then
+I   print(4)
+else
+I   print(0) --[[14]]
+end"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        if_indent_format: Some(1),
+        max_width: Some(2000),
+        enable_oneline_if: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"if --[[1]] a > 3 --[[2]] then print(4) else print(0) --[[14]]end"#),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then print(4) else print(0) --[[14]]end"#.to_string())
+    );
+    assert_eq!(
+        ts(
+            r#"if --[[1]] a > 3 --[[2]] then --[[3]] print(4) --[[4]] elseif --[[5]]a<3--[[6]] then --[[7]]print(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]] print(3)--[[12]] else--[[13]] print(0) --[[14]]end"#
+        ),
+        Ok(r#"if --[[1]] a > 3 --[[2]] then --[[3]]
+I   print(4) --[[4]]
+elseif --[[5]]a<3--[[6]] then --[[7]]
+I   print(2)--[[8]]
+elseif --[[9]]a == 3 --[[10]]then--[[11]]
+I   print(3)--[[12]]
+else--[[13]]
+I   print(0) --[[14]]
+end"#
+            .to_string())
     );
 }

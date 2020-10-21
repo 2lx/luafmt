@@ -65,6 +65,7 @@ pub struct Config {
     pub max_width: Option<usize>,
     pub enable_oneline_binary_op: Option<bool>,
     pub enable_oneline_table: Option<bool>,
+    pub enable_oneline_if: Option<bool>,
 }
 
 impl Config {
@@ -105,6 +106,7 @@ impl Config {
             max_width: None,
             enable_oneline_binary_op: None,
             enable_oneline_table: None,
+            enable_oneline_if: None,
         }
     }
 
@@ -160,6 +162,7 @@ impl Config {
             "max_width" => set_param_value_as!(self.max_width, usize),
             "enable_oneline_binary_op" => set_param_value_as!(self.enable_oneline_binary_op, bool),
             "enable_oneline_table" => set_param_value_as!(self.enable_oneline_table, bool),
+            "enable_oneline_if" => set_param_value_as!(self.enable_oneline_if, bool),
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
     }
@@ -262,6 +265,7 @@ impl fmt::Display for Config {
         print_opt!(self.max_width, "max_width");
         print_opt!(self.enable_oneline_binary_op, "enable_oneline_binary_op");
         print_opt!(self.enable_oneline_table, "enable_oneline_table");
+        print_opt!(self.enable_oneline_if, "enable_oneline_if");
 
         write!(f, "}}")?;
         Ok(())
