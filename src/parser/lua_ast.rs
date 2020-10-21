@@ -210,7 +210,7 @@ impl ConfiguredWrite for Node {
                     // if it fits, print the expression on one line
                     if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
                         if util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
-                            return cfg_write!(f, cfg, buf, state, l, Hint(&locs[0], " "), tok, Hint(&locs[1], " "), r)
+                            return write!(f, "{}", buffer);
                         }
                     }
                 }
@@ -248,10 +248,28 @@ impl ConfiguredWrite for Node {
             }
 
             TableConstructor(_, locs, r) => {
+                if cfg.max_width.is_some() && cfg.enable_oneline_table == Some(true)
+                        && cfg.table_indent_format.is_some() {
+                    let mut cfg_test = cfg.clone();
+
+                    // disable NewLineDecor within table constructor
+                    cfg_test.table_indent_format = None;
+
+                    // one-line tables are forced to have no trailing separator
+                    cfg_test.write_trailing_field_separator = Some(false);
+                    let mut buffer = String::new();
+
+                    // if it fits, print the expression on one line
+                    if self.configured_write(&mut buffer, &cfg_test, buf, state) == Ok(()) {
+                        if util::get_positon_after_newline(f, cfg) + buffer.len() < cfg.max_width.unwrap() {
+                            return write!(f, "{}", buffer);
+                        }
+                    }
+                }
+
                 let default_hint = String::new();
                 let hint = cfg.hint_table_constructor.as_ref().unwrap_or(&default_hint);
                 let nl = cfg.indentation_string.is_some() && cfg.table_indent_format == Some(1);
-
                 cfg_write!(f, cfg, buf, state, "{{", IndentDecor(1), NewLineDecor(Hint(&locs[0], &hint), nl), r,
                            IndentDecor(-1), NewLineDecor(Hint(&locs[1], &hint), nl), "}}")
             }
