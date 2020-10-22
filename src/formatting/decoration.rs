@@ -47,11 +47,34 @@ where
     }
 }
 
-pub struct IndentDecor(pub isize);
-impl ConfiguredWrite for IndentDecor {
+pub struct IndentIncDecor();
+impl ConfiguredWrite for IndentIncDecor {
     fn configured_write(&self, _: &mut String, _: &Config, _: &str, state: &mut State) -> std::fmt::Result {
-        state.indent_level += self.0;
+        state.indent_level += 1;
+        Ok(())
+    }
+}
 
+pub struct IndentDecDecor();
+impl ConfiguredWrite for IndentDecDecor {
+    fn configured_write(&self, _: &mut String, _: &Config, _: &str, state: &mut State) -> std::fmt::Result {
+        state.indent_level -= 1;
+        Ok(())
+    }
+}
+
+pub struct FuncLevelIncDecor();
+impl ConfiguredWrite for FuncLevelIncDecor {
+    fn configured_write(&self, _: &mut String, _: &Config, _: &str, state: &mut State) -> std::fmt::Result {
+        state.function_nested_level += 1;
+        Ok(())
+    }
+}
+
+pub struct FuncLevelDecDecor();
+impl ConfiguredWrite for FuncLevelDecDecor {
+    fn configured_write(&self, _: &mut String, _: &Config, _: &str, state: &mut State) -> std::fmt::Result {
+        state.function_nested_level -= 1;
         Ok(())
     }
 }

@@ -408,3 +408,131 @@ end"#
             .to_string())
     );
 }
+
+#[test]
+fn test_function() {
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        format_type_function: Some(1),
+        indent_every_statement: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn(a, b) print(a) local fn2 = function(a, b) return a < b end print(b) end"#),
+        Ok(r#"function fn(a, b)
+I   print(a)
+I   local fn2 = function(a, b)
+I   I   return a < b
+I   end
+I   print(b)
+end"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"function fn(a, b) return function(a, b) return a < b end end"#),
+        Ok(r#"function fn(a, b)
+I   return function(a, b)
+I   I   return a < b
+I   end
+end"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        format_type_function: Some(1),
+        indent_every_statement: Some(true),
+        max_width: Some(120),
+        enable_oneline_top_level_function: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn(a, b) print(a) local fn2 = function(a, b) return a < b end print(b) end"#),
+        Ok(r#"function fn(a, b)
+I   print(a)
+I   local fn2 = function(a, b)
+I   I   return a < b
+I   end
+I   print(b)
+end"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"function fn(a, b) return function(a, b) return a < b end end"#),
+        Ok(r#"function fn(a, b) return function(a, b) return a < b end end"#.to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        format_type_function: Some(1),
+        indent_every_statement: Some(true),
+        max_width: Some(120),
+        enable_oneline_scoped_function: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn(a, b) print(a) local fn2 = function(a, b) return a < b end print(b) end"#),
+        Ok(r#"function fn(a, b)
+I   print(a)
+I   local fn2 = function(a, b) return a < b end
+I   print(b)
+end"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"function fn(a, b) return function(a, b) return a < b end end"#),
+        Ok(r#"function fn(a, b)
+I   return function(a, b) return a < b end
+end"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        format_type_function: Some(1),
+        indent_every_statement: Some(true),
+        max_width: Some(120),
+        enable_oneline_top_level_function: Some(true),
+        enable_oneline_scoped_function: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn(a, b) print(a) local fn2 = function(a, b) return a < b end print(b) end"#),
+        Ok(r#"function fn(a, b)
+I   print(a)
+I   local fn2 = function(a, b) return a < b end
+I   print(b)
+end"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"function fn(a, b) return function(a, b) return a < b end end"#),
+        Ok(r#"function fn(a, b) return function(a, b) return a < b end end"#.to_string())
+    );
+
+    assert_eq!(
+        ts(r#"function fn(a, b) print(a) print(b) return function(a, b) return a < b end end"#),
+        Ok(r#"function fn(a, b)
+I   print(a)
+I   print(b)
+I   return function(a, b) return a < b end
+end"#
+            .to_string())
+    );
+}

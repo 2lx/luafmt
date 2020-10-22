@@ -72,6 +72,8 @@ pub struct Config {
     pub enable_oneline_binary_op: Option<bool>,
     pub enable_oneline_table: Option<bool>,
     pub enable_oneline_if: Option<bool>,
+    pub enable_oneline_top_level_function: Option<bool>,
+    pub enable_oneline_scoped_function: Option<bool>,
 }
 
 impl Config {
@@ -119,6 +121,8 @@ impl Config {
             enable_oneline_binary_op: None,
             enable_oneline_table: None,
             enable_oneline_if: None,
+            enable_oneline_top_level_function: None,
+            enable_oneline_scoped_function: None,
         }
     }
 
@@ -181,6 +185,8 @@ impl Config {
             "enable_oneline_binary_op" => set_param_value_as!(self.enable_oneline_binary_op, bool),
             "enable_oneline_table" => set_param_value_as!(self.enable_oneline_table, bool),
             "enable_oneline_if" => set_param_value_as!(self.enable_oneline_if, bool),
+            "enable_oneline_top_level_function" => set_param_value_as!(self.enable_oneline_top_level_function, bool),
+            "enable_oneline_scoped_function" => set_param_value_as!(self.enable_oneline_scoped_function, bool),
 
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
@@ -291,6 +297,8 @@ impl fmt::Display for Config {
         print_opt!(self.enable_oneline_binary_op, "enable_oneline_binary_op");
         print_opt!(self.enable_oneline_table, "enable_oneline_table");
         print_opt!(self.enable_oneline_if, "enable_oneline_if");
+        print_opt!(self.enable_oneline_top_level_function, "enable_oneline_top_level_function");
+        print_opt!(self.enable_oneline_scoped_function, "enable_oneline_scoped_function");
 
         write!(f, "}}")?;
         Ok(())
@@ -300,10 +308,11 @@ impl fmt::Display for Config {
 #[derive(Debug)]
 pub struct State {
     pub indent_level: isize,
+    pub function_nested_level: isize,
 }
 
 impl State {
     pub const fn default() -> Self {
-        State { indent_level: 0 }
+        State { indent_level: 0, function_nested_level: 0 }
     }
 }
