@@ -6,7 +6,7 @@ fn test_binary_ops() {
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        binary_op_indent_format: Some(1),
+        format_type_binary_op: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -35,7 +35,7 @@ I   I   and e"
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        binary_op_indent_format: Some(2),
+        format_type_binary_op: Some(2),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -64,7 +64,7 @@ I   I   e"
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        binary_op_indent_format: Some(1),
+        format_type_binary_op: Some(1),
         max_width: Some(30),
         enable_oneline_binary_op: Some(true),
         ..Config::default()
@@ -99,7 +99,7 @@ I   I   and (c and d and e)"
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        binary_op_indent_format: Some(1),
+        format_type_binary_op: Some(1),
         max_width: Some(50),
         enable_oneline_binary_op: Some(true),
         ..Config::default()
@@ -131,7 +131,7 @@ fn test_table() {
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        table_indent_format: Some(1),
+        format_type_table: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -168,7 +168,7 @@ I   e
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        table_indent_format: Some(1),
+        format_type_table: Some(1),
         max_width: Some(50),
         enable_oneline_table: Some(true),
         ..Config::default()
@@ -190,7 +190,7 @@ I   e
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        table_indent_format: Some(1),
+        format_type_table: Some(1),
         max_width: Some(27),
         enable_oneline_table: Some(true),
         ..Config::default()
@@ -226,7 +226,7 @@ I   e
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        table_indent_format: Some(1),
+        format_type_table: Some(1),
         max_width: Some(27),
         enable_oneline_table: Some(true),
         field_separator: Some(";".to_string()),
@@ -264,7 +264,7 @@ I   e;
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        table_indent_format: Some(2),
+        format_type_table: Some(2),
         max_width: Some(27),
         field_separator: Some(";".to_string()),
         write_trailing_field_separator: Some(true),
@@ -293,7 +293,7 @@ fn test_if() {
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        if_indent_format: Some(1),
+        format_type_if: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -328,7 +328,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        if_indent_format: Some(1),
+        format_type_if: Some(1),
         max_width: Some(120),
         enable_oneline_if: Some(true),
         ..Config::default()
@@ -360,7 +360,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        if_indent_format: Some(1),
+        format_type_if: Some(1),
         max_width: Some(20),
         enable_oneline_if: Some(true),
         ..Config::default()
@@ -380,7 +380,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        if_indent_format: Some(1),
+        format_type_if: Some(1),
         max_width: Some(2000),
         enable_oneline_if: Some(true),
         ..Config::default()

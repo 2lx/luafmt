@@ -1,5 +1,5 @@
-use crate::config::*;
 use super::common::*;
+use crate::config::*;
 
 #[test]
 fn test_replace_zero_spaces_with_hint() {
@@ -161,5 +161,26 @@ fn test_remove_comments_newlines() {
     assert_eq!(
         ts("#!/usr/bin/lua\n local --1\n b = {2, 3} for a=1,--[[  asd ]]  \n  4do print--1\n (1,4)end--[=[1232 ]=]"),
         Ok("#!/usr/bin/lua\n local  b = {2, 3} for a=1,    4do print (1,4)end".to_string())
+    );
+}
+
+#[test]
+fn test_eof_hint() {
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        hint_before_end_of_file: Some("\n".to_string()),
+        replace_zero_spaces_with_hint: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("for a=1, \n  4 do print --1\n --[[ text ]](1,4)end"),
+        Ok("for a = 1,   4 do print --1\n --[[ text ]](1, 4) end\n".to_string())
+    );
+
+    assert_eq!(
+        ts("#!/usr/bin/lua\n local \n b = {2, 3} for a=1,--[[  asd ]]  \n  4do print--1\n (1,4)end--[=[1232 ]=]"),
+        Ok("#!/usr/bin/lua\n local  b = {2, 3} for a = 1,--[[  asd ]]  \n  4 do print--1\n (1, 4) end--[=[1232 ]=]".to_string())
     );
 }

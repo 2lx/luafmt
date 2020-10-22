@@ -98,8 +98,8 @@ fn test_parse_options() {
     let po = ProgramOpts { inplace: true, recursive: true };
     assert_eq!(parse_options(&options), (cfg, po));
 
-    let options = vec!["-i".to_string(), "--recursive".to_string(), "--if_indent_format=1".to_string()];
-    let cfg = Config { if_indent_format: Some(1), ..Config::default() };
+    let options = vec!["-i".to_string(), "--recursive".to_string(), "--format_type_if=1".to_string()];
+    let cfg = Config { format_type_if: Some(1), ..Config::default() };
     let po = ProgramOpts { inplace: true, recursive: true };
     assert_eq!(parse_options(&options), (cfg, po));
 

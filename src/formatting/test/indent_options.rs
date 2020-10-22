@@ -12,7 +12,7 @@ fn test_indent_do_end() {
     );
 
     let cfg =
-        Config { indentation_string: Some("    ".to_string()), do_end_indent_format: Some(1), ..Config::default() };
+        Config { indentation_string: Some("    ".to_string()), format_type_do_end: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(
         ts("do print(a) print(b) end"),
@@ -130,7 +130,7 @@ fn test_indent_for() {
     );
 
     let cfg =
-        Config { indentation_string: Some("INDENT".to_string()), for_indent_format: Some(1), ..Config::default() };
+        Config { indentation_string: Some("INDENT".to_string()), format_type_for: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -187,7 +187,7 @@ fn test_indent_for() {
 
     let cfg = Config {
         indentation_string: Some("INDENT".to_string()),
-        for_indent_format: Some(1),
+        format_type_for: Some(1),
         indent_every_statement: Some(true),
         ..Config::default()
     };
@@ -210,7 +210,7 @@ fn test_indent_if_then_else() {
         Ok("if a > b --comment\n then print(a) print(b) end".to_string())
     );
 
-    let cfg = Config { indentation_string: Some("INDENT".to_string()), if_indent_format: Some(1), ..Config::default() };
+    let cfg = Config { indentation_string: Some("INDENT".to_string()), format_type_if: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(
         ts(
@@ -347,7 +347,7 @@ fn test_indent_function() {
     );
 
     let cfg =
-        Config { indentation_string: Some("INDENT".to_string()), function_indent_format: Some(1), ..Config::default() };
+        Config { indentation_string: Some("INDENT".to_string()), format_type_function: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -370,7 +370,7 @@ end"#
     let cfg = Config {
         indent_every_statement: Some(true),
         indentation_string: Some("INDENT".to_string()),
-        function_indent_format: Some(1),
+        format_type_function: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -429,7 +429,7 @@ fn test_indent_repeat_until() {
 
     let cfg = Config {
         indentation_string: Some("INDENT".to_string()),
-        repeat_until_indent_format: Some(1),
+        format_type_repeat_until: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -448,7 +448,7 @@ until --[[123]] a>3"#.to_string())
     let cfg = Config {
         indent_every_statement: Some(true),
         indentation_string: Some("INDENT".to_string()),
-        repeat_until_indent_format: Some(1),
+        format_type_repeat_until: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -475,7 +475,7 @@ fn test_indent_while_do() {
 
     let cfg = Config {
         indentation_string: Some("INDENT".to_string()),
-        while_do_indent_format: Some(1),
+        format_type_while: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -494,7 +494,7 @@ end"#.to_string())
     let cfg = Config {
         indent_every_statement: Some(true),
         indentation_string: Some("INDENT".to_string()),
-        while_do_indent_format: Some(1),
+        format_type_while: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -520,7 +520,7 @@ fn test_indent_table() {
 
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
-        table_indent_format: Some(1),
+        format_type_table: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -552,7 +552,7 @@ I   e
 
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
-        table_indent_format: Some(1),
+        format_type_table: Some(1),
         indent_every_statement: Some(true),
         ..Config::default()
     };
@@ -580,7 +580,7 @@ I   e
 
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
-        table_indent_format: Some(1),
+        format_type_table: Some(1),
         hint_table_constructor: Some(" ".to_string()),
         replace_zero_spaces_with_hint: Some(true),
         ..Config::default()
@@ -619,12 +619,12 @@ fn test_indent_all() {
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
         indent_every_statement: Some(true),
-        do_end_indent_format: Some(1),
-        for_indent_format: Some(1),
-        function_indent_format: Some(1),
-        if_indent_format: Some(1),
-        repeat_until_indent_format: Some(1),
-        while_do_indent_format: Some(1),
+        format_type_do_end: Some(1),
+        format_type_for: Some(1),
+        format_type_function: Some(1),
+        format_type_if: Some(1),
+        format_type_repeat_until: Some(1),
+        format_type_while: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -655,12 +655,12 @@ print(h)"#.to_string())
         indentation_string: Some("I     ".to_string()),
         indent_every_statement: Some(true),
         indent_oneline_comments: Some(true),
-        do_end_indent_format: Some(1),
-        for_indent_format: Some(1),
-        function_indent_format: Some(1),
-        if_indent_format: Some(1),
-        repeat_until_indent_format: Some(1),
-        while_do_indent_format: Some(1),
+        format_type_do_end: Some(1),
+        format_type_for: Some(1),
+        format_type_function: Some(1),
+        format_type_if: Some(1),
+        format_type_repeat_until: Some(1),
+        format_type_while: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -695,12 +695,12 @@ print(h)"#.to_string())
         indent_every_statement: Some(true),
         indent_first_oneline_comment: Some(true),
         indent_oneline_comments: Some(true),
-        do_end_indent_format: Some(1),
-        for_indent_format: Some(1),
-        function_indent_format: Some(1),
-        if_indent_format: Some(1),
-        repeat_until_indent_format: Some(1),
-        while_do_indent_format: Some(1),
+        format_type_do_end: Some(1),
+        format_type_for: Some(1),
+        format_type_function: Some(1),
+        format_type_if: Some(1),
+        format_type_repeat_until: Some(1),
+        format_type_while: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -766,12 +766,12 @@ print(h)"#.to_string())
         indent_every_statement: Some(true),
         // indent_first_multiline_comment: Some(true),
         indent_multiline_comments: Some(true),
-        do_end_indent_format: Some(1),
-        for_indent_format: Some(1),
-        function_indent_format: Some(1),
-        if_indent_format: Some(1),
-        repeat_until_indent_format: Some(1),
-        while_do_indent_format: Some(1),
+        format_type_do_end: Some(1),
+        format_type_for: Some(1),
+        format_type_function: Some(1),
+        format_type_if: Some(1),
+        format_type_repeat_until: Some(1),
+        format_type_while: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -809,12 +809,12 @@ print(h)"#.to_string())
         indent_every_statement: Some(true),
         indent_first_multiline_comment: Some(true),
         indent_multiline_comments: Some(true),
-        do_end_indent_format: Some(1),
-        for_indent_format: Some(1),
-        function_indent_format: Some(1),
-        if_indent_format: Some(1),
-        repeat_until_indent_format: Some(1),
-        while_do_indent_format: Some(1),
+        format_type_do_end: Some(1),
+        format_type_for: Some(1),
+        format_type_function: Some(1),
+        format_type_if: Some(1),
+        format_type_repeat_until: Some(1),
+        format_type_while: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -858,12 +858,12 @@ print(h)"#.to_string())
         indent_oneline_comments: Some(true),
         indent_first_multiline_comment: Some(true),
         indent_multiline_comments: Some(true),
-        do_end_indent_format: Some(1),
-        for_indent_format: Some(1),
-        function_indent_format: Some(1),
-        if_indent_format: Some(1),
-        repeat_until_indent_format: Some(1),
-        while_do_indent_format: Some(1),
+        format_type_do_end: Some(1),
+        format_type_for: Some(1),
+        format_type_function: Some(1),
+        format_type_if: Some(1),
+        format_type_repeat_until: Some(1),
+        format_type_while: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);

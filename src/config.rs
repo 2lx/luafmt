@@ -28,33 +28,37 @@ pub trait ConfiguredWrite {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Config {
-    // comments
+    // hint
     pub hint_after_multiline_comment: Option<String>,
     pub hint_after_multiline_comment_text: Option<String>,
     pub hint_before_comment: Option<String>,
     pub hint_before_multiline_comment_text: Option<String>,
     pub hint_before_oneline_comment_text: Option<String>,
+    pub hint_before_end_of_file: Option<String>,
+
     pub remove_comments: Option<bool>,
     pub remove_single_newlines: Option<bool>,
     pub remove_all_newlines: Option<bool>,
     pub remove_spaces_between_tokens: Option<bool>,
     pub replace_zero_spaces_with_hint: Option<bool>,
 
-    // indent
+    // indentation
     pub indentation_string: Option<String>,
     pub indent_oneline_comments: Option<bool>,
     pub indent_multiline_comments: Option<bool>,
     pub indent_first_oneline_comment: Option<bool>,
     pub indent_first_multiline_comment: Option<bool>,
     pub indent_every_statement: Option<bool>,
-    pub do_end_indent_format: Option<usize>,
-    pub for_indent_format: Option<usize>,
-    pub function_indent_format: Option<usize>,
-    pub if_indent_format: Option<usize>,
-    pub repeat_until_indent_format: Option<usize>,
-    pub table_indent_format: Option<usize>,
-    pub while_do_indent_format: Option<usize>,
-    pub binary_op_indent_format: Option<usize>,
+
+    // format
+    pub format_type_do_end: Option<usize>,
+    pub format_type_for: Option<usize>,
+    pub format_type_function: Option<usize>,
+    pub format_type_if: Option<usize>,
+    pub format_type_repeat_until: Option<usize>,
+    pub format_type_table: Option<usize>,
+    pub format_type_while: Option<usize>,
+    pub format_type_binary_op: Option<usize>,
 
     // other
     // replace_tabs_with_spaces: Option<String>,
@@ -63,6 +67,8 @@ pub struct Config {
     pub field_separator: Option<String>,
     pub write_trailing_field_separator: Option<bool>,
     pub max_width: Option<usize>,
+
+    // oneline
     pub enable_oneline_binary_op: Option<bool>,
     pub enable_oneline_table: Option<bool>,
     pub enable_oneline_if: Option<bool>,
@@ -71,39 +77,45 @@ pub struct Config {
 impl Config {
     pub const fn default() -> Self {
         Config {
-            // comments
+            // hint
             hint_after_multiline_comment: None,
             hint_after_multiline_comment_text: None,
             hint_before_comment: None,
             hint_before_multiline_comment_text: None,
             hint_before_oneline_comment_text: None,
+            hint_before_end_of_file: None,
+
             remove_comments: None,
             remove_single_newlines: None,
             remove_all_newlines: None,
             remove_spaces_between_tokens: None,
             replace_zero_spaces_with_hint: None,
 
-            // indent
+            // indentation
             indentation_string: None,
             indent_every_statement: None,
             indent_oneline_comments: None,
             indent_multiline_comments: None,
             indent_first_oneline_comment: None,
             indent_first_multiline_comment: None,
-            do_end_indent_format: None,
-            for_indent_format: None,
-            function_indent_format: None,
-            if_indent_format: None,
-            repeat_until_indent_format: None,
-            table_indent_format: None,
-            while_do_indent_format: None,
-            binary_op_indent_format: None,
+
+            // format
+            format_type_do_end: None,
+            format_type_for: None,
+            format_type_function: None,
+            format_type_if: None,
+            format_type_repeat_until: None,
+            format_type_table: None,
+            format_type_while: None,
+            format_type_binary_op: None,
 
             // other
             hint_table_constructor: None,
             field_separator: None,
             write_trailing_field_separator: None,
             max_width: None,
+
+            // oneline
             enable_oneline_binary_op: None,
             enable_oneline_table: None,
             enable_oneline_if: None,
@@ -125,7 +137,7 @@ impl Config {
         }
 
         match option_name {
-            // comments
+            // hint
             "hint_after_multiline_comment" => set_param_value_as!(self.hint_after_multiline_comment, String),
             "hint_after_multiline_comment_text" => set_param_value_as!(self.hint_after_multiline_comment_text, String),
             "hint_before_comment" => set_param_value_as!(self.hint_before_comment, String),
@@ -133,36 +145,43 @@ impl Config {
                 set_param_value_as!(self.hint_before_multiline_comment_text, String)
             }
             "hint_before_oneline_comment_text" => set_param_value_as!(self.hint_before_oneline_comment_text, String),
+            "hint_before_end_of_file" => set_param_value_as!(self.hint_before_end_of_file, String),
+
             "remove_comments" => set_param_value_as!(self.remove_comments, bool),
             "remove_single_newlines" => set_param_value_as!(self.remove_single_newlines, bool),
             "remove_all_newlines" => set_param_value_as!(self.remove_all_newlines, bool),
             "remove_spaces_between_tokens" => set_param_value_as!(self.remove_spaces_between_tokens, bool),
             "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
 
-            // indent
+            // indentation
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
             "indent_every_statement" => set_param_value_as!(self.indent_every_statement, bool),
             "indent_oneline_comments" => set_param_value_as!(self.indent_oneline_comments, bool),
             "indent_multiline_comments" => set_param_value_as!(self.indent_multiline_comments, bool),
             "indent_first_oneline_comment" => set_param_value_as!(self.indent_first_oneline_comment, bool),
             "indent_first_multiline_comment" => set_param_value_as!(self.indent_first_multiline_comment, bool),
-            "do_end_indent_format" => set_param_value_as!(self.do_end_indent_format, usize),
-            "for_indent_format" => set_param_value_as!(self.for_indent_format, usize),
-            "function_indent_format" => set_param_value_as!(self.function_indent_format, usize),
-            "if_indent_format" => set_param_value_as!(self.if_indent_format, usize),
-            "repeat_until_indent_format" => set_param_value_as!(self.repeat_until_indent_format, usize),
-            "table_indent_format" => set_param_value_as!(self.table_indent_format, usize),
-            "while_do_indent_format" => set_param_value_as!(self.while_do_indent_format, usize),
-            "binary_op_indent_format" => set_param_value_as!(self.binary_op_indent_format, usize),
+
+            // format
+            "format_type_do_end" => set_param_value_as!(self.format_type_do_end, usize),
+            "format_type_for" => set_param_value_as!(self.format_type_for, usize),
+            "format_type_function" => set_param_value_as!(self.format_type_function, usize),
+            "format_type_if" => set_param_value_as!(self.format_type_if, usize),
+            "format_type_repeat_until" => set_param_value_as!(self.format_type_repeat_until, usize),
+            "format_type_table" => set_param_value_as!(self.format_type_table, usize),
+            "format_type_while" => set_param_value_as!(self.format_type_while, usize),
+            "format_type_binary_op" => set_param_value_as!(self.format_type_binary_op, usize),
 
             // other
             "hint_table_constructor" => set_param_value_as!(self.hint_table_constructor, String),
             "field_separator" => set_param_value_as!(self.field_separator, String),
             "write_trailing_field_separator" => set_param_value_as!(self.write_trailing_field_separator, bool),
             "max_width" => set_param_value_as!(self.max_width, usize),
+
+            // oneline
             "enable_oneline_binary_op" => set_param_value_as!(self.enable_oneline_binary_op, bool),
             "enable_oneline_table" => set_param_value_as!(self.enable_oneline_table, bool),
             "enable_oneline_if" => set_param_value_as!(self.enable_oneline_if, bool),
+
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
     }
@@ -230,39 +249,45 @@ impl fmt::Display for Config {
 
         write!(f, "{{\n")?;
 
-        // comments
+        // hint
         print_opt!(self.hint_after_multiline_comment, "hint_after_multiline_comment");
         print_opt!(self.hint_after_multiline_comment_text, "hint_after_multiline_comment_text");
         print_opt!(self.hint_before_comment, "hint_before_comment");
         print_opt!(self.hint_before_multiline_comment_text, "hint_before_multiline_comment_text");
         print_opt!(self.hint_before_oneline_comment_text, "hint_before_oneline_comment_text");
+        print_opt!(self.hint_before_end_of_file, "hint_before_end_of_file");
+
         print_opt!(self.remove_comments, "remove_comments");
         print_opt!(self.remove_single_newlines, "remove_single_newlines");
         print_opt!(self.remove_all_newlines, "remove_all_newlines");
         print_opt!(self.remove_spaces_between_tokens, "remove_spaces_between_tokens");
         print_opt!(self.replace_zero_spaces_with_hint, "replace_zero_spaces_with_hint");
 
-        // indent
+        // indentation
         print_opt!(self.indentation_string, "indentation_string");
         print_opt!(self.indent_every_statement, "indent_every_statement");
         print_opt!(self.indent_oneline_comments, "indent_oneline_comments");
         print_opt!(self.indent_multiline_comments, "indent_multiline_comments");
         print_opt!(self.indent_first_oneline_comment, "indent_first_oneline_comment");
         print_opt!(self.indent_first_multiline_comment, "indent_first_multiline_comment");
-        print_opt!(self.do_end_indent_format, "do_end_indent_format");
-        print_opt!(self.for_indent_format, "for_indent_format");
-        print_opt!(self.function_indent_format, "function_indent_format");
-        print_opt!(self.if_indent_format, "if_indent_format");
-        print_opt!(self.repeat_until_indent_format, "repeat_until_indent_format");
-        print_opt!(self.table_indent_format, "table_indent_format");
-        print_opt!(self.while_do_indent_format, "while_do_indent_format");
-        print_opt!(self.binary_op_indent_format, "binary_op_indent_format");
+
+        // format
+        print_opt!(self.format_type_do_end, "format_type_do_end");
+        print_opt!(self.format_type_for, "format_type_for");
+        print_opt!(self.format_type_function, "format_type_function");
+        print_opt!(self.format_type_if, "format_type_if");
+        print_opt!(self.format_type_repeat_until, "format_type_repeat_until");
+        print_opt!(self.format_type_table, "format_type_table");
+        print_opt!(self.format_type_while, "format_type_while");
+        print_opt!(self.format_type_binary_op, "format_type_binary_op");
 
         // other
         print_opt!(self.hint_table_constructor, "hint_table_constructor");
         print_opt!(self.field_separator, "field_separator");
         print_opt!(self.write_trailing_field_separator, "write_trailing_field_separator");
         print_opt!(self.max_width, "max_width");
+
+        // oneline
         print_opt!(self.enable_oneline_binary_op, "enable_oneline_binary_op");
         print_opt!(self.enable_oneline_table, "enable_oneline_table");
         print_opt!(self.enable_oneline_if, "enable_oneline_if");
