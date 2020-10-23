@@ -3,18 +3,18 @@ use super::util::*;
 use crate::config::*;
 use std::fmt::Write;
 
-pub struct NewLineDecor<LocHint>(pub LocHint, pub bool);
-impl<'a, 'b, LocHint> ConfiguredWrite for NewLineDecor<LocHint>
+pub struct IfNewLine<LocHint>(pub bool, pub LocHint);
+impl<'a, 'b, LocHint> ConfiguredWrite for IfNewLine<LocHint>
 where
     LocHint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
-        if !self.1 {
-            return self.0.configured_write(f, cfg, buf, state);
+        if !self.0 {
+            return self.1.configured_write(f, cfg, buf, state);
         }
 
         // erase hint
-        let loc_hint = LocHint::new(self.0.get_loc(), "");
+        let loc_hint = LocHint::new(self.1.get_loc(), "");
         let mut comment_block = String::new();
         match loc_hint.configured_write(&mut comment_block, cfg, buf, state) {
             Ok(..) => {
@@ -47,8 +47,8 @@ where
     }
 }
 
-pub struct IndentIncDecor(pub Option<&'static str>);
-impl ConfiguredWrite for IndentIncDecor {
+pub struct IncIndent(pub Option<&'static str>);
+impl ConfiguredWrite for IncIndent {
     fn configured_write(&self, _: &mut String, _: &Config, _: &str, state: &mut State) -> std::fmt::Result {
         if self.0.is_none() || state.stack_indent.last() != Some(&self.0) {
             state.indent_level += 1;
@@ -59,8 +59,8 @@ impl ConfiguredWrite for IndentIncDecor {
     }
 }
 
-pub struct IndentDecDecor();
-impl ConfiguredWrite for IndentDecDecor {
+pub struct DecIndent();
+impl ConfiguredWrite for DecIndent {
     fn configured_write(&self, _: &mut String, _: &Config, _: &str, state: &mut State) -> std::fmt::Result {
         let last = state.stack_indent.pop();
         if last.is_some() && last.unwrap().is_none() || state.stack_indent.last() != last.as_ref() {
@@ -71,21 +71,32 @@ impl ConfiguredWrite for IndentDecDecor {
     }
 }
 
-pub struct FuncLevelIncDecor();
-impl ConfiguredWrite for FuncLevelIncDecor {
+pub struct IncFuncLevel();
+impl ConfiguredWrite for IncFuncLevel {
     fn configured_write(&self, _: &mut String, _: &Config, _: &str, state: &mut State) -> std::fmt::Result {
         state.function_nested_level += 1;
         Ok(())
     }
 }
 
-pub struct FuncLevelDecDecor();
-impl ConfiguredWrite for FuncLevelDecDecor {
+pub struct DecFuncLevel();
+impl ConfiguredWrite for DecFuncLevel {
     fn configured_write(&self, _: &mut String, _: &Config, _: &str, state: &mut State) -> std::fmt::Result {
         state.function_nested_level -= 1;
         Ok(())
     }
 }
+
+pub struct If<'a>(pub bool, pub &'a dyn ConfiguredWrite);
+impl ConfiguredWrite for If<'_> {
+    fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
+        match self.0 {
+            true => self.1.configured_write(f, cfg, buf, state),
+            _ => Ok(()),
+        }
+    }
+}
+
 
 #[test]
 fn test_decors() -> std::fmt::Result {
@@ -96,29 +107,29 @@ fn test_decors() -> std::fmt::Result {
     let mut buf = String::new();
 
     // 1
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentIncDecor(Some("1")))?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, IncIndent(Some("1")))?;
     assert_eq!(state.indent_level, 1);
     assert_eq!(state.stack_indent, vec![Some("1")]);
 
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentDecDecor())?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, DecIndent())?;
     assert_eq!(state.indent_level, 0);
     assert_eq!(state.stack_indent, vec![]);
 
     // 2
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentIncDecor(Some("1")), IndentIncDecor(Some("2")))?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, IncIndent(Some("1")), IncIndent(Some("2")))?;
     assert_eq!(state.indent_level, 2);
     assert_eq!(state.stack_indent, vec![Some("1"), Some("2")]);
 
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentDecDecor(), IndentDecDecor())?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, DecIndent(), DecIndent())?;
     assert_eq!(state.indent_level, 0);
     assert_eq!(state.stack_indent, vec![]);
 
     // 3
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentIncDecor(Some("1")), IndentIncDecor(Some("1")))?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, IncIndent(Some("1")), IncIndent(Some("1")))?;
     assert_eq!(state.indent_level, 1);
     assert_eq!(state.stack_indent, vec![Some("1"), Some("1")]);
 
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentDecDecor(), IndentDecDecor())?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, DecIndent(), DecIndent())?;
     assert_eq!(state.indent_level, 0);
     assert_eq!(state.stack_indent, vec![]);
 
@@ -128,14 +139,14 @@ fn test_decors() -> std::fmt::Result {
         &cfg,
         "",
         &mut state,
-        IndentIncDecor(Some("1")),
-        IndentIncDecor(None),
-        IndentIncDecor(Some("1"))
+        IncIndent(Some("1")),
+        IncIndent(None),
+        IncIndent(Some("1"))
     )?;
     assert_eq!(state.indent_level, 3);
     assert_eq!(state.stack_indent, vec![Some("1"), None, Some("1")]);
 
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentDecDecor(), IndentDecDecor(), IndentDecDecor())?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, DecIndent(), DecIndent(), DecIndent())?;
     assert_eq!(state.indent_level, 0);
     assert_eq!(state.stack_indent, vec![]);
 
@@ -145,27 +156,27 @@ fn test_decors() -> std::fmt::Result {
         &cfg,
         "",
         &mut state,
-        IndentIncDecor(None),
-        IndentIncDecor(None),
-        IndentIncDecor(Some("1")),
-        IndentIncDecor(Some("1"))
+        IncIndent(None),
+        IncIndent(None),
+        IncIndent(Some("1")),
+        IncIndent(Some("1"))
     )?;
     assert_eq!(state.indent_level, 3);
     assert_eq!(state.stack_indent, vec![None, None, Some("1"), Some("1")]);
 
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentDecDecor())?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, DecIndent())?;
     assert_eq!(state.indent_level, 3);
     assert_eq!(state.stack_indent, vec![None, None, Some("1")]);
 
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentDecDecor())?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, DecIndent())?;
     assert_eq!(state.indent_level, 2);
     assert_eq!(state.stack_indent, vec![None, None]);
 
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentDecDecor())?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, DecIndent())?;
     assert_eq!(state.indent_level, 1);
     assert_eq!(state.stack_indent, vec![None]);
 
-    cfg_write!(&mut buf, &cfg, "", &mut state, IndentDecDecor())?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, DecIndent())?;
     assert_eq!(state.indent_level, 0);
     assert_eq!(state.stack_indent, vec![]);
 

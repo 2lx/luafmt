@@ -249,7 +249,7 @@ impl Node {
         if cfg.max_width.is_some() && cfg.enable_oneline_table == Some(true)
                 && cfg.format_type_table.is_some() {
 
-            // disable NewLineDecor within table constructor
+            // disable IfNewLine within table constructor
             // one-line tables are forced to have no trailing separator
             let mut cfg_test = cfg.clone();
             cfg_test.format_type_table = None;
@@ -264,7 +264,7 @@ impl Node {
         if cfg.max_width.is_some() && cfg.enable_oneline_if == Some(true)
                 && cfg.format_type_if.is_some() {
 
-            // disable NewLineDecor within table constructor
+            // disable IfNewLine within table constructor
             let mut cfg_test = cfg.clone();
             cfg_test.format_type_if = None;
 
@@ -276,7 +276,7 @@ impl Node {
     fn test_oneline_field(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
         if cfg.max_width.is_some() && cfg.format_type_table == Some(2) {
 
-            // disable NewLineDecor within table constructor
+            // disable IfNewLine within table constructor
             let mut cfg_test = cfg.clone();
             cfg_test.format_type_table = None;
 
@@ -290,7 +290,7 @@ impl Node {
             && ((state.function_nested_level == 0 && cfg.enable_oneline_top_level_function == Some(true))
              || (state.function_nested_level > 0 && cfg.enable_oneline_scoped_function == Some(true))) {
 
-            // disable NewLineDecor within function body
+            // disable IfNewLine within function body
             let mut cfg_test = cfg.clone();
             cfg_test.format_type_function = None;
 
@@ -311,7 +311,7 @@ impl ConfiguredWrite for Node {
 
         match self {
             BinaryOp(_, locs, tok, l, r) => {
-                cfg_write!(f, cfg, buf, state, IndentIncDecor(Some(tok.0)), l)?;
+                cfg_write!(f, cfg, buf, state, IncIndent(Some(tok.0)), l)?;
 
                 let mut nl1 = cfg.format_type_binary_op == Some(1);
                 let mut nl2 = cfg.format_type_binary_op == Some(2);
@@ -322,8 +322,8 @@ impl ConfiguredWrite for Node {
                     }
                 }
 
-                cfg_write!(f, cfg, buf, state, NewLineDecor(Hint(&locs[0], " "), nl1), tok,
-                           NewLineDecor(Hint(&locs[1], " "), nl2), r, IndentDecDecor())
+                cfg_write!(f, cfg, buf, state, IfNewLine(nl1, Hint(&locs[0], " ")), tok,
+                           IfNewLine(nl2, Hint(&locs[1], " ")), r, DecIndent())
             }
             UnaryOp(_, locs, tok, r) => cfg_write!(f, cfg, buf, state, tok, Hint(&locs[0], ""), r),
             UnaryNot(_, locs, r) => cfg_write!(f, cfg, buf, state, "not", Hint(&locs[0], " "), r),
@@ -367,15 +367,15 @@ impl ConfiguredWrite for Node {
                 let nl1 = cfg.format_type_table == Some(1);
                 let mut nl2 = cfg.format_type_table == Some(1);
 
-                cfg_write!(f, cfg, buf, state, "{{", IndentIncDecor(None), FuncLevelIncDecor(),
-                           NewLineDecor(Hint(&locs[0], &hint), nl1), r)?;
+                cfg_write!(f, cfg, buf, state, "{{", IncIndent(None), IncFuncLevel(),
+                           IfNewLine(nl1, Hint(&locs[0], &hint)), r)?;
 
                 if cfg.max_width.is_some() && util::get_len_after_newline(f, cfg) >= cfg.max_width.unwrap() {
                     nl2 = true;
                 }
 
-                cfg_write!(f, cfg, buf, state, IndentDecDecor(), FuncLevelDecDecor(),
-                           NewLineDecor(Hint(&locs[1], &hint), nl2), "}}")
+                cfg_write!(f, cfg, buf, state, DecIndent(), DecFuncLevel(),
+                           IfNewLine(nl2, Hint(&locs[1], &hint)), "}}")
             }
             TableConstructorEmpty(_, locs) => {
                 let default_hint = String::new();
@@ -404,8 +404,8 @@ impl ConfiguredWrite for Node {
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => {
                 let nl = cfg.format_type_do_end == Some(1);
-                cfg_write!(f, cfg, buf, state, "do", IndentIncDecor(None), NewLineDecor(Hint(&locs[0], " "), nl), b,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[1], " "), nl), "end")
+                cfg_write!(f, cfg, buf, state, "do", IncIndent(None), IfNewLine(nl, Hint(&locs[0], " ")), b,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[1], " ")), "end")
             }
             VarsExprs(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, state, n1, Hint(&locs[0], " "), "=", Hint(&locs[1], " "), n2)
@@ -424,13 +424,10 @@ impl ConfiguredWrite for Node {
                     }
                 }
 
-                if cfg.indent_method_call == Some(true) {
-                    cfg_write!(f, cfg, buf, state, IndentIncDecor(None), NewLineDecor(Hint(&Loc(0, 0), ""), nl), ":",
-                               Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2, IndentDecDecor())
-                } else {
-                    cfg_write!(f, cfg, buf, state, NewLineDecor(Hint(&Loc(0, 0), ""), nl), ":", Hint(&locs[0], ""), n1,
-                               Hint(&locs[1], ""), n2)
-                }
+                let indent = cfg.indent_method_call == Some(true);
+                cfg_write!(f, cfg, buf, state, If(indent, &IncIndent(None)),
+                           IfNewLine(nl, Hint(&Loc(0, 0), "")), ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2,
+                           If(indent, &DecIndent()))
             }
             ParList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n),
@@ -440,7 +437,7 @@ impl ConfiguredWrite for Node {
                 }
 
                 let nl = cfg.format_type_function == Some(1);
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", NewLineDecor(Hint(&locs[1], " "), nl),
+                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", IfNewLine(nl, Hint(&locs[1], " ")),
                            "end")
             }
             FuncBodyB(_, locs, n2) => {
@@ -450,8 +447,8 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_function == Some(1);
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")",
-                           IndentIncDecor(None), FuncLevelIncDecor(), NewLineDecor(Hint(&locs[1], " "), nl), n2,
-                           IndentDecDecor(), FuncLevelDecDecor(), NewLineDecor(Hint(&locs[2], " "), nl), "end")
+                           IncIndent(None), IncFuncLevel(), IfNewLine(nl, Hint(&locs[1], " ")), n2,
+                           DecIndent(), DecFuncLevel(), IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
             FuncPBody(_, locs, n1) => {
                 if let Some(line) = self.test_oneline_function(f, cfg, buf, state) {
@@ -460,7 +457,7 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_function == Some(1);
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")",
-                           NewLineDecor(Hint(&locs[2], " "), nl), "end")
+                           IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
             FuncPBodyB(_, locs, n1, n2) => {
                 if let Some(line) = self.test_oneline_function(f, cfg, buf, state) {
@@ -469,8 +466,8 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_function == Some(1);
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")",
-                           IndentIncDecor(None), FuncLevelIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), n2,
-                           IndentDecDecor(), FuncLevelDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "end")
+                           IncIndent(None), IncFuncLevel(), IfNewLine(nl, Hint(&locs[2], " ")), n2,
+                           DecIndent(), DecFuncLevel(), IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
             FuncName(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FuncNameSelf(_, locs, _, n) => {
@@ -499,7 +496,7 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           NewLineDecor(Hint(&locs[2], " "), nl), "end")
+                           IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
             IfThenB(_, locs, e1, b1) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -508,8 +505,8 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[2], " "), nl), b1,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "end")
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
             IfThenElse(_, locs, e1) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -518,7 +515,7 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), "else", NewLineDecor(Hint(&locs[3], " "), nl), "end")
+                           Hint(&locs[2], " "), "else", IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
             IfThenBElse(_, locs, e1, b1) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -527,9 +524,9 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[2], " "), nl), b1,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "else",
-                           NewLineDecor(Hint(&locs[4], " "), nl), "end")
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[3], " ")), "else",
+                           IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
             IfThenElseB(_, locs, e1, b2) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -538,8 +535,8 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           Hint(&locs[2], " "), "else", IndentIncDecor(None), NewLineDecor(Hint(&locs[3], " "), nl), b2,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[4], " "), nl), "end")
+                           Hint(&locs[2], " "), "else", IncIndent(None), IfNewLine(nl, Hint(&locs[3], " ")),
+                           b2, DecIndent(), IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
             IfThenBElseB(_, locs, e1, b1, b2) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -548,10 +545,10 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[2], " "), nl), b1,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "else",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[4], " "), nl), b2,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[5], " "), nl), "end")
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[3], " ")), "else",
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[4], " ")), b2,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[5], " ")), "end")
             }
             IfThenElseIf(_, locs, e1, n) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -560,8 +557,8 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           NewLineDecor(Hint(&locs[2], " "), nl), n,
-                           NewLineDecor(Hint(&locs[3], " "), nl), "end")
+                           IfNewLine(nl, Hint(&locs[2], " ")), n,
+                           IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
             IfThenBElseIf(_, locs, e1, b1, n) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -570,9 +567,9 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[2], " "), nl), b1,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), n,
-                           NewLineDecor(Hint(&locs[4], " "), nl), "end")
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[3], " ")), n,
+                           IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
             IfThenElseIfElse(_, locs, e1, n) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -581,9 +578,9 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           NewLineDecor(Hint(&locs[2], " "), nl), n,
-                           NewLineDecor(Hint(&locs[3], " "), nl), "else",
-                           NewLineDecor(Hint(&locs[4], " "), nl), "end")
+                           IfNewLine(nl, Hint(&locs[2], " ")), n,
+                           IfNewLine(nl, Hint(&locs[3], " ")), "else",
+                           IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
             IfThenBElseIfElse(_, locs, e1, b1, n) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -592,10 +589,10 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[2], " "), nl), b1,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), n,
-                           NewLineDecor(Hint(&locs[4], " "), nl), "else",
-                           NewLineDecor(Hint(&locs[5], " "), nl), "end")
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[3], " ")), n,
+                           IfNewLine(nl, Hint(&locs[4], " ")), "else",
+                           IfNewLine(nl, Hint(&locs[5], " ")), "end")
             }
             IfThenElseIfElseB(_, locs, e1, n, b2) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -604,10 +601,10 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           NewLineDecor(Hint(&locs[2], " "), nl), n,
-                           NewLineDecor(Hint(&locs[3], " "), nl), "else",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[4], " "), nl), b2,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[5], " "), nl), "end")
+                           IfNewLine(nl, Hint(&locs[2], " ")), n,
+                           IfNewLine(nl, Hint(&locs[3], " ")), "else",
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[4], " ")), b2,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[5], " ")), "end")
             }
             IfThenBElseIfElseB(_, locs, e1, b1, n, b2) => {
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
@@ -616,11 +613,11 @@ impl ConfiguredWrite for Node {
 
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[2], " "), nl), b1,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), n,
-                           NewLineDecor(Hint(&locs[4], " "), nl), "else",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[5], " "), nl), b2,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[6], " "), nl), "end")
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[3], " ")), n,
+                           IfNewLine(nl, Hint(&locs[4], " ")), "else",
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[5], " ")), b2,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[6], " ")), "end")
             }
             ElseIfThenVec(_, elems) => cfg_write_list_items(f, cfg, buf, state, elems),
             ElseIfThen(_, locs, e) => {
@@ -629,7 +626,7 @@ impl ConfiguredWrite for Node {
             ElseIfThenB(_, locs, e, b) => {
                 let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then",
-                            IndentIncDecor(None), NewLineDecor(Hint(&locs[2], " "), nl), b, IndentDecDecor())
+                            IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b, DecIndent())
             }
 
             Name(_, s) => write!(f, "{}", s),
@@ -638,23 +635,24 @@ impl ConfiguredWrite for Node {
             WhileDo(_, locs, e) => {
                 let nl = cfg.format_type_while == Some(1);
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
-                           NewLineDecor(Hint(&locs[2], " "), nl), "end")
+                           IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
             WhileDoB(_, locs, e, n) => {
                 let nl = cfg.format_type_while == Some(1);
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[2], " "), nl), n,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "end")
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), n,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
             RepeatUntil(_, locs, e) => {
                 let nl = cfg.format_type_repeat_until == Some(1);
-                cfg_write!(f, cfg, buf, state, "repeat", NewLineDecor(Hint(&locs[0], " "), nl), "until", Hint(&locs[1], " "), e)
+                cfg_write!(f, cfg, buf, state, "repeat", IfNewLine(nl, Hint(&locs[0], " ")), "until",
+                           Hint(&locs[1], " "), e)
             }
             RepeatBUntil(_, locs, b, e) => {
                 let nl = cfg.format_type_repeat_until == Some(1);
                 cfg_write!(f, cfg, buf, state, "repeat",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[0], " "), nl), b,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[1], " "), nl), "until",
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[0], " ")), b,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[1], " ")), "until",
                            Hint(&locs[2], " "), e)
             }
 
@@ -667,14 +665,14 @@ impl ConfiguredWrite for Node {
                 let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                            Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
-                           Hint(&locs[5], " "), "do", IndentIncDecor(None), NewLineDecor(Hint(&locs[6], " "), nl), b,
-                           IndentDecDecor(), NewLineDecor(Hint(&locs[7], " "), nl), "end")
+                           Hint(&locs[5], " "), "do", IncIndent(None), IfNewLine(nl, Hint(&locs[6], " ")), b,
+                           DecIndent(), IfNewLine(nl, Hint(&locs[7], " ")), "end")
             }
             ForIntStep(_, locs, n, e1, e2, e3) => {
                 let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                            Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], ""),
-                           ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do", NewLineDecor(Hint(&locs[8], " "), nl),
+                           ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do", IfNewLine(nl, Hint(&locs[8], " ")),
                            "end")
             },
             ForIntStepB(_, locs, n, e1, e2, e3, b) => {
@@ -682,21 +680,21 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                            Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
                            Hint(&locs[5], ""), ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do",
-                           IndentIncDecor(None), NewLineDecor(Hint(&locs[8], " "), nl), b, IndentDecDecor(),
-                           NewLineDecor(Hint(&locs[9], " "), nl), "end")
+                           IncIndent(None), IfNewLine(nl, Hint(&locs[8], " ")), b, DecIndent(),
+                           IfNewLine(nl, Hint(&locs[9], " ")), "end")
             },
             ForRange(_, locs, n, e) => {
                 let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in",
-                           Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", NewLineDecor(Hint(&locs[4], " "), nl),
+                           Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", IfNewLine(nl, Hint(&locs[4], " ")),
                            "end")
             }
             ForRangeB(_, locs, n, e, b) => {
                 let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in",
-                           Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", IndentIncDecor(None),
-                           NewLineDecor(Hint(&locs[4], " "), nl), b, IndentDecDecor(),
-                           NewLineDecor(Hint(&locs[5], " "), nl), "end")
+                           Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", IncIndent(None),
+                           IfNewLine(nl, Hint(&locs[4], " ")), b, DecIndent(),
+                           IfNewLine(nl, Hint(&locs[5], " ")), "end")
             }
 
             RetStatNone(_) => write!(f, "return"),
@@ -707,15 +705,16 @@ impl ConfiguredWrite for Node {
             }
             StatsRetStat(_, locs, n1, n2) => {
                 let nl = cfg.indent_every_statement == Some(true);
-                cfg_write!(f, cfg, buf, state, n1, NewLineDecor(Hint(&locs[0], " "), nl), n2)
+                cfg_write!(f, cfg, buf, state, n1, IfNewLine(nl, Hint(&locs[0], " ")), n2)
             }
             Chunk(locl, n, locr) => {
                 let nl = cfg.write_newline_at_eof == Some(true);
-                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, NewLineDecor(Hint(&locr, ""), nl))
+                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, IfNewLine(nl, Hint(&locr, "")))
             }
             SheBangChunk(locl, n, locm, b, locr) => {
                 let nl = cfg.write_newline_at_eof == Some(true);
-                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locm, ""), b, NewLineDecor(Hint(&locr, ""), nl))
+                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locm, ""), b,
+                           IfNewLine(nl, Hint(&locr, "")))
             }
 
             Semicolon(_) => write!(f, ";"),

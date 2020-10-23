@@ -45,7 +45,7 @@ where
 
                 let first = &items[0];
                 let need_indent = list_node.need_indent_items(cfg) && first.1.need_first_indent(f, cfg, buf, state);
-                cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&first.0, ""), need_indent), first.1,
+                cfg_write!(f, cfg, buf, state, IfNewLine(need_indent, Hint::new(&first.0, "")), first.1,
                            Hint::new(&first.2, ""))?;
 
                 for i in 1..items.len() {
@@ -53,8 +53,8 @@ where
 
                     let item = &items[i];
                     let need_indent = list_node.need_indent_items(cfg) && item.1.need_indent(f, cfg, buf, state);
-                    cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&item.0, list_node.element_prefix_hint()), need_indent), item.1,
-                               Hint::new(&item.2, ""))?;
+                    cfg_write!(f, cfg, buf, state, IfNewLine(need_indent, Hint::new(&item.0, list_node.element_prefix_hint())),
+                               item.1, Hint::new(&item.2, ""))?;
                 }
 
                 let last = &items[items.len() - 1];
@@ -84,7 +84,7 @@ where
         let first = &elems[0];
 
         let need_indent = first.1.need_first_indent(f, cfg, buf, state);
-        cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&first.0, ""), need_indent), first.1)?;
+        cfg_write!(f, cfg, buf, state, IfNewLine(need_indent, Hint::new(&first.0, "")), first.1)?;
 
         for i in 1..elems.len() {
             let suffix = elems[i - 1].1.list_item_suffix_hint(cfg);
@@ -92,7 +92,7 @@ where
             let hint = longest_hint(prefix, suffix);
 
             let need_indent = elems[i].1.need_indent(f, cfg, buf, state);
-            cfg_write!(f, cfg, buf, state, NewLineDecor(Hint::new(&elems[i].0, hint), need_indent), elems[i].1)?;
+            cfg_write!(f, cfg, buf, state, IfNewLine(need_indent, Hint::new(&elems[i].0, hint)), elems[i].1)?;
         }
     }
     Ok(())
