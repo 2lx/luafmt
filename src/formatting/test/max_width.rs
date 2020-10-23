@@ -667,3 +667,145 @@ I   :method():method().field.field
 I   :method():method()"#.to_string())
     );
 }
+
+#[test]
+fn test_table_field() {
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        format_type_table_field: Some(1),
+        // enable_oneline_talbe_field: Some(true),
+        // indent_table_field: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object
+.field
+.field:method()
+.field:method():method()
+.field
+.field:method():method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        format_type_table_field: Some(1),
+        format_type_method_call: Some(1),
+        // enable_oneline_talbe_field: Some(true),
+        // indent_table_field: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object
+.field
+.field
+:method()
+.field
+:method()
+:method()
+.field
+.field
+:method()
+:method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        format_type_table_field: Some(1),
+        // format_type_method_call: Some(1),
+        // enable_oneline_talbe_field: Some(true),
+        indent_table_field: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object
+I   .field
+I   .field:method()
+I   .field:method():method()
+I   .field
+I   .field:method():method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        format_type_table_field: Some(1),
+        format_type_method_call: Some(1),
+        // enable_oneline_talbe_field: Some(true),
+        indent_table_field: Some(true),
+        indent_method_call: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object
+I   .field
+I   .field
+I   :method()
+I   .field
+I   :method()
+I   :method()
+I   .field
+I   .field
+I   :method()
+I   :method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        format_type_table_field: Some(1),
+        format_type_method_call: Some(1),
+        enable_oneline_table_field: Some(true),
+        indent_table_field: Some(true),
+        indent_method_call: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object.field.field
+I   :method().field
+I   :method()
+I   :method().field
+I   .field
+I   :method()
+I   :method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        format_type_table_field: Some(1),
+        format_type_method_call: Some(1),
+        enable_oneline_table_field: Some(true),
+        enable_oneline_method_call: Some(true),
+        indent_table_field: Some(true),
+        indent_method_call: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object.field.field
+I   :method().field
+I   :method():method()
+I   .field.field
+I   :method():method()"#.to_string())
+    );
+}

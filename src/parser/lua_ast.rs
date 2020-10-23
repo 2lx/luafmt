@@ -396,7 +396,20 @@ impl ConfiguredWrite for Node {
             FieldSequential(_, e) => cfg_write!(f, cfg, buf, state, e),
 
             TableIndex(_, locs, e) => cfg_write!(f, cfg, buf, state, "[", Hint(&locs[0], ""), e, Hint(&locs[1], ""), "]"),
-            TableMember(_, locs, n) => cfg_write!(f, cfg, buf, state, ".", Hint(&locs[0], ""), n),
+            TableMember(_, locs, n) => {
+                let mut nl = cfg.format_type_table_field == Some(1);
+
+                if nl && cfg.enable_oneline_table_field == Some(true)
+                    && test_oneline!(f, cfg, buf, state, ".", Hint(&locs[0], ""), n).is_some() {
+                    nl = false;
+                }
+
+                let indent = cfg.indent_table_field == Some(true);
+                cfg_write!(f, cfg, buf, state, If(indent, &IncIndent(None)),
+                           IfNewLine(nl, Hint(&Loc(0, 0), "")), ".", Hint(&locs[0], ""), n, If(indent, &DecIndent()))
+
+                // cfg_write!(f, cfg, buf, state, ".", Hint(&locs[0], ""), n),
+            }
             ExpList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             NameList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             VarList(..) => cfg_write_sep_list(f, cfg, buf, state, self),

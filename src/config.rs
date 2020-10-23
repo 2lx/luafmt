@@ -50,6 +50,7 @@ pub struct Config {
     pub indent_first_multiline_comment: Option<bool>,
     pub indent_every_statement: Option<bool>,
     pub indent_method_call: Option<bool>,
+    pub indent_table_field: Option<bool>,
 
     // format
     pub format_type_do_end: Option<usize>,
@@ -61,6 +62,7 @@ pub struct Config {
     pub format_type_while: Option<usize>,
     pub format_type_binary_op: Option<usize>,
     pub format_type_method_call: Option<usize>,
+    pub format_type_table_field: Option<usize>,
 
     // other
     // replace_tabs_with_spaces: Option<String>,
@@ -78,6 +80,7 @@ pub struct Config {
     pub enable_oneline_top_level_function: Option<bool>,
     pub enable_oneline_scoped_function: Option<bool>,
     pub enable_oneline_method_call: Option<bool>,
+    pub enable_oneline_table_field: Option<bool>,
 }
 
 impl Config {
@@ -105,6 +108,7 @@ impl Config {
             indent_first_oneline_comment: None,
             indent_first_multiline_comment: None,
             indent_method_call: None,
+            indent_table_field: None,
 
             // format
             format_type_do_end: None,
@@ -116,6 +120,7 @@ impl Config {
             format_type_while: None,
             format_type_binary_op: None,
             format_type_method_call: None,
+            format_type_table_field: None,
 
             // other
             hint_table_constructor: None,
@@ -131,6 +136,7 @@ impl Config {
             enable_oneline_top_level_function: None,
             enable_oneline_scoped_function: None,
             enable_oneline_method_call: None,
+            enable_oneline_table_field: None,
         }
     }
 
@@ -173,6 +179,7 @@ impl Config {
             "indent_first_oneline_comment" => set_param_value_as!(self.indent_first_oneline_comment, bool),
             "indent_first_multiline_comment" => set_param_value_as!(self.indent_first_multiline_comment, bool),
             "indent_method_call" => set_param_value_as!(self.indent_method_call, bool),
+            "indent_table_field" => set_param_value_as!(self.indent_table_field, bool),
 
             // format
             "format_type_do_end" => set_param_value_as!(self.format_type_do_end, usize),
@@ -184,6 +191,7 @@ impl Config {
             "format_type_while" => set_param_value_as!(self.format_type_while, usize),
             "format_type_binary_op" => set_param_value_as!(self.format_type_binary_op, usize),
             "format_type_method_call" => set_param_value_as!(self.format_type_method_call, usize),
+            "format_type_table_field" => set_param_value_as!(self.format_type_table_field, usize),
 
             // other
             "hint_table_constructor" => set_param_value_as!(self.hint_table_constructor, String),
@@ -199,6 +207,7 @@ impl Config {
             "enable_oneline_top_level_function" => set_param_value_as!(self.enable_oneline_top_level_function, bool),
             "enable_oneline_scoped_function" => set_param_value_as!(self.enable_oneline_scoped_function, bool),
             "enable_oneline_method_call" => set_param_value_as!(self.enable_oneline_method_call, bool),
+            "enable_oneline_table_field" => set_param_value_as!(self.enable_oneline_table_field, bool),
 
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
@@ -289,6 +298,7 @@ impl fmt::Display for Config {
         print_opt!(self.indent_first_oneline_comment, "indent_first_oneline_comment");
         print_opt!(self.indent_first_multiline_comment, "indent_first_multiline_comment");
         print_opt!(self.indent_method_call, "indent_method_call");
+        print_opt!(self.indent_table_field, "indent_table_field");
 
         // format
         print_opt!(self.format_type_do_end, "format_type_do_end");
@@ -300,6 +310,7 @@ impl fmt::Display for Config {
         print_opt!(self.format_type_while, "format_type_while");
         print_opt!(self.format_type_binary_op, "format_type_binary_op");
         print_opt!(self.format_type_method_call, "format_type_method_call");
+        print_opt!(self.format_type_table_field, "format_type_table_field");
 
         // other
         print_opt!(self.hint_table_constructor, "hint_table_constructor");
@@ -315,6 +326,7 @@ impl fmt::Display for Config {
         print_opt!(self.enable_oneline_top_level_function, "enable_oneline_top_level_function");
         print_opt!(self.enable_oneline_scoped_function, "enable_oneline_scoped_function");
         print_opt!(self.enable_oneline_method_call, "enable_oneline_method_call");
+        print_opt!(self.enable_oneline_table_field, "enable_oneline_table_field");
 
         write!(f, "}}")?;
         Ok(())
