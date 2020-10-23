@@ -168,7 +168,7 @@ fn test_remove_comments_newlines() {
 fn test_eof_hint() {
     let cfg = Config {
         remove_single_newlines: Some(true),
-        hint_before_end_of_file: Some("\n".to_string()),
+        write_newline_at_eof: Some(true),
         replace_zero_spaces_with_hint: Some(true),
         ..Config::default()
     };
@@ -181,6 +181,6 @@ fn test_eof_hint() {
 
     assert_eq!(
         ts("#!/usr/bin/lua\n local \n b = {2, 3} for a=1,--[[  asd ]]  \n  4do print--1\n (1,4)end--[=[1232 ]=]"),
-        Ok("#!/usr/bin/lua\n local  b = {2, 3} for a = 1,--[[  asd ]]  \n  4 do print--1\n (1, 4) end--[=[1232 ]=]".to_string())
+        Ok("#!/usr/bin/lua\n local  b = {2, 3} for a = 1,--[[  asd ]]  \n  4 do print--1\n (1, 4) end--[=[1232 ]=]\n".to_string())
     );
 }

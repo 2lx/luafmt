@@ -34,13 +34,13 @@ pub struct Config {
     pub hint_before_comment: Option<String>,
     pub hint_before_multiline_comment_text: Option<String>,
     pub hint_before_oneline_comment_text: Option<String>,
-    pub hint_before_end_of_file: Option<String>,
 
     pub remove_comments: Option<bool>,
     pub remove_single_newlines: Option<bool>,
     pub remove_all_newlines: Option<bool>,
     pub remove_spaces_between_tokens: Option<bool>,
     pub replace_zero_spaces_with_hint: Option<bool>,
+    pub write_newline_at_eof: Option<bool>,
 
     // indentation
     pub indentation_string: Option<String>,
@@ -85,13 +85,13 @@ impl Config {
             hint_before_comment: None,
             hint_before_multiline_comment_text: None,
             hint_before_oneline_comment_text: None,
-            hint_before_end_of_file: None,
 
             remove_comments: None,
             remove_single_newlines: None,
             remove_all_newlines: None,
             remove_spaces_between_tokens: None,
             replace_zero_spaces_with_hint: None,
+            write_newline_at_eof: None,
 
             // indentation
             indentation_string: None,
@@ -149,13 +149,13 @@ impl Config {
                 set_param_value_as!(self.hint_before_multiline_comment_text, String)
             }
             "hint_before_oneline_comment_text" => set_param_value_as!(self.hint_before_oneline_comment_text, String),
-            "hint_before_end_of_file" => set_param_value_as!(self.hint_before_end_of_file, String),
 
             "remove_comments" => set_param_value_as!(self.remove_comments, bool),
             "remove_single_newlines" => set_param_value_as!(self.remove_single_newlines, bool),
             "remove_all_newlines" => set_param_value_as!(self.remove_all_newlines, bool),
             "remove_spaces_between_tokens" => set_param_value_as!(self.remove_spaces_between_tokens, bool),
             "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
+            "write_newline_at_eof" => set_param_value_as!(self.write_newline_at_eof, bool),
 
             // indentation
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
@@ -261,13 +261,13 @@ impl fmt::Display for Config {
         print_opt!(self.hint_before_comment, "hint_before_comment");
         print_opt!(self.hint_before_multiline_comment_text, "hint_before_multiline_comment_text");
         print_opt!(self.hint_before_oneline_comment_text, "hint_before_oneline_comment_text");
-        print_opt!(self.hint_before_end_of_file, "hint_before_end_of_file");
 
         print_opt!(self.remove_comments, "remove_comments");
         print_opt!(self.remove_single_newlines, "remove_single_newlines");
         print_opt!(self.remove_all_newlines, "remove_all_newlines");
         print_opt!(self.remove_spaces_between_tokens, "remove_spaces_between_tokens");
         print_opt!(self.replace_zero_spaces_with_hint, "replace_zero_spaces_with_hint");
+        print_opt!(self.write_newline_at_eof, "write_newline_at_eof");
 
         // indentation
         print_opt!(self.indentation_string, "indentation_string");

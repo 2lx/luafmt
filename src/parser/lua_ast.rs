@@ -701,14 +701,12 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, n1, NewLineDecor(Hint(&locs[0], " "), nl), n2)
             }
             Chunk(locl, n, locr) => {
-                let eof_default = String::new();
-                let eof_hint = cfg.hint_before_end_of_file.as_ref().unwrap_or(&eof_default);
-                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, &eof_hint))
+                let nl = cfg.write_newline_at_eof == Some(true);
+                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, NewLineDecor(Hint(&locr, ""), nl))
             }
             SheBangChunk(locl, n, locm, b, locr) => {
-                let eof_default = String::new();
-                let eof_hint = cfg.hint_before_end_of_file.as_ref().unwrap_or(&eof_default);
-                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locm, ""), b, Hint(&locr, &eof_hint))
+                let nl = cfg.write_newline_at_eof == Some(true);
+                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locm, ""), b, NewLineDecor(Hint(&locr, ""), nl))
             }
 
             Semicolon(_) => write!(f, ";"),
