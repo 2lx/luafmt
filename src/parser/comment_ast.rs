@@ -44,15 +44,15 @@ impl<'a> list::NoSepListItem<'a> for Node {
     fn need_indent(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
-            OneLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_oneline_comments == Some(true),
-            MultiLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_multiline_comments == Some(true),
+            OneLineComment(..) => cfg.indent_oneline_comments == Some(true),
+            MultiLineComment(..) => cfg.indent_multiline_comments == Some(true),
             CommentList(_, comments) => {
                 // indentation of the first comment, if it is not the first token in the Loc
                 if !comments.is_empty() {
                     if let (_, OneLineComment(..)) = &comments[0] {
-                        return cfg.indentation_string.is_some() && cfg.indent_oneline_comments == Some(true);
+                        return cfg.indent_oneline_comments == Some(true);
                     } else if let (_, MultiLineComment(..)) = &comments[0] {
-                        return cfg.indentation_string.is_some() && cfg.indent_multiline_comments == Some(true);
+                        return cfg.indent_multiline_comments == Some(true);
                     }
                 }
                 false
@@ -64,8 +64,8 @@ impl<'a> list::NoSepListItem<'a> for Node {
     fn need_first_indent(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
-            OneLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_first_oneline_comment == Some(true),
-            MultiLineComment(..) => cfg.indentation_string.is_some() && cfg.indent_first_multiline_comment == Some(true),
+            OneLineComment(..) => cfg.indent_first_oneline_comment == Some(true),
+            MultiLineComment(..) => cfg.indent_first_multiline_comment == Some(true),
             _ => false,
         }
     }

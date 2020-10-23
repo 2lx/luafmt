@@ -15,8 +15,7 @@ pub fn trim_end_spaces_and_tabs<'a>(string: &'a String) -> &'a str {
 }
 
 pub fn get_positon_after_newline(s: &str, _cfg: &Config) -> usize {
-    let idx_opt = s.rfind('\n');
-    return s.len() - idx_opt.unwrap_or(0);
+    return s.chars().rev().take_while(|&c| c != '\n').count()
 }
 
 pub fn has_newlines(s: &str) -> bool {
@@ -59,9 +58,11 @@ fn test_trim_end_spaces_and_tabs() {
 #[test]
 fn test_position_after_newline() {
     let cfg = Config::default();
-    assert_eq!(get_positon_after_newline("abc\t  \n  ", &cfg), 3);
-    assert_eq!(get_positon_after_newline("abc\t  \n  absdsrf", &cfg), 10);
-    assert_eq!(get_positon_after_newline("\nabc\t dasdsadas \n  asdasdas\nabsdsrf", &cfg), 8);
+    assert_eq!(get_positon_after_newline("abc\t  \n  ", &cfg), 2);
+    assert_eq!(get_positon_after_newline("abc\t  \n  absdsrf", &cfg), 9);
+    assert_eq!(get_positon_after_newline("\nabc\t dasdsadas \n  asdasdas\nabsdsrf", &cfg), 7);
+
+    assert_eq!(get_positon_after_newline("abc\t  \nабв", &cfg), 3);
 }
 
 #[test]

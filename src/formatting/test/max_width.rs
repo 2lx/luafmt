@@ -281,9 +281,8 @@ I   e;
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = { b = 123;
-I   c={1; 2; 3; {a=1; b=2;
-I   I   }; 5;}; d = {}; e;
-}"#
+I   c={1; 2; 3; {a=1; b=2;};
+I   I   5;}; d = {}; e;}"#
         .to_string())
     );
 }
@@ -534,5 +533,61 @@ I   print(b)
 I   return function(a, b) return a < b end
 end"#
             .to_string())
+    );
+}
+
+#[test]
+fn test_method_call() {
+    let cfg = Config {
+        // indentation_string: Some("I   ".to_string()),
+        // max_width: Some(20),
+        format_type_method_call: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object.field.field
+:method().field
+:method()
+:method().field.field
+:method()
+:method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(20),
+        format_type_method_call: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object.field.field
+:method().field
+:method()
+:method().field.field
+:method()
+:method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(20),
+        format_type_method_call: Some(1),
+        enable_oneline_method_call: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object.field.field
+:method().field
+:method():method().field.field
+:method():method()"#.to_string())
     );
 }

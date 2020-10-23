@@ -129,25 +129,23 @@ impl<'a> list::NoSepListItem<'a> for Node {
             | IfThenBElseIf(..) | IfThenElseIfElse(..) | IfThenBElseIfElse(..) | IfThenElseIfElseB(..)
             | IfThenBElseIfElseB(..) | ForInt(..) | ForIntB(..) | ForIntStep(..) | ForIntStepB(..)
             | ForRange(..) | ForRangeB(..) | FuncDecl(..) | LocalFuncDecl(..) | Var(..) | VarRoundSuffix(..)
-            | RoundBrackets(..) =>
-                cfg.indentation_string.is_some() && cfg.indent_every_statement == Some(true),
-            ElseIfThen(..) | ElseIfThenB(..)
-                => cfg.indentation_string.is_some() && cfg.format_type_if == Some(1),
+            | RoundBrackets(..) => cfg.indent_every_statement == Some(true),
+            ElseIfThen(..) | ElseIfThenB(..) => cfg.format_type_if == Some(1),
             FieldNamedBracket(..) | FieldNamed(..) => {
-                if cfg.indentation_string.is_some() && cfg.format_type_table == Some(1) {
+                if cfg.format_type_table == Some(1) {
                     return true;
                 }
-                if cfg.indentation_string.is_some() && cfg.format_type_table == Some(2) {
+                if cfg.format_type_table == Some(2) {
                     return self.test_oneline_field(f, cfg, buf, state) == None;
                 }
                 false
             }
             // allow sequental table constructors keep the line
             FieldSequential(_, e) => {
-                if cfg.indentation_string.is_some() && cfg.format_type_table == Some(1) {
+                if cfg.format_type_table == Some(1) {
                     return true;
                 }
-                if cfg.indentation_string.is_some() && cfg.format_type_table == Some(2) {
+                if cfg.format_type_table == Some(2) {
                     match &**e {
                         TableConstructor(..) | TableConstructorEmpty(..) => return false,
                         _ => {},
@@ -164,14 +162,14 @@ impl<'a> list::NoSepListItem<'a> for Node {
         use Node::*;
         match self {
             FieldNamedBracket(..) | FieldNamed(..) => {
-                if cfg.indentation_string.is_some() && cfg.format_type_table == Some(2) {
+                if cfg.format_type_table == Some(2) {
                     return self.test_oneline_field(f, cfg, buf, state) == None;
                 }
                 false
             }
             // allow sequental table constructors keep the line
             FieldSequential(_, e) => {
-                if cfg.indentation_string.is_some() && cfg.format_type_table == Some(2) {
+                if cfg.format_type_table == Some(2) {
                     match &**e {
                         TableConstructor(..) | TableConstructorEmpty(..) => return false,
                         _ => {},
@@ -329,8 +327,8 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl1 = cfg.indentation_string.is_some() && cfg.format_type_binary_op == Some(1);
-                let nl2 = cfg.indentation_string.is_some() && cfg.format_type_binary_op == Some(2);
+                let nl1 = cfg.format_type_binary_op == Some(1);
+                let nl2 = cfg.format_type_binary_op == Some(2);
                 cfg_write!(f, cfg, buf, state, IndentIncDecor(), l, NewLineDecor(Hint(&locs[0], " "), nl1), tok,
                            NewLineDecor(Hint(&locs[1], " "), nl2), r, IndentDecDecor())
             }
@@ -373,8 +371,8 @@ impl ConfiguredWrite for Node {
 
                 let default_hint = String::new();
                 let hint = cfg.hint_table_constructor.as_ref().unwrap_or(&default_hint);
-                let nl1 = cfg.indentation_string.is_some() && cfg.format_type_table == Some(1);
-                let mut nl2 = cfg.indentation_string.is_some() && cfg.format_type_table == Some(1);
+                let nl1 = cfg.format_type_table == Some(1);
+                let mut nl2 = cfg.format_type_table == Some(1);
 
                 cfg_write!(f, cfg, buf, state, "{{", IndentIncDecor(), FuncLevelIncDecor(),
                            NewLineDecor(Hint(&locs[0], &hint), nl1), r)?;
@@ -412,7 +410,7 @@ impl ConfiguredWrite for Node {
             StatementList(_, stts) => cfg_write_list_items(f, cfg, buf, state, stts),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_do_end == Some(1);
+                let nl = cfg.format_type_do_end == Some(1);
                 cfg_write!(f, cfg, buf, state, "do", IndentIncDecor(), NewLineDecor(Hint(&locs[0], " "), nl), b,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[1], " "), nl), "end")
             }
@@ -426,7 +424,19 @@ impl ConfiguredWrite for Node {
             }
             VarSuffixList(_, suffs) => cfg_write_list_items(f, cfg, buf, state, suffs),
             FnMethodCall(_, locs, n1, n2) => {
-                cfg_write!(f, cfg, buf, state, ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2)
+                let mut nl = cfg.format_type_method_call == Some(1);
+                if nl && cfg.enable_oneline_method_call == Some(true) {
+                    let mut buffer = String::new();
+
+                    // if it fits, print method name on one line
+                    if n1.configured_write(&mut buffer, &cfg, buf, state) == Ok(())
+                      && util::get_positon_after_newline(f, cfg) + buffer.len() + 2 < cfg.max_width.unwrap() {
+                        nl = false;
+                    }
+                }
+
+                cfg_write!(f, cfg, buf, state, NewLineDecor(Hint(&Loc(0, 0), ""), nl), ":", Hint(&locs[0], ""), n1,
+                           Hint(&locs[1], ""), n2)
             }
             ParList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n),
@@ -435,7 +445,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_function == Some(1);
+                let nl = cfg.format_type_function == Some(1);
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", NewLineDecor(Hint(&locs[1], " "), nl),
                            "end")
             }
@@ -444,7 +454,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_function == Some(1);
+                let nl = cfg.format_type_function == Some(1);
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")",
                            IndentIncDecor(), FuncLevelIncDecor(), NewLineDecor(Hint(&locs[1], " "), nl), n2,
                            IndentDecDecor(), FuncLevelDecDecor(), NewLineDecor(Hint(&locs[2], " "), nl), "end")
@@ -454,7 +464,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_function == Some(1);
+                let nl = cfg.format_type_function == Some(1);
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")",
                            NewLineDecor(Hint(&locs[2], " "), nl), "end")
             }
@@ -463,7 +473,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_function == Some(1);
+                let nl = cfg.format_type_function == Some(1);
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")",
                            IndentIncDecor(), FuncLevelIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), n2,
                            IndentDecDecor(), FuncLevelDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "end")
@@ -493,7 +503,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            NewLineDecor(Hint(&locs[2], " "), nl), "end")
             }
@@ -502,7 +512,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), b1,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "end")
@@ -512,7 +522,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            Hint(&locs[2], " "), "else", NewLineDecor(Hint(&locs[3], " "), nl), "end")
             }
@@ -521,7 +531,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), b1,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "else",
@@ -532,7 +542,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            Hint(&locs[2], " "), "else", IndentIncDecor(), NewLineDecor(Hint(&locs[3], " "), nl), b2,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[4], " "), nl), "end")
@@ -542,7 +552,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), b1,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "else",
@@ -554,7 +564,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            NewLineDecor(Hint(&locs[2], " "), nl), n,
                            NewLineDecor(Hint(&locs[3], " "), nl), "end")
@@ -564,7 +574,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), b1,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), n,
@@ -575,7 +585,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            NewLineDecor(Hint(&locs[2], " "), nl), n,
                            NewLineDecor(Hint(&locs[3], " "), nl), "else",
@@ -586,7 +596,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), b1,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), n,
@@ -598,7 +608,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            NewLineDecor(Hint(&locs[2], " "), nl), n,
                            NewLineDecor(Hint(&locs[3], " "), nl), "else",
@@ -610,7 +620,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IndentIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), b1,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), n,
@@ -623,7 +633,7 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then")
             }
             ElseIfThenB(_, locs, e, b) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_if == Some(1);
+                let nl = cfg.format_type_if == Some(1);
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then",
                             IndentIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), b, IndentDecDecor())
             }
@@ -632,22 +642,22 @@ impl ConfiguredWrite for Node {
             Label(_, locs, n) => cfg_write!(f, cfg, buf, state, "::", Hint(&locs[0], ""), n, Hint(&locs[1], ""), "::"),
             GoTo(_, locs, n) => cfg_write!(f, cfg, buf, state, "goto", Hint(&locs[0], " "), n),
             WhileDo(_, locs, e) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_while == Some(1);
+                let nl = cfg.format_type_while == Some(1);
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
                            NewLineDecor(Hint(&locs[2], " "), nl), "end")
             }
             WhileDoB(_, locs, e, n) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_while == Some(1);
+                let nl = cfg.format_type_while == Some(1);
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
                            IndentIncDecor(), NewLineDecor(Hint(&locs[2], " "), nl), n,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[3], " "), nl), "end")
             }
             RepeatUntil(_, locs, e) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_repeat_until == Some(1);
+                let nl = cfg.format_type_repeat_until == Some(1);
                 cfg_write!(f, cfg, buf, state, "repeat", NewLineDecor(Hint(&locs[0], " "), nl), "until", Hint(&locs[1], " "), e)
             }
             RepeatBUntil(_, locs, b, e) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_repeat_until == Some(1);
+                let nl = cfg.format_type_repeat_until == Some(1);
                 cfg_write!(f, cfg, buf, state, "repeat",
                            IndentIncDecor(), NewLineDecor(Hint(&locs[0], " "), nl), b,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[1], " "), nl), "until",
@@ -660,21 +670,21 @@ impl ConfiguredWrite for Node {
                            "do", Hint(&locs[6], " "), "end")
             }
             ForIntB(_, locs, n, e1, e2, b) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_for == Some(1);
+                let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                            Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
                            Hint(&locs[5], " "), "do", IndentIncDecor(), NewLineDecor(Hint(&locs[6], " "), nl), b,
                            IndentDecDecor(), NewLineDecor(Hint(&locs[7], " "), nl), "end")
             }
             ForIntStep(_, locs, n, e1, e2, e3) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_for == Some(1);
+                let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                            Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2, Hint(&locs[5], ""),
                            ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do", NewLineDecor(Hint(&locs[8], " "), nl),
                            "end")
             },
             ForIntStepB(_, locs, n, e1, e2, e3, b) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_for == Some(1);
+                let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                            Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
                            Hint(&locs[5], ""), ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do",
@@ -682,13 +692,13 @@ impl ConfiguredWrite for Node {
                            NewLineDecor(Hint(&locs[9], " "), nl), "end")
             },
             ForRange(_, locs, n, e) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_for == Some(1);
+                let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in",
                            Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", NewLineDecor(Hint(&locs[4], " "), nl),
                            "end")
             }
             ForRangeB(_, locs, n, e, b) => {
-                let nl = cfg.indentation_string.is_some() && cfg.format_type_for == Some(1);
+                let nl = cfg.format_type_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in",
                            Hint(&locs[2], " "), e, Hint(&locs[3], " "), "do", IndentIncDecor(),
                            NewLineDecor(Hint(&locs[4], " "), nl), b, IndentDecDecor(),
@@ -702,7 +712,7 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "return", Hint(&locs[0], " "), n, Hint(&locs[1], ""), ";")
             }
             StatsRetStat(_, locs, n1, n2) => {
-                let nl = cfg.indentation_string.is_some() && cfg.indent_every_statement == Some(true);
+                let nl = cfg.indent_every_statement == Some(true);
                 cfg_write!(f, cfg, buf, state, n1, NewLineDecor(Hint(&locs[0], " "), nl), n2)
             }
             Chunk(locl, n, locr) => {

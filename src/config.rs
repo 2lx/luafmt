@@ -59,6 +59,7 @@ pub struct Config {
     pub format_type_table: Option<usize>,
     pub format_type_while: Option<usize>,
     pub format_type_binary_op: Option<usize>,
+    pub format_type_method_call: Option<usize>,
 
     // other
     // replace_tabs_with_spaces: Option<String>,
@@ -75,6 +76,7 @@ pub struct Config {
     pub enable_oneline_if: Option<bool>,
     pub enable_oneline_top_level_function: Option<bool>,
     pub enable_oneline_scoped_function: Option<bool>,
+    pub enable_oneline_method_call: Option<bool>,
 }
 
 impl Config {
@@ -111,6 +113,7 @@ impl Config {
             format_type_table: None,
             format_type_while: None,
             format_type_binary_op: None,
+            format_type_method_call: None,
 
             // other
             hint_table_constructor: None,
@@ -125,6 +128,7 @@ impl Config {
             enable_oneline_if: None,
             enable_oneline_top_level_function: None,
             enable_oneline_scoped_function: None,
+            enable_oneline_method_call: None,
         }
     }
 
@@ -176,6 +180,7 @@ impl Config {
             "format_type_table" => set_param_value_as!(self.format_type_table, usize),
             "format_type_while" => set_param_value_as!(self.format_type_while, usize),
             "format_type_binary_op" => set_param_value_as!(self.format_type_binary_op, usize),
+            "format_type_method_call" => set_param_value_as!(self.format_type_method_call, usize),
 
             // other
             "hint_table_constructor" => set_param_value_as!(self.hint_table_constructor, String),
@@ -190,6 +195,7 @@ impl Config {
             "enable_oneline_if" => set_param_value_as!(self.enable_oneline_if, bool),
             "enable_oneline_top_level_function" => set_param_value_as!(self.enable_oneline_top_level_function, bool),
             "enable_oneline_scoped_function" => set_param_value_as!(self.enable_oneline_scoped_function, bool),
+            "enable_oneline_method_call" => set_param_value_as!(self.enable_oneline_method_call, bool),
 
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
@@ -289,6 +295,7 @@ impl fmt::Display for Config {
         print_opt!(self.format_type_table, "format_type_table");
         print_opt!(self.format_type_while, "format_type_while");
         print_opt!(self.format_type_binary_op, "format_type_binary_op");
+        print_opt!(self.format_type_method_call, "format_type_method_call");
 
         // other
         print_opt!(self.hint_table_constructor, "hint_table_constructor");
@@ -303,6 +310,7 @@ impl fmt::Display for Config {
         print_opt!(self.enable_oneline_if, "enable_oneline_if");
         print_opt!(self.enable_oneline_top_level_function, "enable_oneline_top_level_function");
         print_opt!(self.enable_oneline_scoped_function, "enable_oneline_scoped_function");
+        print_opt!(self.enable_oneline_method_call, "enable_oneline_method_call");
 
         write!(f, "}}")?;
         Ok(())
