@@ -67,6 +67,7 @@ pub struct Config {
     pub field_separator: Option<String>,
     pub write_trailing_field_separator: Option<bool>,
     pub max_width: Option<usize>,
+    pub convert_charstring_to_normalstring: Option<bool>,
 
     // oneline
     pub enable_oneline_binary_op: Option<bool>,
@@ -116,6 +117,7 @@ impl Config {
             field_separator: None,
             write_trailing_field_separator: None,
             max_width: None,
+            convert_charstring_to_normalstring: None,
 
             // oneline
             enable_oneline_binary_op: None,
@@ -180,6 +182,7 @@ impl Config {
             "field_separator" => set_param_value_as!(self.field_separator, String),
             "write_trailing_field_separator" => set_param_value_as!(self.write_trailing_field_separator, bool),
             "max_width" => set_param_value_as!(self.max_width, usize),
+            "convert_charstring_to_normalstring" => set_param_value_as!(self.convert_charstring_to_normalstring, bool),
 
             // oneline
             "enable_oneline_binary_op" => set_param_value_as!(self.enable_oneline_binary_op, bool),
@@ -292,6 +295,7 @@ impl fmt::Display for Config {
         print_opt!(self.field_separator, "field_separator");
         print_opt!(self.write_trailing_field_separator, "write_trailing_field_separator");
         print_opt!(self.max_width, "max_width");
+        print_opt!(self.convert_charstring_to_normalstring, "convert_charstring_to_normalstring");
 
         // oneline
         print_opt!(self.enable_oneline_binary_op, "enable_oneline_binary_op");

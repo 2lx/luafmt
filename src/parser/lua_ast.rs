@@ -355,7 +355,12 @@ impl ConfiguredWrite for Node {
             // literals
             Numeral(_, s) => write!(f, "{}", s),
             NormalStringLiteral(_, s) => write!(f, "\"{}\"", s),
-            CharStringLiteral(_, s) => write!(f, "'{}'", s),
+            CharStringLiteral(_, s) => {
+                if cfg.convert_charstring_to_normalstring == Some(true) {
+                    return write!(f, "\"{}\"", util::charstring_to_normalstring(s));
+                }
+                write!(f, "'{}'", s)
+            }
             MultiLineStringLiteral(_, level, s) => {
                 let level_str = (0..*level).map(|_| "=").collect::<String>();
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)

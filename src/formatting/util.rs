@@ -23,6 +23,23 @@ pub fn has_newlines(s: &str) -> bool {
     return s.find('\n').is_some();
 }
 
+pub fn charstring_to_normalstring(s: &str) -> String {
+    let mut result = String::new();
+    let mut escaped = false;
+
+    for ch in s.chars() {
+        if ch == '"' && !escaped {
+            result.push('\\');
+            result.push('"');
+        } else {
+            result.push(ch);
+        }
+
+        escaped = !escaped && ch == '\\';
+    }
+    result
+}
+
 pub fn write_indent(f: &mut String, cfg: &Config, state: &State) -> std::fmt::Result {
     let indentation = match &cfg.indentation_string {
         Some(indent_str) => (0..state.indent_level).map(|_| &indent_str[..]).collect::<String>(),
@@ -51,4 +68,12 @@ fn test_position_after_newline() {
 fn test_has_newlines() {
     assert_eq!(has_newlines("abc\t  \n  "), true);
     assert_eq!(has_newlines("abc\t  \r\tasdas   "), false);
+}
+
+#[test]
+fn test_charstring_to_normalstring() {
+    assert_eq!(charstring_to_normalstring(r#" hi ab"cas"das   "#), r#" hi ab\"cas\"das   "#);
+    assert_eq!(charstring_to_normalstring(r#" hi ab\"cas\"das   "#), r#" hi ab\"cas\"das   "#);
+    assert_eq!(charstring_to_normalstring(r#" hi ab\\"cas\\"das   "#), r#" hi ab\\\"cas\\\"das   "#);
+    assert_eq!(charstring_to_normalstring(r#" hi ab\\\"cas\\\"das   "#), r#" hi ab\\\"cas\\\"das   "#);
 }

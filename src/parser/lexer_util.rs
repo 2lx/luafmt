@@ -19,7 +19,7 @@ fn seek_end_by_predicate(chars: &mut TChars, start: usize, f: &dyn Fn(char, bool
 
                 end = i;
                 chars.next();
-                escaped = ch == '\\';
+                escaped = !escaped && ch == '\\';
             }
             None => return (end + 1, false),
         };
@@ -370,6 +370,16 @@ fn test_get_string_ends() {
     iter.next();
     assert_eq!(get_string_ends(&mut iter, '"', 0), (7, 8, true));
 
+    let mystr = String::from("\"123456\\\"");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    assert_eq!(get_string_ends(&mut iter, '"', 0), (9, 9, false));
+
+    let mystr = String::from("\"123456\\\\\"");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    assert_eq!(get_string_ends(&mut iter, '"', 0), (9, 10, true));
+
     let mystr = String::from("'123456");
     let mut iter = mystr.char_indices().peekable();
     iter.next();
@@ -453,6 +463,13 @@ fn test_get_multiline_string_ends() {
     iter.next();
     iter.next();
     assert_eq!(get_multiline_string_ends(&mut iter, 0, 2), (2, 4, true));
+
+    let mystr = String::from("[=[striing\n\\\"'\"]=]");
+    let mut iter = mystr.char_indices().peekable();
+    iter.next();
+    iter.next();
+    iter.next();
+    assert_eq!(get_multiline_string_ends(&mut iter, 1, 3), (15, 18, true));
 
     let mystr = String::from("[=[striing\n\"'\"]=]");
     let mut iter = mystr.char_indices().peekable();
