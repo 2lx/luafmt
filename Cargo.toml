@@ -1,13 +1,13 @@
 [package]
-name = "luafmt"
-version = "0.3.0"
+name = "luapp"
+version = "0.5.0"
 authors = ["Alexey Minchakov <lexaaim@gmail.com>"]
 edition = "2018"
 
 [build-dependencies]
-lalrpop = "0.19.0"
+lalrpop = "0.19.1"
 
 [dependencies]
-lalrpop-util = "0.19.0"
+lalrpop-util = "0.19.1"
 regex = "1"
 phf = { version = "0.8", features = ["macros"] }

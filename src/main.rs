@@ -3,9 +3,9 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use luafmt::config::Config;
-use luafmt::file_util;
-use luafmt::formatter;
+use luapp::config::Config;
+use luapp::file_util;
+use luapp::formatter;
 
 fn get_options_and_filenames() -> (Vec<String>, Vec<String>) {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -73,7 +73,7 @@ fn main() {
     for rel_path in &rel_paths {
         let path_buf = Path::new(rel_path).to_path_buf();
 
-        match file_util::get_path_files(&path_buf, program_opts.recursive, "lua", luafmt::CFG_PREFIX) {
+        match file_util::get_path_files(&path_buf, program_opts.recursive, "lua", luapp::CFG_PREFIX) {
             Ok(file_paths) => {
                 for file_path in &file_paths {
                     process_file_path(file_path, &config, &program_opts);

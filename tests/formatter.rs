@@ -1,6 +1,6 @@
-extern crate luafmt;
-use luafmt::config::Config;
-use luafmt::formatter::process_file;
+extern crate luapp;
+use luapp::config::Config;
+use luapp::formatter::*;
 
 use std::fs;
 use std::path::Path;
@@ -18,7 +18,7 @@ fn test_process_file_success() {
 
 #[test]
 fn test_process_file_failure() {
-    use luafmt::formatter::FormatterError::*;
+    use FormatterError::*;
 
     // no config
     let path_buf = Path::new("tests/scripts2/no_err.lua").to_path_buf();

@@ -1,6 +1,6 @@
-extern crate luafmt;
+extern crate luapp;
 
-use luafmt::config::Config;
+use luapp::config::Config;
 use std::path::Path;
 
 #[test]
