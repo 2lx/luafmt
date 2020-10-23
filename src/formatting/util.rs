@@ -2,6 +2,30 @@ use crate::config::*;
 use std::cmp::Ordering;
 use std::fmt::Write;
 
+#[macro_export]
+macro_rules! test_oneline {
+    ($wrt:expr, $cfg:expr, $buf:expr, $state: expr, $($arg:expr),+) => {{
+        let mut test_state = $state.clone();
+        let mut test_cfg = $cfg.clone();
+        let mut buffer = String::new();
+
+        $( cfg_write_helper!(&mut buffer, &mut test_cfg, $buf, &mut test_state, $arg)?; )+
+
+        // let mut left_len = util::get_len_after_newline(&buffer, $cfg);
+        // if left_len == buffer.chars().count() {
+        //     left_len += util::get_len_after_newline($wrt, $cfg);
+        // }
+        let left_len = util::get_len_after_newline($wrt, $cfg);
+        let right_len = util::get_len_till_newline(&buffer, $cfg);
+
+        match left_len + right_len < $cfg.max_width.unwrap() {
+            true => Some(buffer),
+            false => None,
+        }
+    }};
+}
+
+
 pub fn longest_hint<'a>(hint1: &'a str, hint2: &'a str) -> &'a str {
     return match hint1.len().cmp(&hint2.len()) {
         Ordering::Less => hint2,
@@ -14,8 +38,12 @@ pub fn trim_end_spaces_and_tabs<'a>(string: &'a String) -> &'a str {
     string.trim_end_matches(|ch: char| return ch == ' ' || ch == '\t')
 }
 
-pub fn get_positon_after_newline(s: &str, _cfg: &Config) -> usize {
+pub fn get_len_after_newline(s: &str, _cfg: &Config) -> usize {
     return s.chars().rev().take_while(|&c| c != '\n').count()
+}
+
+pub fn get_len_till_newline(s: &str, _cfg: &Config) -> usize {
+    return s.chars().take_while(|&c| c != '\n').count()
 }
 
 pub fn has_newlines(s: &str) -> bool {
@@ -56,13 +84,23 @@ fn test_trim_end_spaces_and_tabs() {
 }
 
 #[test]
-fn test_position_after_newline() {
+fn test_len_after_newline() {
     let cfg = Config::default();
-    assert_eq!(get_positon_after_newline("abc\t  \n  ", &cfg), 2);
-    assert_eq!(get_positon_after_newline("abc\t  \n  absdsrf", &cfg), 9);
-    assert_eq!(get_positon_after_newline("\nabc\t dasdsadas \n  asdasdas\nabsdsrf", &cfg), 7);
+    assert_eq!(get_len_after_newline("abc", &cfg), 3);
+    assert_eq!(get_len_after_newline("abc\t  \n  ", &cfg), 2);
+    assert_eq!(get_len_after_newline("abc\t  \n  absdsrf", &cfg), 9);
+    assert_eq!(get_len_after_newline("\nabc\t dasdsadas \n  asdasdas\nabsdsrf", &cfg), 7);
+    assert_eq!(get_len_after_newline("abc\t  \nабв", &cfg), 3);
+}
 
-    assert_eq!(get_positon_after_newline("abc\t  \nабв", &cfg), 3);
+#[test]
+fn test_len_till_newline() {
+    let cfg = Config::default();
+    assert_eq!(get_len_till_newline("abc", &cfg), 3);
+    assert_eq!(get_len_till_newline("abc\t  \n  ", &cfg), 6);
+    assert_eq!(get_len_till_newline("abc\n  \n  absdsrf", &cfg), 3);
+    assert_eq!(get_len_till_newline("\nabc\t dasdsadas", &cfg), 0);
+    assert_eq!(get_len_till_newline("ab\nc\t  \nабв", &cfg), 2);
 }
 
 #[test]

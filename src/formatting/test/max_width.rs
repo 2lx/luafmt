@@ -24,10 +24,10 @@ I   I   <= 1000 then end"#
     assert_eq!(
         ts("local a = fn1(b, c, d) or fn2(c, d, e) or fn3(d, e, c) and c and d and e"),
         Ok("local a = fn1(b, c, d)
-I   I   or fn2(c, d, e)
+I   or fn2(c, d, e)
 I   or fn3(d, e, c)
-I   I   I   I   and c
-I   I   I   and d
+I   I   and c
+I   I   and d
 I   I   and e"
             .to_string())
     );
@@ -53,10 +53,10 @@ I   I   1000 then end"#
     assert_eq!(
         ts("local a = fn1(b, c, d) or fn2(c, d, e) or fn3(d, e, c) and c and d and e"),
         Ok("local a = fn1(b, c, d) or
-I   I   fn2(c, d, e) or
+I   fn2(c, d, e) or
 I   fn3(d, e, c) and
-I   I   I   I   c and
-I   I   I   d and
+I   I   c and
+I   I   d and
 I   I   e"
             .to_string())
     );
@@ -81,16 +81,15 @@ I   I   <= 1000 then end"#
     assert_eq!(
         ts("local a = fn1(b, c, d) or fn2(c, d, e) or fn3(d, e, c) and c and d and e"),
         Ok("local a = fn1(b, c, d)
-I   I   or fn2(c, d, e)
+I   or fn2(c, d, e)
 I   or fn3(d, e, c) and c
-I   I   I   and d
-I   I   and e"
+I   I   and d and e"
             .to_string())
     );
     assert_eq!(
         ts("local a = fn1(b, c, d) or fn2(c, d, e) or fn3(d, e, c) and (c and d and e)"),
         Ok("local a = fn1(b, c, d)
-I   I   or fn2(c, d, e)
+I   or fn2(c, d, e)
 I   or fn3(d, e, c)
 I   I   and (c and d and e)"
             .to_string())
@@ -122,6 +121,65 @@ I   or fn3(d, e, c) and c and d and e"
         ts("local a = fn1(b, c, d) or fn2(c, d, e) or fn3(d, e, c) and (c and d and e)"),
         Ok("local a = fn1(b, c, d) or fn2(c, d, e)
 I   or fn3(d, e, c) and (c and d and e)"
+            .to_string())
+    );
+}
+
+#[test]
+fn test_binary_op_same() {
+    let cfg = Config {
+        // remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        format_type_binary_op: Some(1),
+        max_width: Some(50),
+        enable_oneline_binary_op: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local a = 'abcdefg1' .. 'abcdefg2' .. 'abcdefg3' .. 'abcdefg4' .. 'abcdefg5' .. 'abcdefg6' .. 'abcdefg7'"),
+        Ok(r#"local a = 'abcdefg1' .. 'abcdefg2' .. 'abcdefg3'
+I   .. 'abcdefg4' .. 'abcdefg5' .. 'abcdefg6'
+I   .. 'abcdefg7'"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        // remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        format_type_binary_op: Some(1),
+        max_width: Some(40),
+        enable_oneline_binary_op: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local a = 'abcdefg1' .. 'abcdefg2' .. 'abcdefg3' .. 'abcdefg4' .. 'abcdefg5' .. 'abcdefg6' .. 'abcdefg7'"),
+        Ok(r#"local a = 'abcdefg1' .. 'abcdefg2'
+I   .. 'abcdefg3' .. 'abcdefg4'
+I   .. 'abcdefg5' .. 'abcdefg6'
+I   .. 'abcdefg7'"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        // remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        format_type_binary_op: Some(1),
+        max_width: Some(33),
+        enable_oneline_binary_op: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local a = 'abcdefgh' .. 'abcdefgh' .. 'abcdefgh' .. 'abcdefgh' .. 'abcdefgh' .. 'abcdefgh' .. 'abcdefgh'"),
+        Ok(r#"local a = 'abcdefgh'
+I   .. 'abcdefgh' .. 'abcdefgh'
+I   .. 'abcdefgh' .. 'abcdefgh'
+I   .. 'abcdefgh' .. 'abcdefgh'"#
             .to_string())
     );
 }

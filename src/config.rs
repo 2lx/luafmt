@@ -317,14 +317,15 @@ impl fmt::Display for Config {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct State {
     pub indent_level: isize,
+    pub stack_indent: Vec<Option<&'static str>>,
     pub function_nested_level: isize,
 }
 
 impl State {
     pub const fn default() -> Self {
-        State { indent_level: 0, function_nested_level: 0 }
+        State { indent_level: 0, stack_indent: Vec::new(), function_nested_level: 0, }
     }
 }
