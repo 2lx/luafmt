@@ -419,17 +419,18 @@ impl ConfiguredWrite for Node {
             FnMethodCall(_, locs, n1, n2) => {
                 let mut nl = cfg.format_type_method_call == Some(1);
                 if nl && cfg.enable_oneline_method_call == Some(true) {
-                    let mut buffer = String::new();
-
-                    // if it fits, print method name on one line
-                    if n1.configured_write(&mut buffer, &cfg, buf, state) == Ok(())
-                      && util::get_len_after_newline(f, cfg) + buffer.len() + 2 < cfg.max_width.unwrap() {
+                    if test_oneline!(f, cfg, buf, state, Str(":"), Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2).is_some() {
                         nl = false;
                     }
                 }
 
-                cfg_write!(f, cfg, buf, state, NewLineDecor(Hint(&Loc(0, 0), ""), nl), ":", Hint(&locs[0], ""), n1,
-                           Hint(&locs[1], ""), n2)
+                if cfg.indent_method_call == Some(true) {
+                    cfg_write!(f, cfg, buf, state, IndentIncDecor(None), NewLineDecor(Hint(&Loc(0, 0), ""), nl), ":",
+                               Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2, IndentDecDecor())
+                } else {
+                    cfg_write!(f, cfg, buf, state, NewLineDecor(Hint(&Loc(0, 0), ""), nl), ":", Hint(&locs[0], ""), n1,
+                               Hint(&locs[1], ""), n2)
+                }
             }
             ParList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n),

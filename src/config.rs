@@ -49,6 +49,7 @@ pub struct Config {
     pub indent_first_oneline_comment: Option<bool>,
     pub indent_first_multiline_comment: Option<bool>,
     pub indent_every_statement: Option<bool>,
+    pub indent_method_call: Option<bool>,
 
     // format
     pub format_type_do_end: Option<usize>,
@@ -103,6 +104,7 @@ impl Config {
             indent_multiline_comments: None,
             indent_first_oneline_comment: None,
             indent_first_multiline_comment: None,
+            indent_method_call: None,
 
             // format
             format_type_do_end: None,
@@ -170,6 +172,7 @@ impl Config {
             "indent_multiline_comments" => set_param_value_as!(self.indent_multiline_comments, bool),
             "indent_first_oneline_comment" => set_param_value_as!(self.indent_first_oneline_comment, bool),
             "indent_first_multiline_comment" => set_param_value_as!(self.indent_first_multiline_comment, bool),
+            "indent_method_call" => set_param_value_as!(self.indent_method_call, bool),
 
             // format
             "format_type_do_end" => set_param_value_as!(self.format_type_do_end, usize),
@@ -285,6 +288,7 @@ impl fmt::Display for Config {
         print_opt!(self.indent_multiline_comments, "indent_multiline_comments");
         print_opt!(self.indent_first_oneline_comment, "indent_first_oneline_comment");
         print_opt!(self.indent_first_multiline_comment, "indent_first_multiline_comment");
+        print_opt!(self.indent_method_call, "indent_method_call");
 
         // format
         print_opt!(self.format_type_do_end, "format_type_do_end");
