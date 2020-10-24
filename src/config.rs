@@ -59,6 +59,7 @@ pub struct Config {
     pub newline_format_if: Option<usize>,
     pub newline_format_repeat_until: Option<usize>,
     pub newline_format_table_constructor: Option<usize>,
+    pub newline_format_table_field: Option<usize>,
     pub newline_format_while: Option<usize>,
     pub newline_format_binary_op: Option<usize>,
     pub newline_format_method_call: Option<usize>,
@@ -75,7 +76,8 @@ pub struct Config {
 
     // oneline
     pub enable_oneline_binary_op: Option<bool>,
-    pub enable_oneline_table: Option<bool>,
+    pub enable_oneline_table_constructor: Option<bool>,
+    pub enable_oneline_table_field: Option<bool>,
     pub enable_oneline_if: Option<bool>,
     pub enable_oneline_top_level_function: Option<bool>,
     pub enable_oneline_scoped_function: Option<bool>,
@@ -117,6 +119,7 @@ impl Config {
             newline_format_if: None,
             newline_format_repeat_until: None,
             newline_format_table_constructor: None,
+            newline_format_table_field: None,
             newline_format_while: None,
             newline_format_binary_op: None,
             newline_format_method_call: None,
@@ -131,7 +134,8 @@ impl Config {
 
             // oneline
             enable_oneline_binary_op: None,
-            enable_oneline_table: None,
+            enable_oneline_table_constructor: None,
+            enable_oneline_table_field: None,
             enable_oneline_if: None,
             enable_oneline_top_level_function: None,
             enable_oneline_scoped_function: None,
@@ -188,6 +192,7 @@ impl Config {
             "newline_format_if" => set_param_value_as!(self.newline_format_if, usize),
             "newline_format_repeat_until" => set_param_value_as!(self.newline_format_repeat_until, usize),
             "newline_format_table_constructor" => set_param_value_as!(self.newline_format_table_constructor, usize),
+            "newline_format_table_field" => set_param_value_as!(self.newline_format_table_field, usize),
             "newline_format_while" => set_param_value_as!(self.newline_format_while, usize),
             "newline_format_binary_op" => set_param_value_as!(self.newline_format_binary_op, usize),
             "newline_format_method_call" => set_param_value_as!(self.newline_format_method_call, usize),
@@ -202,7 +207,8 @@ impl Config {
 
             // oneline
             "enable_oneline_binary_op" => set_param_value_as!(self.enable_oneline_binary_op, bool),
-            "enable_oneline_table" => set_param_value_as!(self.enable_oneline_table, bool),
+            "enable_oneline_table_constructor" => set_param_value_as!(self.enable_oneline_table_constructor, bool),
+            "enable_oneline_table_field" => set_param_value_as!(self.enable_oneline_table_field, bool),
             "enable_oneline_if" => set_param_value_as!(self.enable_oneline_if, bool),
             "enable_oneline_top_level_function" => set_param_value_as!(self.enable_oneline_top_level_function, bool),
             "enable_oneline_scoped_function" => set_param_value_as!(self.enable_oneline_scoped_function, bool),
@@ -307,6 +313,7 @@ impl fmt::Display for Config {
         print_opt!(self.newline_format_if, "newline_format_if");
         print_opt!(self.newline_format_repeat_until, "newline_format_repeat_until");
         print_opt!(self.newline_format_table_constructor, "newline_format_table_constructor");
+        print_opt!(self.newline_format_table_field, "newline_format_table_field");
         print_opt!(self.newline_format_while, "newline_format_while");
         print_opt!(self.newline_format_binary_op, "newline_format_binary_op");
         print_opt!(self.newline_format_method_call, "newline_format_method_call");
@@ -321,7 +328,8 @@ impl fmt::Display for Config {
 
         // oneline
         print_opt!(self.enable_oneline_binary_op, "enable_oneline_binary_op");
-        print_opt!(self.enable_oneline_table, "enable_oneline_table");
+        print_opt!(self.enable_oneline_table_constructor, "enable_oneline_table_constructor");
+        print_opt!(self.enable_oneline_table_field, "enable_oneline_table_field");
         print_opt!(self.enable_oneline_if, "enable_oneline_if");
         print_opt!(self.enable_oneline_top_level_function, "enable_oneline_top_level_function");
         print_opt!(self.enable_oneline_scoped_function, "enable_oneline_scoped_function");

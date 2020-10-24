@@ -190,6 +190,7 @@ fn test_table() {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
         newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -227,8 +228,9 @@ I   e
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
         newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
         max_width: Some(50),
-        enable_oneline_table: Some(true),
+        enable_oneline_table_constructor: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -249,8 +251,9 @@ I   e
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
         newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
         max_width: Some(27),
-        enable_oneline_table: Some(true),
+        enable_oneline_table_constructor: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -285,8 +288,9 @@ I   e
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
         newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
         max_width: Some(27),
-        enable_oneline_table: Some(true),
+        enable_oneline_table_constructor: Some(true),
         field_separator: Some(";".to_string()),
         write_trailing_field_separator: Some(true),
         ..Config::default()
@@ -310,7 +314,7 @@ I   c={
 I   I   1;
 I   I   2;
 I   I   3;
-I   I   {a=1; b=2};
+I   I   {a=1; b=2;};
 I   I   5;
 I   };
 I   d = {};
@@ -322,8 +326,41 @@ I   e;
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(2),
-        max_width: Some(27),
+        newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
+        enable_oneline_table_constructor: Some(true),
+        enable_oneline_table_field: Some(true),
+        max_width: Some(28),
+        field_separator: Some(";".to_string()),
+        write_trailing_field_separator: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {a=3; b=23-1; c=a;
+}"#
+        .to_string())
+    );
+    assert_eq!(
+        ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
+        Ok(r#"local a = { b = 123;
+I   c={1; 2; 3; {a=1; b=2;};
+I   I   5;
+I   }; d = {}; e;
+}"#
+        .to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        // newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
+        // enable_oneline_table_constructor: Some(true),
+        enable_oneline_table_field: Some(true),
+        max_width: Some(28),
         field_separator: Some(";".to_string()),
         write_trailing_field_separator: Some(true),
         ..Config::default()
@@ -341,6 +378,33 @@ I   e;
         Ok(r#"local a = { b = 123;
 I   c={1; 2; 3; {a=1; b=2;};
 I   I   5;}; d = {}; e;}"#
+        .to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        // newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
+        // enable_oneline_table_constructor: Some(true),
+        enable_oneline_table_field: Some(true),
+        max_width: Some(35),
+        field_separator: Some(";".to_string()),
+        write_trailing_field_separator: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {a=3; b=23-1; c=a;}"#
+        .to_string())
+    );
+    assert_eq!(
+        ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
+        Ok(r#"local a = { b = 123;
+I   c={1; 2; 3; {a=1; b=2;}; 5;};
+I   d = {}; e;}"#
         .to_string())
     );
 }
