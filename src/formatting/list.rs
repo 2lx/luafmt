@@ -1,6 +1,5 @@
 use super::decoration::*;
 use super::loc_hint::*;
-use super::util::*;
 use crate::config::*;
 use crate::parser::common::*;
 use crate::{cfg_write, cfg_write_helper};
@@ -8,7 +7,6 @@ use std::fmt::Write;
 
 pub trait NoSepListItem<'a, Node> {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str;
-    fn list_item_suffix_hint(&self, cfg: &'a Config) -> &'a str;
     fn need_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
     fn need_first_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
 }
@@ -19,14 +17,11 @@ pub trait SepListOfItems<Node> {
     fn separator(&self, cfg: &Config) -> Option<String>;
     fn trailing_separator(&self, cfg: &Config) -> Option<bool>;
     fn need_newlines(&self, cfg: &Config) -> bool;
-    fn need_indent(&self, cfg: &Config) -> bool;
 }
 
 pub trait ListOfItems<Node> {
     fn items(&self) -> Option<&Vec<(Loc, Node)>>;
-    fn element_prefix_hint(&self) -> &str;
     fn need_newlines(&self, cfg: &Config) -> bool;
-    fn need_indent(&self, cfg: &Config) -> bool;
 }
 
 pub fn cfg_write_sep_list<'a, 'b, 'c, 'n: 'a + 'b + 'c, Node, Hint>(
@@ -52,9 +47,7 @@ where
 
             let first = &items[0];
             let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
-            let need_indent = list_node.need_indent(cfg);
-            cfg_write!(f, cfg, buf, state, If(need_indent, &IncIndent(None)),
-                       IfNewLine(need_newline, Hint::new(&first.0, "")), first.1,
+            cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&first.0, "")), first.1,
                        Hint::new(&first.2, ""))?;
 
             for i in 1..items.len() {
@@ -71,7 +64,6 @@ where
             if trailing_sep.is_none() && !last.3.is_empty() || trailing_sep == Some(true) {
                 write!(f, "{}", get_sep(&last))?;
             }
-            cfg_write!(f, cfg, buf, state, If(need_indent, &DecIndent()))?;
         }
         _ => {}
     }
@@ -94,20 +86,14 @@ where
             let first = &items[0];
 
             let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
-            let need_indent = list_node.need_indent(cfg);
-            cfg_write!(f, cfg, buf, state, If(need_indent, &IncIndent(None)),
-                       IfNewLine(need_newline, Hint::new(&first.0, "")), first.1)?;
+            cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&first.0, "")), first.1)?;
 
             for i in 1..items.len() {
-                let suffix = items[i - 1].1.list_item_suffix_hint(cfg);
-                let prefix = items[i].1.list_item_prefix_hint(cfg);
-                let hint = longest_hint(prefix, suffix);
-
+                let hint = items[i].1.list_item_prefix_hint(cfg);
                 let need_newline = list_node.need_newlines(cfg) && items[i].1.need_newline(list_node, f, cfg, buf, state);
+
                 cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&items[i].0, hint)), items[i].1)?;
             }
-
-            cfg_write!(f, cfg, buf, state, If(need_indent, &DecIndent()))?;
         }
         _ => {}
     }

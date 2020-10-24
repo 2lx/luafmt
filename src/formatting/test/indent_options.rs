@@ -552,6 +552,23 @@ I   }, d = {}, e
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
+        ts("local a = {}"),
+        Ok(r#"local a = {}"#
+            .to_string())
+    );
+    assert_eq!(
+        ts("local a = {a}"),
+        Ok(r#"local a = {
+I   a}"#
+            .to_string())
+    );
+    assert_eq!(
+        ts("local a = {a=3}"),
+        Ok(r#"local a = {
+I   a=3}"#
+            .to_string())
+    );
+    assert_eq!(
         ts("local a = {a=3, b=23-1, c=a}"),
         Ok(r#"local a = {
 I   a=3,
@@ -974,7 +991,6 @@ print(h)"#.to_string())
 
 #[test]
 fn test_indent_exp_list() {
-    // multiline and oneline all
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         newline_format_statement: Some(1),
@@ -982,6 +998,56 @@ fn test_indent_exp_list() {
 
         indent_exp_list: Some(true),
         indent_table_suffix: Some(true),
+        indent_one_item_exp_list: Some(true),
+        newline_format_exp_list: Some(1),
+        enable_oneline_exp_list: Some(true),
+
+        newline_format_table_suffix: Some(1),
+        enable_oneline_table_suffix: Some(true),
+        max_width: Some(50),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"value = class(function()
+    self.a = 1
+    self.b = 2
+end)
+local a = b"#),
+        Ok(r#"value = class(function()
+I   I   I   self.a = 1
+I   I   I   self.b = 2
+I   I   end)
+local a = b"#.to_string())
+    );
+    assert_eq!(
+        ts(r#"for a, b, c in fn.field.field:method(), b.field.field:method():method().field, field.field:method() do end"#),
+        Ok(r#"for a, b, c in fn.field.field:method(),
+I   b.field.field:method():method().field,
+I   field.field:method() do end"#.to_string())
+    );
+    assert_eq!(
+        ts(r#"return fn.field.field:method(), b.field.field:method():method().field, field.field:method()"#),
+        Ok(r#"return fn.field.field:method(),
+I   b.field.field:method():method().field,
+I   field.field:method()"#.to_string())
+    );
+    assert_eq!(
+        ts(r#"return fn.field.field:method(), b.field.field:method():method().field, field.field:method();"#),
+        Ok(r#"return fn.field.field:method(),
+I   b.field.field:method():method().field,
+I   field.field:method();"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        newline_format_statement: Some(1),
+        newline_format_function: Some(1),
+
+        indent_exp_list: Some(true),
+        indent_table_suffix: Some(true),
+        // indent_one_item_exp_list: Some(true),
         newline_format_exp_list: Some(1),
         enable_oneline_exp_list: Some(true),
 
@@ -1000,9 +1066,9 @@ local a = b"#;
     assert_eq!(
         ts(source),
         Ok(r#"value = class(function()
-I   I   I   self.a = 1
-I   I   I   self.b = 2
-I   I   end)
+I   self.a = 1
+I   self.b = 2
+end)
 local a = b"#.to_string())
     );
 }

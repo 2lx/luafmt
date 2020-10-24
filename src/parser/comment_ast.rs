@@ -27,25 +27,11 @@ impl list::ListOfItems<Node> for Node {
         }
     }
 
-    fn element_prefix_hint(&self) -> &str {
-        // use Node::*;
-        match self {
-            _ => "",
-        }
-    }
-
     fn need_newlines(&self, cfg: &Config) -> bool {
         use Node::*;
         match self {
             CommentList(..) =>
                 cfg.newline_format_oneline_comment == Some(1) || cfg.newline_format_multiline_comment == Some(1),
-            _ => false,
-        }
-    }
-
-    fn need_indent(&self, _cfg: &Config) -> bool {
-        // use Node::*;
-        match self {
             _ => false,
         }
     }
@@ -56,17 +42,6 @@ impl<'a> list::NoSepListItem<'a, Node> for Node {
         use Node::*;
         match self {
             MultiLineComment(_, _, _) | OneLineComment(_, _) => match cfg.hint_before_comment.as_ref() {
-                Some(s) => s,
-                None => "",
-            },
-            _ => "",
-        }
-    }
-
-    fn list_item_suffix_hint(&self, cfg: &'a Config) -> &'a str {
-        use Node::*;
-        match self {
-            MultiLineComment(..) => match cfg.hint_after_multiline_comment.as_ref() {
                 Some(s) => s,
                 None => "",
             },
