@@ -11,7 +11,7 @@ replace_zero_spaces_with_hint = true
 
 -- indent
 indentation_string = "    "
-indent_every_statement = true
+newline_format_statement = 1
 indent_oneline_comments = true
 -- indent_multiline_comments = false
 indent_first_oneline_comment = true

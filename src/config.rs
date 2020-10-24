@@ -48,11 +48,11 @@ pub struct Config {
     pub indent_multiline_comments: Option<bool>,
     pub indent_first_oneline_comment: Option<bool>,
     pub indent_first_multiline_comment: Option<bool>,
-    pub indent_every_statement: Option<bool>,
     pub indent_method_call: Option<bool>,
     pub indent_table_dot_index: Option<bool>,
 
     // format
+    pub newline_format_statement: Option<usize>,
     pub newline_format_do_end: Option<usize>,
     pub newline_format_for: Option<usize>,
     pub newline_format_function: Option<usize>,
@@ -104,7 +104,6 @@ impl Config {
 
             // indentation
             indentation_string: None,
-            indent_every_statement: None,
             indent_oneline_comments: None,
             indent_multiline_comments: None,
             indent_first_oneline_comment: None,
@@ -113,6 +112,7 @@ impl Config {
             indent_table_dot_index: None,
 
             // format
+            newline_format_statement: None,
             newline_format_do_end: None,
             newline_format_for: None,
             newline_format_function: None,
@@ -177,7 +177,6 @@ impl Config {
 
             // indentation
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
-            "indent_every_statement" => set_param_value_as!(self.indent_every_statement, bool),
             "indent_oneline_comments" => set_param_value_as!(self.indent_oneline_comments, bool),
             "indent_multiline_comments" => set_param_value_as!(self.indent_multiline_comments, bool),
             "indent_first_oneline_comment" => set_param_value_as!(self.indent_first_oneline_comment, bool),
@@ -186,6 +185,7 @@ impl Config {
             "indent_table_dot_index" => set_param_value_as!(self.indent_table_dot_index, bool),
 
             // format
+            "newline_format_statement" => set_param_value_as!(self.newline_format_statement, usize),
             "newline_format_do_end" => set_param_value_as!(self.newline_format_do_end, usize),
             "newline_format_for" => set_param_value_as!(self.newline_format_for, usize),
             "newline_format_function" => set_param_value_as!(self.newline_format_function, usize),
@@ -298,7 +298,6 @@ impl fmt::Display for Config {
 
         // indentation
         print_opt!(self.indentation_string, "indentation_string");
-        print_opt!(self.indent_every_statement, "indent_every_statement");
         print_opt!(self.indent_oneline_comments, "indent_oneline_comments");
         print_opt!(self.indent_multiline_comments, "indent_multiline_comments");
         print_opt!(self.indent_first_oneline_comment, "indent_first_oneline_comment");
@@ -307,6 +306,7 @@ impl fmt::Display for Config {
         print_opt!(self.indent_table_dot_index, "indent_table_dot_index");
 
         // format
+        print_opt!(self.newline_format_statement, "newline_format_statement");
         print_opt!(self.newline_format_do_end, "newline_format_do_end");
         print_opt!(self.newline_format_for, "newline_format_for");
         print_opt!(self.newline_format_function, "newline_format_function");

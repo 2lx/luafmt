@@ -536,7 +536,7 @@ fn test_function() {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
         newline_format_function: Some(1),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -567,7 +567,7 @@ end"#
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
         newline_format_function: Some(1),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         max_width: Some(120),
         enable_oneline_top_level_function: Some(true),
         ..Config::default()
@@ -595,7 +595,7 @@ end"#
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
         newline_format_function: Some(1),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         max_width: Some(120),
         enable_oneline_scoped_function: Some(true),
         ..Config::default()
@@ -624,7 +624,7 @@ end"#
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
         newline_format_function: Some(1),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         max_width: Some(120),
         enable_oneline_top_level_function: Some(true),
         enable_oneline_scoped_function: Some(true),

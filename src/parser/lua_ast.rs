@@ -129,7 +129,8 @@ impl<'a> list::NoSepListItem<'a> for Node {
             | IfThenBElseIf(..) | IfThenElseIfElse(..) | IfThenBElseIfElse(..) | IfThenElseIfElseB(..)
             | IfThenBElseIfElseB(..) | ForInt(..) | ForIntB(..) | ForIntStep(..) | ForIntStepB(..)
             | ForRange(..) | ForRangeB(..) | FuncDecl(..) | LocalFuncDecl(..) | Var(..) | VarRoundSuffix(..)
-            | RoundBrackets(..) => cfg.indent_every_statement == Some(true),
+            | RoundBrackets(..) => cfg.newline_format_statement.is_some(),
+
             ElseIfThen(..) | ElseIfThenB(..) => cfg.newline_format_if == Some(1),
             FieldNamedBracket(..) | FieldNamed(..) | FieldSequential(..) => {
                 match cfg.newline_format_table_field {
@@ -685,7 +686,7 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "return", Hint(&locs[0], " "), n, Hint(&locs[1], ""), ";")
             }
             StatsRetStat(_, locs, n1, n2) => {
-                let nl = cfg.indent_every_statement == Some(true);
+                let nl = cfg.newline_format_statement.is_some();
                 cfg_write!(f, cfg, buf, state, n1, IfNewLine(nl, Hint(&locs[0], " ")), n2)
             }
             Chunk(locl, n, locr) => {

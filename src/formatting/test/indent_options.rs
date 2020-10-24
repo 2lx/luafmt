@@ -12,12 +12,12 @@ fn test_indent_do_end() {
     );
 
     let cfg =
-        Config { indentation_string: Some("    ".to_string()), newline_format_do_end: Some(1), ..Config::default() };
+        Config { indentation_string: Some("I   ".to_string()), newline_format_do_end: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(
         ts("do print(a) print(b) end"),
         Ok(r#"do
-    print(a) print(b)
+I   print(a) print(b)
 end"#
             .to_string())
     );
@@ -25,7 +25,7 @@ end"#
     assert_eq!(
         ts("do--comm\n   print(a) print(b) --[[123]]end"),
         Ok(r#"do--comm
-    print(a) print(b) --[[123]]
+I   print(a) print(b) --[[123]]
 end"#
             .to_string())
     );
@@ -36,7 +36,7 @@ end"#
     print(b) --[[123]]
     end"#),
         Ok(r#"do--comm
-    print(a)
+I   print(a)
     print(b) --[[123]]
 end"#
             .to_string())
@@ -48,7 +48,7 @@ end"#
     --123
     --[[345]]end"#),
         Ok(r#"do --[[123]]
-    print(a)
+I   print(a)
     print(b) --[[123]]
     --123
     --[[345]]
@@ -58,7 +58,7 @@ end"#
 }
 
 #[test]
-fn test_indent_every_statement() {
+fn test_newline_format_statement() {
     let cfg = Config::default();
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(ts("do print(a) print(b) print(c) end"), Ok("do print(a) print(b) print(c) end".to_string()));
@@ -73,7 +73,7 @@ fn test_indent_every_statement() {
 
     let cfg = Config {
         indentation_string: Some("INDENT".to_string()),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -188,7 +188,7 @@ fn test_indent_for() {
     let cfg = Config {
         indentation_string: Some("INDENT".to_string()),
         newline_format_for: Some(1),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -210,7 +210,8 @@ fn test_indent_if_then_else() {
         Ok("if a > b --comment\n then print(a) print(b) end".to_string())
     );
 
-    let cfg = Config { indentation_string: Some("INDENT".to_string()), newline_format_if: Some(1), ..Config::default() };
+    let cfg =
+        Config { indentation_string: Some("INDENT".to_string()), newline_format_if: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(
         ts(
@@ -346,8 +347,11 @@ fn test_indent_function() {
         Ok("local function fn() --123\nprint(a) print(b) print(c) --[[345]] end".to_string())
     );
 
-    let cfg =
-        Config { indentation_string: Some("INDENT".to_string()), newline_format_function: Some(1), ..Config::default() };
+    let cfg = Config {
+        indentation_string: Some("INDENT".to_string()),
+        newline_format_function: Some(1),
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -368,7 +372,7 @@ end"#
     );
 
     let cfg = Config {
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         indentation_string: Some("INDENT".to_string()),
         newline_format_function: Some(1),
         ..Config::default()
@@ -413,7 +417,8 @@ INDENTself._value = value
 INDENTself._compare_values = compare_values
 INDENTself._print_value = print_value
 end)
-"#.to_string())
+"#
+        .to_string())
     );
 }
 
@@ -437,16 +442,19 @@ fn test_indent_repeat_until() {
     assert_eq!(
         ts("repeat --abc\n until --[[123]] a>3"),
         Ok(r#"repeat --abc
-until --[[123]] a>3"#.to_string()));
+until --[[123]] a>3"#
+            .to_string())
+    );
     assert_eq!(
         ts("repeat --abc\n print(a) print(b) print(c) --123\n until --[[123]] a>3"),
         Ok(r#"repeat --abc
 INDENTprint(a) print(b) print(c) --123
-until --[[123]] a>3"#.to_string())
+until --[[123]] a>3"#
+            .to_string())
     );
 
     let cfg = Config {
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         indentation_string: Some("INDENT".to_string()),
         newline_format_repeat_until: Some(1),
         ..Config::default()
@@ -458,9 +466,9 @@ until --[[123]] a>3"#.to_string())
 INDENTprint(a)
 INDENTprint(b)
 INDENTprint(c) --123
-until --[[123]] a>3"#.to_string())
+until --[[123]] a>3"#
+            .to_string())
     );
-
 }
 
 #[test]
@@ -473,26 +481,21 @@ fn test_indent_while_do() {
         Ok("while a < 3 --[[123]] do --234\n print(a) print(b) --[[345]] print(c) --456\n end".to_string())
     );
 
-    let cfg = Config {
-        indentation_string: Some("INDENT".to_string()),
-        newline_format_while: Some(1),
-        ..Config::default()
-    };
+    let cfg =
+        Config { indentation_string: Some("INDENT".to_string()), newline_format_while: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(
-        ts("while a < 3 --123\n do --234\n end"),
-        Ok("while a < 3 --123\n do --234\nend".to_string())
-    );
+    assert_eq!(ts("while a < 3 --123\n do --234\n end"), Ok("while a < 3 --123\n do --234\nend".to_string()));
     assert_eq!(
         ts("while a < 3 --[[123]] do --234\n print(a) print(b) --[[345]] print(c) --456\n end"),
         Ok(r#"while a < 3 --[[123]] do --234
 INDENTprint(a) print(b) --[[345]] print(c) --456
-end"#.to_string())
+end"#
+            .to_string())
     );
 
     let cfg = Config {
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         indentation_string: Some("INDENT".to_string()),
         newline_format_while: Some(1),
         ..Config::default()
@@ -504,7 +507,8 @@ end"#.to_string())
 INDENTprint(a)
 INDENTprint(b) --[[345]]
 INDENTprint(c) --456
-end"#.to_string())
+end"#
+            .to_string())
     );
 }
 
@@ -525,15 +529,19 @@ fn test_indent_table() {
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"),
-               Ok(r#"local a = {a=3, b=23-1, c=a
-}"#.to_string()));
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {a=3, b=23-1, c=a
+}"#
+        .to_string())
+    );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = { b = 123, c={1, 2, 3, {a=1, b=2
 I   I   }, 5
 I   }, d = {}, e
-}"#.to_string())
+}"#
+        .to_string())
     );
 
     let cfg = Config {
@@ -543,11 +551,14 @@ I   }, d = {}, e
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"),
-               Ok(r#"local a = {
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {
 I   a=3,
 I   b=23-1,
-I   c=a}"#.to_string()));
+I   c=a}"#
+            .to_string())
+    );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e }"),
         Ok(r#"local a = {
@@ -561,7 +572,8 @@ I   I   I   a=1,
 I   I   I   b=2},
 I   I   5},
 I   d = {},
-I   e }"#.to_string())
+I   e }"#
+            .to_string())
     );
 
     let cfg = Config {
@@ -572,12 +584,15 @@ I   e }"#.to_string())
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"),
-               Ok(r#"local a = {
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {
 I   a=3,
 I   b=23-1,
 I   c=a
-}"#.to_string()));
+}"#
+        .to_string())
+    );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = {
@@ -594,13 +609,14 @@ I   I   5
 I   },
 I   d = {},
 I   e
-}"#.to_string())
+}"#
+        .to_string())
     );
 
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         newline_format_table_constructor: Some(1),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -618,8 +634,7 @@ I   e
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"),
-               Ok("local a = { a = 3, b = 23 - 1, c = a }".to_string()));
+    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"), Ok("local a = { a = 3, b = 23 - 1, c = a }".to_string()));
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok("local a = { b = 123, c = { 1, 2, 3, { a = 1, b = 2 }, 5 }, d = { }, e }".to_string())
@@ -635,12 +650,15 @@ I   e
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"),
-               Ok(r#"local a = {
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a = {
 I   a = 3,
 I   b = 23 - 1,
 I   c = a
-}"#.to_string()));
+}"#
+        .to_string())
+    );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = {
@@ -657,16 +675,16 @@ I   I   5
 I   },
 I   d = { },
 I   e
-}"#.to_string())
+}"#
+        .to_string())
     );
-
 }
 
 #[test]
 fn test_indent_all() {
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         newline_format_do_end: Some(1),
         newline_format_for: Some(1),
         newline_format_function: Some(1),
@@ -701,7 +719,7 @@ print(h)"#.to_string())
     // oneline one
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         indent_oneline_comments: Some(true),
         newline_format_do_end: Some(1),
         newline_format_for: Some(1),
@@ -740,7 +758,7 @@ print(h)"#.to_string())
     // oneline both
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         indent_first_oneline_comment: Some(true),
         indent_oneline_comments: Some(true),
         newline_format_do_end: Some(1),
@@ -811,7 +829,7 @@ print(h)"#.to_string())
     // multiline one
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         // indent_first_multiline_comment: Some(true),
         indent_multiline_comments: Some(true),
         newline_format_do_end: Some(1),
@@ -854,7 +872,7 @@ print(h)"#.to_string())
     // multiline both
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         indent_first_multiline_comment: Some(true),
         indent_multiline_comments: Some(true),
         newline_format_do_end: Some(1),
@@ -901,7 +919,7 @@ print(h)"#.to_string())
     // multiline and oneline all
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         indent_first_oneline_comment: Some(true),
         indent_oneline_comments: Some(true),
         indent_first_multiline_comment: Some(true),

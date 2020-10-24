@@ -17,7 +17,7 @@ fn test_load_from_file() {
         remove_spaces_between_tokens: Some(true),
         replace_zero_spaces_with_hint: Some(true),
         indentation_string: Some("    ".to_string()),
-        indent_every_statement: Some(true),
+        newline_format_statement: Some(1),
         indent_oneline_comments: Some(true),
         indent_first_oneline_comment: Some(true),
         newline_format_do_end: Some(1),
