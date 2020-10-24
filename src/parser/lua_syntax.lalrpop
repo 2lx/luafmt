@@ -310,16 +310,6 @@ FunctionCallNoStartsMayEndsPar: Node = {
         => Node::Var(Loc(ls, rs), [Loc(l1, r1)], Box::new(n1), Box::new(n2)),
 }
 
-PrefixNoEndsPar: Node = {
-    VarNoPar,
-}
-
-VarNoPar: Node = {
-    Name,
-    <ls:@L> <n1:Name> <l1:@R> <r1:@L> <n2:VarSuffixListNoEndPar> <rs:@R>
-        => Node::Var(Loc(ls, rs), [Loc(l1, r1)], Box::new(n1), Box::new(n2)),
-}
-
 VarNoExp: Node = {
     Name,
     <ls:@L> <n1:Name> <l1:@R> <r1:@L> <n2:VarSuffixList> <rs:@R>
@@ -354,15 +344,6 @@ VarMayExp: Node = {
 
 VarSuffixList: Node = {
     <ls:@L> <v:TList<VarSuffix>> <rs:@R> => Node::VarSuffixList(Loc(ls, rs), v),
-}
-
-VarSuffixListNoEndPar: Node = {
-    VarSuffixNoEndPar,
-    <ls:@L> <v:TList<VarSuffix>> <l1:@R> <r1:@L> <n:VarSuffixNoEndPar> <rs:@R> => {
-        let mut v = v;
-        v.push((Loc(l1, r1), n));
-        Node::VarSuffixList(Loc(ls, rs), v)
-    },
 }
 
 VarSuffixNoEndPar: Node = {

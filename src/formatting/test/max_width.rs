@@ -841,7 +841,25 @@ fn test_exp_list() {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
         newline_format_exp_list: Some(1),
-        // enable_oneline_exp_list: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"local a = b
+fn(12, "abc", a)"#),
+        Ok(r#"local a = b
+fn(12,
+"abc",
+a)"#
+        .to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_exp_list: Some(1),
+        newline_format_exp_list_first: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -879,6 +897,24 @@ fn(12, "abc", a)"#
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
         newline_format_exp_list: Some(1),
+        newline_format_exp_list_first: Some(1),
+        enable_oneline_exp_list: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"local a = b
+fn(12, "abc", a)"#),
+        Ok(r#"local a = b
+fn(12, "abc", a)"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_exp_list: Some(1),
         enable_oneline_exp_list: Some(true),
         indent_exp_list: Some(true),
         ..Config::default()
@@ -889,6 +925,37 @@ fn(12, "abc", a)"#
         ts(r#"local a = b, "asdasdsad", 12312321
 fn(12, "abc", abvad, {a=12321, b="asdad"})"#),
         Ok(r#"local a = b, "asdasdsad",
+I   12312321
+fn(12, "abc", abvad,
+I   {a=12321, b="asdad"})"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_exp_list: Some(1),
+        newline_format_exp_list_first: Some(1),
+        enable_oneline_exp_list: Some(true),
+        indent_exp_list: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"local a = b, "asdasdsad", 12312321
+fn(12, "abc", abvad, {a=12321, b="asdad"})"#),
+        Ok(r#"local a = b, "asdasdsad",
+I   12312321
+fn(12, "abc", abvad,
+I   {a=12321, b="asdad"})"#
+            .to_string())
+    );
+    assert_eq!(
+        ts(r#"local asdadasdasdasdaasd = b, "asdasdsad", 12312321
+fn(12, "abc", abvad, {a=12321, b="asdad"})"#),
+        Ok(r#"local asdadasdasdasdaasd =
+I   b, "asdasdsad",
 I   12312321
 fn(12, "abc", abvad,
 I   {a=12321, b="asdad"})"#

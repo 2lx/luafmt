@@ -65,6 +65,7 @@ pub struct Config {
     pub newline_format_binary_op: Option<usize>,
     pub newline_format_table_suffix: Option<usize>,
     pub newline_format_exp_list: Option<usize>,
+    pub newline_format_exp_list_first: Option<usize>,
 
     // other
     // replace_tabs_with_spaces: Option<String>,
@@ -125,6 +126,7 @@ impl Config {
             newline_format_binary_op: None,
             newline_format_table_suffix: None,
             newline_format_exp_list: None,
+            newline_format_exp_list_first: None,
 
             // other
             field_separator: None,
@@ -198,6 +200,7 @@ impl Config {
             "newline_format_binary_op" => set_param_value_as!(self.newline_format_binary_op, usize),
             "newline_format_table_suffix" => set_param_value_as!(self.newline_format_table_suffix, usize),
             "newline_format_exp_list" => set_param_value_as!(self.newline_format_exp_list, usize),
+            "newline_format_exp_list_first" => set_param_value_as!(self.newline_format_exp_list_first, usize),
 
             // other
             "field_separator" => set_param_value_as!(self.field_separator, String),
@@ -319,6 +322,7 @@ impl fmt::Display for Config {
         print_opt!(self.newline_format_binary_op, "newline_format_binary_op");
         print_opt!(self.newline_format_table_suffix, "newline_format_table_suffix");
         print_opt!(self.newline_format_exp_list, "newline_format_exp_list");
+        print_opt!(self.newline_format_exp_list_first, "newline_format_exp_list_first");
 
         // other
         print_opt!(self.field_separator, "field_separator");

@@ -155,7 +155,7 @@ impl<'a> list::NoSepListItem<'a, Node> for Node {
                 }
                 _ => false
             }
-            ExpList(..) => match cfg.newline_format_exp_list{
+            ExpList(..) => match cfg.newline_format_exp_list_first {
                 Some(1) => match cfg.enable_oneline_exp_list {
                     Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
                     _ => true,
@@ -251,10 +251,9 @@ impl list::ListOfItems<Node> for Node {
         }
     }
 
-    fn need_indent(&self, cfg: &Config) -> bool {
-        use Node::*;
+    fn need_indent(&self, _cfg: &Config) -> bool {
+        // use Node::*;
         match self {
-            VarSuffixList(..) => cfg.indent_table_suffix == Some(true),
             _ => false,
             // _ => true,
         }
@@ -422,12 +421,14 @@ impl ConfiguredWrite for Node {
             TableMember(_, locs, n) => {
                 let mut nl = cfg.newline_format_table_suffix == Some(1);
 
-                if nl && cfg.enable_oneline_table_suffix == Some(true)
+                if nl && cfg.max_width.is_some() && cfg.enable_oneline_table_suffix == Some(true)
                     && test_oneline!(f, cfg, buf, state, ".", Hint(&locs[0], ""), n).is_some() {
                     nl = false;
                 }
 
-                cfg_write!(f, cfg, buf, state, IfNewLine(nl, Hint(&Loc(0, 0), "")), ".", Hint(&locs[0], ""), n)
+                let need_indent = cfg.indent_table_suffix == Some(true);
+                cfg_write!(f, cfg, buf, state, If(need_indent, &IncIndent(None)), IfNewLine(nl, Hint(&Loc(0, 0), "")),
+                           ".", Hint(&locs[0], ""), n, If(need_indent, &DecIndent()))
             }
             ExpList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             NameList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
@@ -456,8 +457,9 @@ impl ConfiguredWrite for Node {
                     }
                 }
 
-                cfg_write!(f, cfg, buf, state, IfNewLine(nl, Hint(&Loc(0, 0), "")), ":", Hint(&locs[0], ""), n1,
-                           Hint(&locs[1], ""), n2)
+                let need_indent = cfg.indent_table_suffix == Some(true);
+                cfg_write!(f, cfg, buf, state, If(need_indent, &IncIndent(None)), IfNewLine(nl, Hint(&Loc(0, 0), "")),
+                           ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2, If(need_indent, &DecIndent()))
             }
             ParList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n),
