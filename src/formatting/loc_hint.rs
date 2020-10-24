@@ -79,8 +79,7 @@ impl ConfiguredWrite for CommentLocHint<'_, '_> {
 impl ConfiguredWrite for SpaceLocHint<'_, '_> {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, _state: &mut State) -> std::fmt::Result {
         if cfg.remove_spaces_between_tokens == Some(true) {
-            write!(f, "{}", self.1)?;
-            return Ok(());
+            return write!(f, "{}", self.1)
         }
 
         write!(f, "{}", &buf[self.0.0..self.0.1])

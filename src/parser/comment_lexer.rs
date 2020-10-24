@@ -158,6 +158,12 @@ fn test_comment_lexer() {
     let tokens = Lexer::new("--[=123]=]\n").collect::<TRes>();
     assert_eq!(tokens, vec!(Ok((0, OneLineComment("[=123]=]"), 11)), Ok((11, EOF, 11))));
 
+    let tokens = Lexer::new("\n\n  --123\n").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, NewLine, 1)), Ok((1, NewLine, 2)), Ok((4, OneLineComment("123"), 10)), Ok((10, EOF, 10)))
+    );
+
     let tokens = Lexer::new("--[=123]=]").collect::<TRes>();
     assert_eq!(tokens, vec!(Ok((0, OneLineComment("[=123]=]"), 10)), Ok((10, EOF, 10))));
 

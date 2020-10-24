@@ -5,7 +5,7 @@ use crate::parser::common::*;
 use crate::{cfg_write, cfg_write_helper};
 use std::fmt::Write;
 
-pub trait NoSepListItem<'a, Node> {
+pub trait AnyListItem<'a, Node> {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str;
     fn need_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
     fn need_first_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
@@ -32,7 +32,7 @@ pub fn cfg_write_sep_list<'a, 'b, 'c, 'n: 'a + 'b + 'c, Node, Hint>(
     list_node: &'n Node,
 ) -> Result<(), core::fmt::Error>
 where
-    Node: ConfiguredWrite + SepListOfItems<Node> + NoSepListItem<'n, Node>,
+    Node: ConfiguredWrite + SepListOfItems<Node> + AnyListItem<'n, Node>,
     Hint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
     match list_node.items() {
@@ -78,7 +78,7 @@ pub fn cfg_write_list_items<'a, 'b, 'n: 'a + 'b, Node, Hint>(
     list_node: &'n Node,
 ) -> Result<(), core::fmt::Error>
 where
-    Node: ConfiguredWrite + ListOfItems<Node> + NoSepListItem<'n, Node>,
+    Node: ConfiguredWrite + ListOfItems<Node> + AnyListItem<'n, Node>,
     Hint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
     match list_node.items() {

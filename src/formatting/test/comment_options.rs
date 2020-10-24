@@ -184,3 +184,219 @@ fn test_eof_hint() {
         Ok("#!/usr/bin/lua\n local  b = {2, 3} for a = 1,--[[  asd ]]  \n  4 do print--1\n (1, 4) end--[=[1232 ]=]\n".to_string())
     );
 }
+
+#[test]
+fn test_end_of_line_and_not() {
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        remove_spaces_between_tokens: Some(true),
+        replace_zero_spaces_with_hint: Some(true),
+        newline_format_oneline_comment: Some(1),
+        // newline_format_first_oneline_comment: Some(1),
+        newline_format_statement: Some(1),
+        indentation_string: Some("I   ".to_string()),
+        newline_format_function: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn()
+    print(a) --123
+
+  --comment1
+    print(b)
+--234
+    print(c) -- end comment
+    print(d)
+end"#),
+        Ok(r#"function fn()
+I   print(a)--123
+
+I   --comment1
+I   print(b)
+I   --234
+I   print(c)-- end comment
+I   print(d)
+end"#.to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        remove_spaces_between_tokens: Some(true),
+        replace_zero_spaces_with_hint: Some(true),
+        newline_format_oneline_comment: Some(1),
+        newline_format_first_oneline_comment: Some(1),
+        newline_format_statement: Some(1),
+        indentation_string: Some("I   ".to_string()),
+        newline_format_function: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn()
+    print(a) --123
+
+  --comment1
+    print(b)
+--234
+    print(c) -- end comment
+    print(d)
+end"#),
+        Ok(r#"function fn()
+I   print(a)
+I   --123
+
+I   --comment1
+I   print(b)
+I   --234
+I   print(c)
+I   -- end comment
+I   print(d)
+end"#.to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        remove_spaces_between_tokens: Some(true),
+        replace_zero_spaces_with_hint: Some(true),
+        // newline_format_multiline_comment: Some(1),
+        // newline_format_first_multiline_comment: Some(1),
+        newline_format_statement: Some(1),
+        indentation_string: Some("I   ".to_string()),
+        newline_format_function: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn()
+    print(a) --[[123]] --[[234]]
+
+  --comment1
+    print(b)
+  --[[234]]
+    print(c) -- end comment
+    print(d) --[[1231]]
+end"#),
+        Ok(r#"function fn()
+I   print(a)--[[123]]--[[234]]
+
+--comment1
+I   print(b)
+--[[234]]
+I   print(c)-- end comment
+I   print(d)--[[1231]]
+end"#.to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        remove_spaces_between_tokens: Some(true),
+        replace_zero_spaces_with_hint: Some(true),
+        newline_format_multiline_comment: Some(1),
+        // newline_format_first_multiline_comment: Some(1),
+        newline_format_statement: Some(1),
+        indentation_string: Some("I   ".to_string()),
+        newline_format_function: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn()
+    print(a) --[[123]] --[[234]]
+
+  --comment1
+    print(b)
+  --[[234]]
+    print(c) -- end comment
+    print(d) --[[1231]]
+end"#),
+        Ok(r#"function fn()
+I   print(a)--[[123]]
+I   --[[234]]
+
+--comment1
+I   print(b)
+I   --[[234]]
+I   print(c)-- end comment
+I   print(d)--[[1231]]
+end"#.to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        remove_spaces_between_tokens: Some(true),
+        replace_zero_spaces_with_hint: Some(true),
+        newline_format_multiline_comment: Some(1),
+        newline_format_first_multiline_comment: Some(1),
+        newline_format_statement: Some(1),
+        indentation_string: Some("I   ".to_string()),
+        newline_format_function: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn()
+    print(a) --[[123]] --[[234]]
+
+  --comment1
+    print(b)
+  --[[234]]
+    print(c) -- end comment
+    print(d) --[[1231]]
+end"#),
+        Ok(r#"function fn()
+I   print(a)
+I   --[[123]]
+I   --[[234]]
+
+--comment1
+I   print(b)
+I   --[[234]]
+I   print(c)-- end comment
+I   print(d)
+--[[1231]]
+end"#.to_string())
+    );
+
+    let cfg = Config {
+        newline_format_oneline_comment: Some(1),
+        newline_format_first_oneline_comment: Some(1),
+        newline_format_multiline_comment: Some(1),
+        newline_format_first_multiline_comment: Some(1),
+        newline_format_statement: Some(1),
+        indentation_string: Some("I   ".to_string()),
+        newline_format_function: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"function fn()
+    print(a) --[[123]] --[[234]]
+
+  --comment1
+    print(b)
+  --[[234]]
+    print(c) -- end comment
+    print(d) --[[1231]]
+end"#),
+        Ok(r#"function fn()
+I   print(a)
+I   --[[123]]
+I   --[[234]]
+
+I   --comment1
+I   print(b)
+I   --[[234]]
+I   print(c)
+I   -- end comment
+I   print(d)
+--[[1231]]
+end"#.to_string())
+    );
+}

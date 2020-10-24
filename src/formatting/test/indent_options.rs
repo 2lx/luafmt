@@ -754,12 +754,12 @@ print(h)"#.to_string())
 --1234
 print(b)
 do
---com
+I     --com
 I     print(c) --1
 I     --2
 I     --3
 I     while a<c do
---135
+I     I     --135
 I     I     print(d)
 I     I     print(e)
 I     I     repeat

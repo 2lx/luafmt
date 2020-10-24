@@ -27,17 +27,16 @@ impl list::ListOfItems<Node> for Node {
         }
     }
 
-    fn need_newlines(&self, cfg: &Config) -> bool {
+    fn need_newlines(&self, _cfg: &Config) -> bool {
         use Node::*;
         match self {
-            CommentList(..) =>
-                cfg.newline_format_oneline_comment == Some(1) || cfg.newline_format_multiline_comment == Some(1),
+            CommentList(..) | VariantList(..) => true,
             _ => false,
         }
     }
 }
 
-impl<'a> list::NoSepListItem<'a, Node> for Node {
+impl<'a> list::AnyListItem<'a, Node> for Node {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
@@ -52,17 +51,14 @@ impl<'a> list::NoSepListItem<'a, Node> for Node {
     fn need_newline(&self, _parent: &Node, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
+            // here we know, that CommentList is not the first item of VariantList
+            CommentList(_, comments) if !comments.is_empty() => match &comments[0] {
+                (_, OneLineComment(..)) => cfg.newline_format_oneline_comment == Some(1),
+                (_, MultiLineComment(..)) => cfg.newline_format_multiline_comment == Some(1),
+                _ => false,
+            }
             OneLineComment(..) => cfg.newline_format_oneline_comment == Some(1),
             MultiLineComment(..) => cfg.newline_format_multiline_comment == Some(1),
-            CommentList(_, comments) if !comments.is_empty() => {
-                // indentation of the first comment, if it is not the first token in the Loc
-                if let (_, OneLineComment(..)) = &comments[0] {
-                    return cfg.newline_format_first_oneline_comment == Some(1);
-                } else if let (_, MultiLineComment(..)) = &comments[0] {
-                    return cfg.newline_format_first_multiline_comment == Some(1);
-                }
-                false
-            }
             _ => false,
         }
     }
@@ -70,8 +66,12 @@ impl<'a> list::NoSepListItem<'a, Node> for Node {
     fn need_first_newline(&self, _parent: &Node, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
-            OneLineComment(..) => cfg.newline_format_first_oneline_comment == Some(1),
-            MultiLineComment(..) => cfg.newline_format_first_multiline_comment == Some(1),
+            // here we know, that CommentList is the first item of VariantList
+            CommentList(_, comments) if !comments.is_empty() => match &comments[0] {
+                (_, OneLineComment(..)) => cfg.newline_format_first_oneline_comment == Some(1),
+                (_, MultiLineComment(..)) => cfg.newline_format_first_multiline_comment == Some(1),
+                _ => false,
+            }
             _ => false,
         }
     }
@@ -86,9 +86,7 @@ impl ConfiguredWrite for Node {
         let cfg_write_list_items = list::cfg_write_list_items::<Node, SpaceLocHint>;
 
         match self {
-            Chunk(locl, n, locr) => {
-                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, ""))
-            }
+            Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),
             VariantList(_, variants) => {
                 if cfg.remove_single_newlines == Some(true) && variants.len() == 1 {
                     if let (_, NewLineList(_, newlines)) = &variants[0] {

@@ -103,7 +103,7 @@ pub enum Node {
     SheBang(Loc, String),
 }
 
-impl<'a> list::NoSepListItem<'a, Node> for Node {
+impl<'a> list::AnyListItem<'a, Node> for Node {
     fn list_item_prefix_hint(&self, _: &'a Config) -> &'a str {
         use Node::*;
         match self {
