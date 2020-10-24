@@ -6,7 +6,7 @@ fn test_binary_ops() {
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_binary_op: Some(1),
+        newline_format_binary_op: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -35,7 +35,7 @@ I   I   and e"
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_binary_op: Some(2),
+        newline_format_binary_op: Some(2),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -64,7 +64,7 @@ I   I   e"
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_binary_op: Some(1),
+        newline_format_binary_op: Some(1),
         max_width: Some(30),
         enable_oneline_binary_op: Some(true),
         ..Config::default()
@@ -98,7 +98,7 @@ I   I   and (c and d and e)"
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_binary_op: Some(1),
+        newline_format_binary_op: Some(1),
         max_width: Some(50),
         enable_oneline_binary_op: Some(true),
         ..Config::default()
@@ -130,7 +130,7 @@ fn test_binary_op_same() {
     let cfg = Config {
         // remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_binary_op: Some(1),
+        newline_format_binary_op: Some(1),
         max_width: Some(50),
         enable_oneline_binary_op: Some(true),
         ..Config::default()
@@ -148,7 +148,7 @@ I   .. 'abcdefg7'"#
     let cfg = Config {
         // remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_binary_op: Some(1),
+        newline_format_binary_op: Some(1),
         max_width: Some(40),
         enable_oneline_binary_op: Some(true),
         ..Config::default()
@@ -167,7 +167,7 @@ I   .. 'abcdefg7'"#
     let cfg = Config {
         // remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_binary_op: Some(1),
+        newline_format_binary_op: Some(1),
         max_width: Some(33),
         enable_oneline_binary_op: Some(true),
         ..Config::default()
@@ -189,7 +189,7 @@ fn test_table() {
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_table: Some(1),
+        newline_format_table_constructor: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -226,7 +226,7 @@ I   e
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_table: Some(1),
+        newline_format_table_constructor: Some(1),
         max_width: Some(50),
         enable_oneline_table: Some(true),
         ..Config::default()
@@ -248,7 +248,7 @@ I   e
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_table: Some(1),
+        newline_format_table_constructor: Some(1),
         max_width: Some(27),
         enable_oneline_table: Some(true),
         ..Config::default()
@@ -284,7 +284,7 @@ I   e
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_table: Some(1),
+        newline_format_table_constructor: Some(1),
         max_width: Some(27),
         enable_oneline_table: Some(true),
         field_separator: Some(";".to_string()),
@@ -322,7 +322,7 @@ I   e;
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_table: Some(2),
+        newline_format_table_constructor: Some(2),
         max_width: Some(27),
         field_separator: Some(";".to_string()),
         write_trailing_field_separator: Some(true),
@@ -350,7 +350,7 @@ fn test_if() {
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_if: Some(1),
+        newline_format_if: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -385,7 +385,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_if: Some(1),
+        newline_format_if: Some(1),
         max_width: Some(120),
         enable_oneline_if: Some(true),
         ..Config::default()
@@ -417,7 +417,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_if: Some(1),
+        newline_format_if: Some(1),
         max_width: Some(20),
         enable_oneline_if: Some(true),
         ..Config::default()
@@ -437,7 +437,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_if: Some(1),
+        newline_format_if: Some(1),
         max_width: Some(2000),
         enable_oneline_if: Some(true),
         ..Config::default()
@@ -471,7 +471,7 @@ fn test_function() {
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_function: Some(1),
+        newline_format_function: Some(1),
         indent_every_statement: Some(true),
         ..Config::default()
     };
@@ -502,7 +502,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_function: Some(1),
+        newline_format_function: Some(1),
         indent_every_statement: Some(true),
         max_width: Some(120),
         enable_oneline_top_level_function: Some(true),
@@ -530,7 +530,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_function: Some(1),
+        newline_format_function: Some(1),
         indent_every_statement: Some(true),
         max_width: Some(120),
         enable_oneline_scoped_function: Some(true),
@@ -559,7 +559,7 @@ end"#
     let cfg = Config {
         remove_single_newlines: Some(true),
         indentation_string: Some("I   ".to_string()),
-        format_type_function: Some(1),
+        newline_format_function: Some(1),
         indent_every_statement: Some(true),
         max_width: Some(120),
         enable_oneline_top_level_function: Some(true),
@@ -599,7 +599,7 @@ fn test_method_call() {
     let cfg = Config {
         // indentation_string: Some("I   ".to_string()),
         // max_width: Some(20),
-        format_type_method_call: Some(1),
+        newline_format_method_call: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -617,7 +617,7 @@ fn test_method_call() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(20),
-        format_type_method_call: Some(1),
+        newline_format_method_call: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -635,7 +635,7 @@ fn test_method_call() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(20),
-        format_type_method_call: Some(1),
+        newline_format_method_call: Some(1),
         enable_oneline_method_call: Some(true),
         ..Config::default()
     };
@@ -652,7 +652,7 @@ fn test_method_call() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        format_type_method_call: Some(1),
+        newline_format_method_call: Some(1),
         enable_oneline_method_call: Some(true),
         indent_method_call: Some(true),
         ..Config::default()
@@ -673,9 +673,9 @@ fn test_table_field() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        format_type_table_field: Some(1),
+        newline_format_table_dot_index: Some(1),
         // enable_oneline_talbe_field: Some(true),
-        // indent_table_field: Some(true),
+        // indent_table_dot_index: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -693,10 +693,10 @@ fn test_table_field() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        format_type_table_field: Some(1),
-        format_type_method_call: Some(1),
+        newline_format_table_dot_index: Some(1),
+        newline_format_method_call: Some(1),
         // enable_oneline_talbe_field: Some(true),
-        // indent_table_field: Some(true),
+        // indent_table_dot_index: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -719,10 +719,10 @@ fn test_table_field() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        format_type_table_field: Some(1),
-        // format_type_method_call: Some(1),
+        newline_format_table_dot_index: Some(1),
+        // newline_format_method_call: Some(1),
         // enable_oneline_talbe_field: Some(true),
-        indent_table_field: Some(true),
+        indent_table_dot_index: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -740,10 +740,10 @@ I   .field:method():method()"#.to_string())
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        format_type_table_field: Some(1),
-        format_type_method_call: Some(1),
+        newline_format_table_dot_index: Some(1),
+        newline_format_method_call: Some(1),
         // enable_oneline_talbe_field: Some(true),
-        indent_table_field: Some(true),
+        indent_table_dot_index: Some(true),
         indent_method_call: Some(true),
         ..Config::default()
     };
@@ -767,10 +767,10 @@ I   :method()"#.to_string())
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        format_type_table_field: Some(1),
-        format_type_method_call: Some(1),
-        enable_oneline_table_field: Some(true),
-        indent_table_field: Some(true),
+        newline_format_table_dot_index: Some(1),
+        newline_format_method_call: Some(1),
+        enable_oneline_table_dot_index: Some(true),
+        indent_table_dot_index: Some(true),
         indent_method_call: Some(true),
         ..Config::default()
     };
@@ -790,11 +790,11 @@ I   :method()"#.to_string())
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        format_type_table_field: Some(1),
-        format_type_method_call: Some(1),
-        enable_oneline_table_field: Some(true),
+        newline_format_table_dot_index: Some(1),
+        newline_format_method_call: Some(1),
+        enable_oneline_table_dot_index: Some(true),
         enable_oneline_method_call: Some(true),
-        indent_table_field: Some(true),
+        indent_table_dot_index: Some(true),
         indent_method_call: Some(true),
         ..Config::default()
     };

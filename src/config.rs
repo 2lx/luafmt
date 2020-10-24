@@ -50,19 +50,19 @@ pub struct Config {
     pub indent_first_multiline_comment: Option<bool>,
     pub indent_every_statement: Option<bool>,
     pub indent_method_call: Option<bool>,
-    pub indent_table_field: Option<bool>,
+    pub indent_table_dot_index: Option<bool>,
 
     // format
-    pub format_type_do_end: Option<usize>,
-    pub format_type_for: Option<usize>,
-    pub format_type_function: Option<usize>,
-    pub format_type_if: Option<usize>,
-    pub format_type_repeat_until: Option<usize>,
-    pub format_type_table: Option<usize>,
-    pub format_type_while: Option<usize>,
-    pub format_type_binary_op: Option<usize>,
-    pub format_type_method_call: Option<usize>,
-    pub format_type_table_field: Option<usize>,
+    pub newline_format_do_end: Option<usize>,
+    pub newline_format_for: Option<usize>,
+    pub newline_format_function: Option<usize>,
+    pub newline_format_if: Option<usize>,
+    pub newline_format_repeat_until: Option<usize>,
+    pub newline_format_table_constructor: Option<usize>,
+    pub newline_format_while: Option<usize>,
+    pub newline_format_binary_op: Option<usize>,
+    pub newline_format_method_call: Option<usize>,
+    pub newline_format_table_dot_index: Option<usize>,
 
     // other
     // replace_tabs_with_spaces: Option<String>,
@@ -80,7 +80,7 @@ pub struct Config {
     pub enable_oneline_top_level_function: Option<bool>,
     pub enable_oneline_scoped_function: Option<bool>,
     pub enable_oneline_method_call: Option<bool>,
-    pub enable_oneline_table_field: Option<bool>,
+    pub enable_oneline_table_dot_index: Option<bool>,
 }
 
 impl Config {
@@ -108,19 +108,19 @@ impl Config {
             indent_first_oneline_comment: None,
             indent_first_multiline_comment: None,
             indent_method_call: None,
-            indent_table_field: None,
+            indent_table_dot_index: None,
 
             // format
-            format_type_do_end: None,
-            format_type_for: None,
-            format_type_function: None,
-            format_type_if: None,
-            format_type_repeat_until: None,
-            format_type_table: None,
-            format_type_while: None,
-            format_type_binary_op: None,
-            format_type_method_call: None,
-            format_type_table_field: None,
+            newline_format_do_end: None,
+            newline_format_for: None,
+            newline_format_function: None,
+            newline_format_if: None,
+            newline_format_repeat_until: None,
+            newline_format_table_constructor: None,
+            newline_format_while: None,
+            newline_format_binary_op: None,
+            newline_format_method_call: None,
+            newline_format_table_dot_index: None,
 
             // other
             hint_table_constructor: None,
@@ -136,7 +136,7 @@ impl Config {
             enable_oneline_top_level_function: None,
             enable_oneline_scoped_function: None,
             enable_oneline_method_call: None,
-            enable_oneline_table_field: None,
+            enable_oneline_table_dot_index: None,
         }
     }
 
@@ -179,19 +179,19 @@ impl Config {
             "indent_first_oneline_comment" => set_param_value_as!(self.indent_first_oneline_comment, bool),
             "indent_first_multiline_comment" => set_param_value_as!(self.indent_first_multiline_comment, bool),
             "indent_method_call" => set_param_value_as!(self.indent_method_call, bool),
-            "indent_table_field" => set_param_value_as!(self.indent_table_field, bool),
+            "indent_table_dot_index" => set_param_value_as!(self.indent_table_dot_index, bool),
 
             // format
-            "format_type_do_end" => set_param_value_as!(self.format_type_do_end, usize),
-            "format_type_for" => set_param_value_as!(self.format_type_for, usize),
-            "format_type_function" => set_param_value_as!(self.format_type_function, usize),
-            "format_type_if" => set_param_value_as!(self.format_type_if, usize),
-            "format_type_repeat_until" => set_param_value_as!(self.format_type_repeat_until, usize),
-            "format_type_table" => set_param_value_as!(self.format_type_table, usize),
-            "format_type_while" => set_param_value_as!(self.format_type_while, usize),
-            "format_type_binary_op" => set_param_value_as!(self.format_type_binary_op, usize),
-            "format_type_method_call" => set_param_value_as!(self.format_type_method_call, usize),
-            "format_type_table_field" => set_param_value_as!(self.format_type_table_field, usize),
+            "newline_format_do_end" => set_param_value_as!(self.newline_format_do_end, usize),
+            "newline_format_for" => set_param_value_as!(self.newline_format_for, usize),
+            "newline_format_function" => set_param_value_as!(self.newline_format_function, usize),
+            "newline_format_if" => set_param_value_as!(self.newline_format_if, usize),
+            "newline_format_repeat_until" => set_param_value_as!(self.newline_format_repeat_until, usize),
+            "newline_format_table_constructor" => set_param_value_as!(self.newline_format_table_constructor, usize),
+            "newline_format_while" => set_param_value_as!(self.newline_format_while, usize),
+            "newline_format_binary_op" => set_param_value_as!(self.newline_format_binary_op, usize),
+            "newline_format_method_call" => set_param_value_as!(self.newline_format_method_call, usize),
+            "newline_format_table_dot_index" => set_param_value_as!(self.newline_format_table_dot_index, usize),
 
             // other
             "hint_table_constructor" => set_param_value_as!(self.hint_table_constructor, String),
@@ -207,7 +207,7 @@ impl Config {
             "enable_oneline_top_level_function" => set_param_value_as!(self.enable_oneline_top_level_function, bool),
             "enable_oneline_scoped_function" => set_param_value_as!(self.enable_oneline_scoped_function, bool),
             "enable_oneline_method_call" => set_param_value_as!(self.enable_oneline_method_call, bool),
-            "enable_oneline_table_field" => set_param_value_as!(self.enable_oneline_table_field, bool),
+            "enable_oneline_table_dot_index" => set_param_value_as!(self.enable_oneline_table_dot_index, bool),
 
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
@@ -298,19 +298,19 @@ impl fmt::Display for Config {
         print_opt!(self.indent_first_oneline_comment, "indent_first_oneline_comment");
         print_opt!(self.indent_first_multiline_comment, "indent_first_multiline_comment");
         print_opt!(self.indent_method_call, "indent_method_call");
-        print_opt!(self.indent_table_field, "indent_table_field");
+        print_opt!(self.indent_table_dot_index, "indent_table_dot_index");
 
         // format
-        print_opt!(self.format_type_do_end, "format_type_do_end");
-        print_opt!(self.format_type_for, "format_type_for");
-        print_opt!(self.format_type_function, "format_type_function");
-        print_opt!(self.format_type_if, "format_type_if");
-        print_opt!(self.format_type_repeat_until, "format_type_repeat_until");
-        print_opt!(self.format_type_table, "format_type_table");
-        print_opt!(self.format_type_while, "format_type_while");
-        print_opt!(self.format_type_binary_op, "format_type_binary_op");
-        print_opt!(self.format_type_method_call, "format_type_method_call");
-        print_opt!(self.format_type_table_field, "format_type_table_field");
+        print_opt!(self.newline_format_do_end, "newline_format_do_end");
+        print_opt!(self.newline_format_for, "newline_format_for");
+        print_opt!(self.newline_format_function, "newline_format_function");
+        print_opt!(self.newline_format_if, "newline_format_if");
+        print_opt!(self.newline_format_repeat_until, "newline_format_repeat_until");
+        print_opt!(self.newline_format_table_constructor, "newline_format_table_constructor");
+        print_opt!(self.newline_format_while, "newline_format_while");
+        print_opt!(self.newline_format_binary_op, "newline_format_binary_op");
+        print_opt!(self.newline_format_method_call, "newline_format_method_call");
+        print_opt!(self.newline_format_table_dot_index, "newline_format_table_dot_index");
 
         // other
         print_opt!(self.hint_table_constructor, "hint_table_constructor");
@@ -326,7 +326,7 @@ impl fmt::Display for Config {
         print_opt!(self.enable_oneline_top_level_function, "enable_oneline_top_level_function");
         print_opt!(self.enable_oneline_scoped_function, "enable_oneline_scoped_function");
         print_opt!(self.enable_oneline_method_call, "enable_oneline_method_call");
-        print_opt!(self.enable_oneline_table_field, "enable_oneline_table_field");
+        print_opt!(self.enable_oneline_table_dot_index, "enable_oneline_table_dot_index");
 
         write!(f, "}}")?;
         Ok(())
@@ -342,6 +342,6 @@ pub struct State {
 
 impl State {
     pub const fn default() -> Self {
-        State { indent_level: 0, stack_indent: Vec::new(), function_nested_level: 0, }
+        State { indent_level: 0, stack_indent: Vec::new(), function_nested_level: 0 }
     }
 }

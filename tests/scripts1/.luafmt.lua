@@ -16,12 +16,12 @@ indent_oneline_comments = true
 -- indent_multiline_comments = false
 indent_first_oneline_comment = true
 -- indent_first_multiline_comment = false
-format_type_do_end = 1
-format_type_for = 1
-format_type_function = 1
-format_type_if = 1
-format_type_repeat_until = 1
-format_type_while = 1
+newline_format_do_end = 1
+newline_format_for = 1
+newline_format_function = 1
+newline_format_if = 1
+newline_format_repeat_until = 1
+newline_format_while = 1
 
 -- other
 field_separator = ","
