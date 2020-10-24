@@ -378,7 +378,7 @@ I   }; d = {}; e;
         Ok(r#"local a = { b = 123;
 I   c={1; 2; 3; {a=1; b=2;};
 I   I   5;}; d = {}; e;}"#
-        .to_string())
+            .to_string())
     );
 
     let cfg = Config {
@@ -395,17 +395,13 @@ I   I   5;}; d = {}; e;}"#
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(
-        ts("local a = {a=3, b=23-1, c=a}"),
-        Ok(r#"local a = {a=3; b=23-1; c=a;}"#
-        .to_string())
-    );
+    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"), Ok(r#"local a = {a=3; b=23-1; c=a;}"#.to_string()));
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = { b = 123;
 I   c={1; 2; 3; {a=1; b=2;}; 5;};
 I   d = {}; e;}"#
-        .to_string())
+            .to_string())
     );
 }
 
@@ -660,10 +656,7 @@ end"#
 
 #[test]
 fn test_table_suffix() {
-    let cfg = Config {
-        newline_format_table_suffix: Some(1),
-        ..Config::default()
-    };
+    let cfg = Config { newline_format_table_suffix: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -678,7 +671,8 @@ fn test_table_suffix() {
 .field
 .field
 :method()
-:method()"#.to_string())
+:method()"#
+            .to_string())
     );
 
     let cfg = Config {
@@ -701,7 +695,8 @@ fn test_table_suffix() {
 .field
 .field
 :method()
-:method()"#.to_string())
+:method()"#
+            .to_string())
     );
 
     let cfg = Config {
@@ -719,7 +714,8 @@ fn test_table_suffix() {
 :method().field
 :method():method()
 .field.field
-:method():method()"#.to_string())
+:method():method()"#
+            .to_string())
     );
 
     let cfg = Config {
@@ -738,7 +734,8 @@ fn test_table_suffix() {
 I   :method().field
 I   :method():method()
 I   .field.field
-I   :method():method()"#.to_string())
+I   :method():method()"#
+            .to_string())
     );
 }
 
@@ -764,7 +761,8 @@ fn test_table_field() {
 .field
 .field
 :method()
-:method()"#.to_string())
+:method()"#
+            .to_string())
     );
 
     let cfg = Config {
@@ -787,7 +785,8 @@ fn test_table_field() {
 .field
 .field
 :method()
-:method()"#.to_string())
+:method()"#
+            .to_string())
     );
 
     let cfg = Config {
@@ -811,7 +810,8 @@ I   :method()
 I   .field
 I   .field
 I   :method()
-I   :method()"#.to_string())
+I   :method()"#
+            .to_string())
     );
 
     let cfg = Config {
@@ -830,7 +830,8 @@ I   :method()"#.to_string())
 I   :method().field
 I   :method():method()
 I   .field.field
-I   :method():method()"#.to_string())
+I   :method():method()"#
+            .to_string())
     );
 }
 
@@ -840,6 +841,7 @@ fn test_exp_list() {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
         newline_format_exp_list: Some(1),
+        // enable_oneline_exp_list: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -852,6 +854,44 @@ b
 fn(
 12,
 "abc",
-a)"#.to_string())
+a)"#
+        .to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_exp_list: Some(1),
+        enable_oneline_exp_list: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"local a = b
+fn(12, "abc", a)"#),
+        Ok(r#"local a = b
+fn(12, "abc", a)"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_exp_list: Some(1),
+        enable_oneline_exp_list: Some(true),
+        indent_exp_list: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"local a = b, "asdasdsad", 12312321
+fn(12, "abc", abvad, {a=12321, b="asdad"})"#),
+        Ok(r#"local a = b, "asdasdsad",
+I   12312321
+fn(12, "abc", abvad,
+I   {a=12321, b="asdad"})"#
+            .to_string())
     );
 }

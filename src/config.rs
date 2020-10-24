@@ -46,6 +46,7 @@ pub struct Config {
     // indentation
     pub indentation_string: Option<String>,
     pub indent_table_suffix: Option<bool>,
+    pub indent_exp_list: Option<bool>,
 
     // format
     pub newline_format_first_oneline_comment: Option<usize>,
@@ -105,6 +106,7 @@ impl Config {
             // indentation
             indentation_string: None,
             indent_table_suffix: None,
+            indent_exp_list: None,
 
             // format
             newline_format_first_oneline_comment: None,
@@ -177,6 +179,7 @@ impl Config {
             // indentation
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
             "indent_table_suffix" => set_param_value_as!(self.indent_table_suffix, bool),
+            "indent_exp_list" => set_param_value_as!(self.indent_exp_list, bool),
 
             // format
             "newline_format_first_oneline_comment" => set_param_value_as!(self.newline_format_first_oneline_comment, usize),
@@ -297,6 +300,7 @@ impl fmt::Display for Config {
         // indentation
         print_opt!(self.indentation_string, "indentation_string");
         print_opt!(self.indent_table_suffix, "indent_table_suffix");
+        print_opt!(self.indent_exp_list, "indent_exp_list");
 
         // format
         print_opt!(self.newline_format_first_oneline_comment, "newline_format_first_oneline_comment");

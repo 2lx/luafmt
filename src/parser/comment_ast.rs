@@ -51,7 +51,7 @@ impl list::ListOfItems<Node> for Node {
     }
 }
 
-impl<'a> list::NoSepListItem<'a> for Node {
+impl<'a> list::NoSepListItem<'a, Node> for Node {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
@@ -74,7 +74,7 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_newline(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
+    fn need_newline(&self, _parent: &Node, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
             OneLineComment(..) => cfg.newline_format_oneline_comment == Some(1),
@@ -92,7 +92,7 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_first_newline(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
+    fn need_first_newline(&self, _parent: &Node, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
             OneLineComment(..) => cfg.newline_format_first_oneline_comment == Some(1),

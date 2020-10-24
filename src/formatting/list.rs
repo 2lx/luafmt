@@ -6,11 +6,11 @@ use crate::parser::common::*;
 use crate::{cfg_write, cfg_write_helper};
 use std::fmt::Write;
 
-pub trait NoSepListItem<'a> {
+pub trait NoSepListItem<'a, Node> {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str;
     fn list_item_suffix_hint(&self, cfg: &'a Config) -> &'a str;
-    fn need_newline(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
-    fn need_first_newline(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
+    fn need_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
+    fn need_first_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
 }
 
 pub trait SepListOfItems<Node> {
@@ -37,7 +37,7 @@ pub fn cfg_write_sep_list<'a, 'b, 'c, 'n: 'a + 'b + 'c, Node, Hint>(
     list_node: &'n Node,
 ) -> Result<(), core::fmt::Error>
 where
-    Node: ConfiguredWrite + SepListOfItems<Node> + NoSepListItem<'n>,
+    Node: ConfiguredWrite + SepListOfItems<Node> + NoSepListItem<'n, Node>,
     Hint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
     match list_node.items() {
@@ -51,18 +51,19 @@ where
             };
 
             let first = &items[0];
-            let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(f, cfg, buf, state);
+            let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
             let need_indent = list_node.need_indent(cfg);
-            cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&first.0, "")), first.1,
-                        If(need_indent, &IncIndent(None)), Hint::new(&first.2, ""))?;
+            cfg_write!(f, cfg, buf, state, If(need_indent, &IncIndent(None)),
+                       IfNewLine(need_newline, Hint::new(&first.0, "")), first.1,
+                       Hint::new(&first.2, ""))?;
 
             for i in 1..items.len() {
                 write!(f, "{}", get_sep(&items[i - 1]))?;
 
                 let item = &items[i];
-                let need_newline = list_node.need_newlines(cfg) && item.1.need_newline(f, cfg, buf, state);
+                let need_newline = list_node.need_newlines(cfg) && item.1.need_newline(list_node, f, cfg, buf, state);
                 cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&item.0, list_node.element_prefix_hint())),
-                            item.1, Hint::new(&item.2, ""))?;
+                           item.1, Hint::new(&item.2, ""))?;
             }
 
             let last = &items[items.len() - 1];
@@ -85,14 +86,14 @@ pub fn cfg_write_list_items<'a, 'b, 'n: 'a + 'b, Node, Hint>(
     list_node: &'n Node,
 ) -> Result<(), core::fmt::Error>
 where
-    Node: ConfiguredWrite + ListOfItems<Node> + NoSepListItem<'n>,
+    Node: ConfiguredWrite + ListOfItems<Node> + NoSepListItem<'n, Node>,
     Hint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
     match list_node.items() {
         Some(items) if !items.is_empty() => {
             let first = &items[0];
 
-            let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(f, cfg, buf, state);
+            let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
             let need_indent = list_node.need_indent(cfg);
             cfg_write!(f, cfg, buf, state, If(need_indent, &IncIndent(None)),
                        IfNewLine(need_newline, Hint::new(&first.0, "")), first.1)?;
@@ -102,7 +103,7 @@ where
                 let prefix = items[i].1.list_item_prefix_hint(cfg);
                 let hint = longest_hint(prefix, suffix);
 
-                let need_newline = list_node.need_newlines(cfg) && items[i].1.need_newline(f, cfg, buf, state);
+                let need_newline = list_node.need_newlines(cfg) && items[i].1.need_newline(list_node, f, cfg, buf, state);
                 cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&items[i].0, hint)), items[i].1)?;
             }
 

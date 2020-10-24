@@ -9,18 +9,26 @@ macro_rules! test_oneline {
         let mut test_cfg = $cfg.clone();
         let mut buffer = String::new();
 
-        $( cfg_write_helper!(&mut buffer, &mut test_cfg, $buf, &mut test_state, $arg)?; )+
+        let mut flag = false;
+        $( if cfg_write_helper!(&mut buffer, &mut test_cfg, $buf, &mut test_state, $arg).is_err() {
+            flag = true;
+        })+
 
-        // let mut left_len = util::get_len_after_newline(&buffer, $cfg);
-        // if left_len == buffer.chars().count() {
-        //     left_len += util::get_len_after_newline($wrt, $cfg);
-        // }
-        let left_len = util::get_len_after_newline($wrt, $cfg);
-        let right_len = util::get_len_till_newline(&buffer, $cfg);
+        match flag {
+            false => {
+                // let mut left_len = util::get_len_after_newline(&buffer, $cfg);
+                // if left_len == buffer.chars().count() {
+                //     left_len += util::get_len_after_newline($wrt, $cfg);
+                // }
+                let left_len = util::get_len_after_newline($wrt, $cfg);
+                let right_len = util::get_len_till_newline(&buffer, $cfg);
 
-        match left_len + right_len < $cfg.max_width.unwrap() {
-            true => Some(buffer),
-            false => None,
+                match left_len + right_len < $cfg.max_width.unwrap() {
+                    true => Some(buffer),
+                    false => None,
+                }
+            }
+            true => None
         }
     }};
 }

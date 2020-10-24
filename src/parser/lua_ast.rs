@@ -103,7 +103,7 @@ pub enum Node {
     SheBang(Loc, String),
 }
 
-impl<'a> list::NoSepListItem<'a> for Node {
+impl<'a> list::NoSepListItem<'a, Node> for Node {
     fn list_item_prefix_hint(&self, _: &'a Config) -> &'a str {
         use Node::*;
         match self {
@@ -120,45 +120,22 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_newline(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
+    fn need_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
         use Node::*;
-        match self {
-            VarsExprs(..) | RepeatUntil(..) | RepeatBUntil(..) | LocalNames(..) | LocalNamesExprs(..) | Break(..)
-            | GoTo(..) | DoEnd(..) | DoBEnd(..) | WhileDo(..) | WhileDoB(..) | IfThen(..) | IfThenB(..)
-            | IfThenElse(..) | IfThenBElse(..) | IfThenElseB(..) | IfThenBElseB(..) | IfThenElseIf(..)
-            | IfThenBElseIf(..) | IfThenElseIfElse(..) | IfThenBElseIfElse(..) | IfThenElseIfElseB(..)
-            | IfThenBElseIfElseB(..) | ForInt(..) | ForIntB(..) | ForIntStep(..) | ForIntStepB(..)
-            | ForRange(..) | ForRangeB(..) | FuncDecl(..) | LocalFuncDecl(..) => {
-                cfg.newline_format_statement.is_some()
-            }
-            RoundBrackets(..) | Var(..) | VarRoundSuffix(..) => {
-                if cfg.newline_format_statement.is_some() {
-                    return true;
+        match parent {
+            StatementList(..) => cfg.newline_format_statement.is_some(),
+            ExpList(..) => match cfg.newline_format_exp_list{
+                Some(1) => match cfg.enable_oneline_exp_list {
+                    Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
+                    _ => true,
                 }
-                match cfg.newline_format_exp_list {
-                    Some(1) => match cfg.enable_oneline_exp_list {
-                        Some(true) => self.test_oneline_exp_list(f, cfg, buf, state) == None,
-                        _ => true
-                    }
-                    _ => false
-                }
+                _ => false,
             }
-            ElseIfThen(..) | ElseIfThenB(..) => cfg.newline_format_if == Some(1),
-            FieldNamedBracket(..) | FieldNamed(..) | FieldSequential(..) => {
+            ElseIfThenVec(..) => cfg.newline_format_if == Some(1),
+            Fields(..) => {
                 match cfg.newline_format_table_field {
                     Some(1) => match cfg.enable_oneline_table_field {
                         Some(true) => self.test_oneline_table_field(f, cfg, buf, state) == None,
-                        _ => true
-                    }
-                    _ => false
-                }
-            }
-            BinaryOp(..) | UnaryOp(..) | UnaryNot(..) | Nil(..) | False(..) | True(..) | Numeral(..)
-            | CharStringLiteral(..) | NormalStringLiteral(..) | MultiLineStringLiteral(..) | VarArg(..)
-            | FunctionDef(..) | Name(..) | TableConstructor(..) | TableConstructorEmpty(..) => {
-                match cfg.newline_format_exp_list {
-                    Some(1) => match cfg.enable_oneline_exp_list {
-                        Some(true) => self.test_oneline_exp_list(f, cfg, buf, state) == None,
                         _ => true
                     }
                     _ => false
@@ -168,29 +145,22 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_first_newline(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
+    fn need_first_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
         use Node::*;
-        match self {
-            FieldNamedBracket(..) | FieldNamed(..) | FieldSequential(..) => {
-                match cfg.newline_format_table_field {
-                    Some(1) => match cfg.enable_oneline_table_field {
-                        Some(true) => self.test_oneline_table_field(f, cfg, buf, state) == None,
-                        _ => true
-                    }
-                    _ => false
+        match parent {
+            Fields(..) => match cfg.newline_format_table_field {
+                Some(1) => match cfg.enable_oneline_table_field {
+                    Some(true) => self.test_oneline_table_field(f, cfg, buf, state) == None,
+                    _ => true
                 }
+                _ => false
             }
-            BinaryOp(..) | UnaryOp(..) | UnaryNot(..) | Nil(..) | False(..) | True(..) | Numeral(..)
-            | CharStringLiteral(..) | NormalStringLiteral(..) | MultiLineStringLiteral(..) | VarArg(..)
-            | FunctionDef(..) | Name(..) | TableConstructor(..) | TableConstructorEmpty(..) | RoundBrackets(..)
-            | Var(..) | VarRoundSuffix(..) => {
-                match cfg.newline_format_exp_list {
-                    Some(1) => match cfg.enable_oneline_exp_list {
-                        Some(true) => self.test_oneline_exp_list(f, cfg, buf, state) == None,
-                        _ => true
-                    }
-                    _ => false
+            ExpList(..) => match cfg.newline_format_exp_list{
+                Some(1) => match cfg.enable_oneline_exp_list {
+                    Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
+                    _ => true,
                 }
+                _ => false,
             }
             _ => false,
         }
@@ -244,9 +214,10 @@ impl list::SepListOfItems<Node> for Node {
         }
     }
 
-    fn need_indent(&self, _cfg: &Config) -> bool {
-        // use Node::*;
+    fn need_indent(&self, cfg: &Config) -> bool {
+        use Node::*;
         match self {
+            ExpList(..) => cfg.indent_exp_list == Some(true),
             _ => false,
             // _ => true,
         }
@@ -317,13 +288,6 @@ impl Node {
             // cfg_test.write_trailing_field_separator = Some(false);
 
             return self.test_oneline(f, &cfg_test, buf, state);
-        }
-        None
-    }
-
-    fn test_oneline_exp_list(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.max_width.is_some() && cfg.newline_format_exp_list.is_some() {
-            return self.test_oneline(f, cfg, buf, state);
         }
         None
     }
