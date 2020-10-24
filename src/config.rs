@@ -29,29 +29,29 @@ pub trait ConfiguredWrite {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Config {
     // hint
+    pub replace_zero_spaces_with_hint: Option<bool>,
     pub hint_after_multiline_comment: Option<String>,
     pub hint_after_multiline_comment_text: Option<String>,
     pub hint_before_comment: Option<String>,
     pub hint_before_multiline_comment_text: Option<String>,
     pub hint_before_oneline_comment_text: Option<String>,
+    pub hint_table_constructor: Option<String>,
 
     pub remove_comments: Option<bool>,
     pub remove_single_newlines: Option<bool>,
     pub remove_all_newlines: Option<bool>,
     pub remove_spaces_between_tokens: Option<bool>,
-    pub replace_zero_spaces_with_hint: Option<bool>,
     pub write_newline_at_eof: Option<bool>,
 
     // indentation
     pub indentation_string: Option<String>,
-    pub indent_oneline_comments: Option<bool>,
-    pub indent_multiline_comments: Option<bool>,
-    pub indent_first_oneline_comment: Option<bool>,
-    pub indent_first_multiline_comment: Option<bool>,
-    pub indent_method_call: Option<bool>,
-    pub indent_table_dot_index: Option<bool>,
+    pub indent_table_suffix: Option<bool>,
 
     // format
+    pub newline_format_first_oneline_comment: Option<usize>,
+    pub newline_format_first_multiline_comment: Option<usize>,
+    pub newline_format_oneline_comment: Option<usize>,
+    pub newline_format_multiline_comment: Option<usize>,
     pub newline_format_statement: Option<usize>,
     pub newline_format_do_end: Option<usize>,
     pub newline_format_for: Option<usize>,
@@ -62,56 +62,55 @@ pub struct Config {
     pub newline_format_table_field: Option<usize>,
     pub newline_format_while: Option<usize>,
     pub newline_format_binary_op: Option<usize>,
-    pub newline_format_method_call: Option<usize>,
-    pub newline_format_table_dot_index: Option<usize>,
+    pub newline_format_table_suffix: Option<usize>,
+    pub newline_format_exp_list: Option<usize>,
 
     // other
     // replace_tabs_with_spaces: Option<String>,
     // tabs_as_spaces_count
-    pub hint_table_constructor: Option<String>,
     pub field_separator: Option<String>,
     pub write_trailing_field_separator: Option<bool>,
-    pub max_width: Option<usize>,
     pub convert_charstring_to_normalstring: Option<bool>,
 
     // oneline
+    pub max_width: Option<usize>,
     pub enable_oneline_binary_op: Option<bool>,
     pub enable_oneline_table_constructor: Option<bool>,
     pub enable_oneline_table_field: Option<bool>,
     pub enable_oneline_if: Option<bool>,
     pub enable_oneline_top_level_function: Option<bool>,
     pub enable_oneline_scoped_function: Option<bool>,
-    pub enable_oneline_method_call: Option<bool>,
-    pub enable_oneline_table_dot_index: Option<bool>,
+    pub enable_oneline_table_suffix: Option<bool>,
+    pub enable_oneline_exp_list: Option<bool>,
 }
 
 impl Config {
     pub const fn default() -> Self {
         Config {
             // hint
+            replace_zero_spaces_with_hint: None,
             hint_after_multiline_comment: None,
             hint_after_multiline_comment_text: None,
             hint_before_comment: None,
             hint_before_multiline_comment_text: None,
             hint_before_oneline_comment_text: None,
+            hint_table_constructor: None,
 
             remove_comments: None,
             remove_single_newlines: None,
             remove_all_newlines: None,
             remove_spaces_between_tokens: None,
-            replace_zero_spaces_with_hint: None,
             write_newline_at_eof: None,
 
             // indentation
             indentation_string: None,
-            indent_oneline_comments: None,
-            indent_multiline_comments: None,
-            indent_first_oneline_comment: None,
-            indent_first_multiline_comment: None,
-            indent_method_call: None,
-            indent_table_dot_index: None,
+            indent_table_suffix: None,
 
             // format
+            newline_format_first_oneline_comment: None,
+            newline_format_first_multiline_comment: None,
+            newline_format_oneline_comment: None,
+            newline_format_multiline_comment: None,
             newline_format_statement: None,
             newline_format_do_end: None,
             newline_format_for: None,
@@ -122,25 +121,24 @@ impl Config {
             newline_format_table_field: None,
             newline_format_while: None,
             newline_format_binary_op: None,
-            newline_format_method_call: None,
-            newline_format_table_dot_index: None,
+            newline_format_table_suffix: None,
+            newline_format_exp_list: None,
 
             // other
-            hint_table_constructor: None,
             field_separator: None,
             write_trailing_field_separator: None,
-            max_width: None,
             convert_charstring_to_normalstring: None,
 
             // oneline
+            max_width: None,
             enable_oneline_binary_op: None,
             enable_oneline_table_constructor: None,
             enable_oneline_table_field: None,
             enable_oneline_if: None,
             enable_oneline_top_level_function: None,
             enable_oneline_scoped_function: None,
-            enable_oneline_method_call: None,
-            enable_oneline_table_dot_index: None,
+            enable_oneline_table_suffix: None,
+            enable_oneline_exp_list: None,
         }
     }
 
@@ -160,6 +158,7 @@ impl Config {
 
         match option_name {
             // hint
+            "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
             "hint_after_multiline_comment" => set_param_value_as!(self.hint_after_multiline_comment, String),
             "hint_after_multiline_comment_text" => set_param_value_as!(self.hint_after_multiline_comment_text, String),
             "hint_before_comment" => set_param_value_as!(self.hint_before_comment, String),
@@ -167,24 +166,23 @@ impl Config {
                 set_param_value_as!(self.hint_before_multiline_comment_text, String)
             }
             "hint_before_oneline_comment_text" => set_param_value_as!(self.hint_before_oneline_comment_text, String),
+            "hint_table_constructor" => set_param_value_as!(self.hint_table_constructor, String),
 
             "remove_comments" => set_param_value_as!(self.remove_comments, bool),
             "remove_single_newlines" => set_param_value_as!(self.remove_single_newlines, bool),
             "remove_all_newlines" => set_param_value_as!(self.remove_all_newlines, bool),
             "remove_spaces_between_tokens" => set_param_value_as!(self.remove_spaces_between_tokens, bool),
-            "replace_zero_spaces_with_hint" => set_param_value_as!(self.replace_zero_spaces_with_hint, bool),
             "write_newline_at_eof" => set_param_value_as!(self.write_newline_at_eof, bool),
 
             // indentation
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
-            "indent_oneline_comments" => set_param_value_as!(self.indent_oneline_comments, bool),
-            "indent_multiline_comments" => set_param_value_as!(self.indent_multiline_comments, bool),
-            "indent_first_oneline_comment" => set_param_value_as!(self.indent_first_oneline_comment, bool),
-            "indent_first_multiline_comment" => set_param_value_as!(self.indent_first_multiline_comment, bool),
-            "indent_method_call" => set_param_value_as!(self.indent_method_call, bool),
-            "indent_table_dot_index" => set_param_value_as!(self.indent_table_dot_index, bool),
+            "indent_table_suffix" => set_param_value_as!(self.indent_table_suffix, bool),
 
             // format
+            "newline_format_first_oneline_comment" => set_param_value_as!(self.newline_format_first_oneline_comment, usize),
+            "newline_format_first_multiline_comment" => set_param_value_as!(self.newline_format_first_multiline_comment, usize),
+            "newline_format_oneline_comment" => set_param_value_as!(self.newline_format_oneline_comment, usize),
+            "newline_format_multiline_comment" => set_param_value_as!(self.newline_format_multiline_comment, usize),
             "newline_format_statement" => set_param_value_as!(self.newline_format_statement, usize),
             "newline_format_do_end" => set_param_value_as!(self.newline_format_do_end, usize),
             "newline_format_for" => set_param_value_as!(self.newline_format_for, usize),
@@ -195,25 +193,24 @@ impl Config {
             "newline_format_table_field" => set_param_value_as!(self.newline_format_table_field, usize),
             "newline_format_while" => set_param_value_as!(self.newline_format_while, usize),
             "newline_format_binary_op" => set_param_value_as!(self.newline_format_binary_op, usize),
-            "newline_format_method_call" => set_param_value_as!(self.newline_format_method_call, usize),
-            "newline_format_table_dot_index" => set_param_value_as!(self.newline_format_table_dot_index, usize),
+            "newline_format_table_suffix" => set_param_value_as!(self.newline_format_table_suffix, usize),
+            "newline_format_exp_list" => set_param_value_as!(self.newline_format_exp_list, usize),
 
             // other
-            "hint_table_constructor" => set_param_value_as!(self.hint_table_constructor, String),
             "field_separator" => set_param_value_as!(self.field_separator, String),
             "write_trailing_field_separator" => set_param_value_as!(self.write_trailing_field_separator, bool),
-            "max_width" => set_param_value_as!(self.max_width, usize),
             "convert_charstring_to_normalstring" => set_param_value_as!(self.convert_charstring_to_normalstring, bool),
 
             // oneline
+            "max_width" => set_param_value_as!(self.max_width, usize),
             "enable_oneline_binary_op" => set_param_value_as!(self.enable_oneline_binary_op, bool),
             "enable_oneline_table_constructor" => set_param_value_as!(self.enable_oneline_table_constructor, bool),
             "enable_oneline_table_field" => set_param_value_as!(self.enable_oneline_table_field, bool),
             "enable_oneline_if" => set_param_value_as!(self.enable_oneline_if, bool),
             "enable_oneline_top_level_function" => set_param_value_as!(self.enable_oneline_top_level_function, bool),
             "enable_oneline_scoped_function" => set_param_value_as!(self.enable_oneline_scoped_function, bool),
-            "enable_oneline_method_call" => set_param_value_as!(self.enable_oneline_method_call, bool),
-            "enable_oneline_table_dot_index" => set_param_value_as!(self.enable_oneline_table_dot_index, bool),
+            "enable_oneline_table_suffix" => set_param_value_as!(self.enable_oneline_table_suffix, bool),
+            "enable_oneline_exp_list" => set_param_value_as!(self.enable_oneline_exp_list, bool),
 
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
@@ -283,29 +280,29 @@ impl fmt::Display for Config {
         write!(f, "{{\n")?;
 
         // hint
+        print_opt!(self.replace_zero_spaces_with_hint, "replace_zero_spaces_with_hint");
         print_opt!(self.hint_after_multiline_comment, "hint_after_multiline_comment");
         print_opt!(self.hint_after_multiline_comment_text, "hint_after_multiline_comment_text");
         print_opt!(self.hint_before_comment, "hint_before_comment");
         print_opt!(self.hint_before_multiline_comment_text, "hint_before_multiline_comment_text");
         print_opt!(self.hint_before_oneline_comment_text, "hint_before_oneline_comment_text");
+        print_opt!(self.hint_table_constructor, "hint_table_constructor");
 
         print_opt!(self.remove_comments, "remove_comments");
         print_opt!(self.remove_single_newlines, "remove_single_newlines");
         print_opt!(self.remove_all_newlines, "remove_all_newlines");
         print_opt!(self.remove_spaces_between_tokens, "remove_spaces_between_tokens");
-        print_opt!(self.replace_zero_spaces_with_hint, "replace_zero_spaces_with_hint");
         print_opt!(self.write_newline_at_eof, "write_newline_at_eof");
 
         // indentation
         print_opt!(self.indentation_string, "indentation_string");
-        print_opt!(self.indent_oneline_comments, "indent_oneline_comments");
-        print_opt!(self.indent_multiline_comments, "indent_multiline_comments");
-        print_opt!(self.indent_first_oneline_comment, "indent_first_oneline_comment");
-        print_opt!(self.indent_first_multiline_comment, "indent_first_multiline_comment");
-        print_opt!(self.indent_method_call, "indent_method_call");
-        print_opt!(self.indent_table_dot_index, "indent_table_dot_index");
+        print_opt!(self.indent_table_suffix, "indent_table_suffix");
 
         // format
+        print_opt!(self.newline_format_first_oneline_comment, "newline_format_first_oneline_comment");
+        print_opt!(self.newline_format_first_multiline_comment, "newline_format_first_multiline_comment");
+        print_opt!(self.newline_format_oneline_comment, "newline_format_oneline_comment");
+        print_opt!(self.newline_format_multiline_comment, "newline_format_multiline_comment");
         print_opt!(self.newline_format_statement, "newline_format_statement");
         print_opt!(self.newline_format_do_end, "newline_format_do_end");
         print_opt!(self.newline_format_for, "newline_format_for");
@@ -316,25 +313,24 @@ impl fmt::Display for Config {
         print_opt!(self.newline_format_table_field, "newline_format_table_field");
         print_opt!(self.newline_format_while, "newline_format_while");
         print_opt!(self.newline_format_binary_op, "newline_format_binary_op");
-        print_opt!(self.newline_format_method_call, "newline_format_method_call");
-        print_opt!(self.newline_format_table_dot_index, "newline_format_table_dot_index");
+        print_opt!(self.newline_format_table_suffix, "newline_format_table_suffix");
+        print_opt!(self.newline_format_exp_list, "newline_format_exp_list");
 
         // other
-        print_opt!(self.hint_table_constructor, "hint_table_constructor");
         print_opt!(self.field_separator, "field_separator");
         print_opt!(self.write_trailing_field_separator, "write_trailing_field_separator");
-        print_opt!(self.max_width, "max_width");
         print_opt!(self.convert_charstring_to_normalstring, "convert_charstring_to_normalstring");
 
         // oneline
+        print_opt!(self.max_width, "max_width");
         print_opt!(self.enable_oneline_binary_op, "enable_oneline_binary_op");
         print_opt!(self.enable_oneline_table_constructor, "enable_oneline_table_constructor");
         print_opt!(self.enable_oneline_table_field, "enable_oneline_table_field");
         print_opt!(self.enable_oneline_if, "enable_oneline_if");
         print_opt!(self.enable_oneline_top_level_function, "enable_oneline_top_level_function");
         print_opt!(self.enable_oneline_scoped_function, "enable_oneline_scoped_function");
-        print_opt!(self.enable_oneline_method_call, "enable_oneline_method_call");
-        print_opt!(self.enable_oneline_table_dot_index, "enable_oneline_table_dot_index");
+        print_opt!(self.enable_oneline_table_suffix, "enable_oneline_table_suffix");
+        print_opt!(self.enable_oneline_exp_list, "enable_oneline_exp_list");
 
         write!(f, "}}")?;
         Ok(())

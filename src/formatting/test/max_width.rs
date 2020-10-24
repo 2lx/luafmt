@@ -659,21 +659,24 @@ end"#
 }
 
 #[test]
-fn test_method_call() {
+fn test_table_suffix() {
     let cfg = Config {
-        // indentation_string: Some("I   ".to_string()),
-        // max_width: Some(20),
-        newline_format_method_call: Some(1),
+        newline_format_table_suffix: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
         ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
-        Ok(r#"object.field.field
-:method().field
+        Ok(r#"object
+.field
+.field
 :method()
-:method().field.field
+.field
+:method()
+:method()
+.field
+.field
 :method()
 :method()"#.to_string())
     );
@@ -681,17 +684,22 @@ fn test_method_call() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(20),
-        newline_format_method_call: Some(1),
+        newline_format_table_suffix: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
         ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
-        Ok(r#"object.field.field
-:method().field
+        Ok(r#"object
+.field
+.field
 :method()
-:method().field.field
+.field
+:method()
+:method()
+.field
+.field
 :method()
 :method()"#.to_string())
     );
@@ -699,8 +707,8 @@ fn test_method_call() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(20),
-        newline_format_method_call: Some(1),
-        enable_oneline_method_call: Some(true),
+        newline_format_table_suffix: Some(1),
+        enable_oneline_table_suffix: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -709,157 +717,17 @@ fn test_method_call() {
         ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
         Ok(r#"object.field.field
 :method().field
-:method():method().field.field
+:method():method()
+.field.field
 :method():method()"#.to_string())
     );
 
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        newline_format_method_call: Some(1),
-        enable_oneline_method_call: Some(true),
-        indent_method_call: Some(true),
-        ..Config::default()
-    };
-    let ts = |s: &str| ts_base(s, &cfg);
-
-    assert_eq!(
-        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
-        Ok(r#"object.field.field
-I   :method().field
-I   :method():method().field.field
-I   :method():method()"#.to_string())
-    );
-}
-
-#[test]
-fn test_table_field() {
-    let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_table_dot_index: Some(1),
-        // enable_oneline_talbe_field: Some(true),
-        // indent_table_dot_index: Some(true),
-        ..Config::default()
-    };
-    let ts = |s: &str| ts_base(s, &cfg);
-
-    assert_eq!(
-        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
-        Ok(r#"object
-.field
-.field:method()
-.field:method():method()
-.field
-.field:method():method()"#.to_string())
-    );
-
-    let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_table_dot_index: Some(1),
-        newline_format_method_call: Some(1),
-        // enable_oneline_talbe_field: Some(true),
-        // indent_table_dot_index: Some(true),
-        ..Config::default()
-    };
-    let ts = |s: &str| ts_base(s, &cfg);
-
-    assert_eq!(
-        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
-        Ok(r#"object
-.field
-.field
-:method()
-.field
-:method()
-:method()
-.field
-.field
-:method()
-:method()"#.to_string())
-    );
-
-    let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_table_dot_index: Some(1),
-        // newline_format_method_call: Some(1),
-        // enable_oneline_talbe_field: Some(true),
-        indent_table_dot_index: Some(true),
-        ..Config::default()
-    };
-    let ts = |s: &str| ts_base(s, &cfg);
-
-    assert_eq!(
-        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
-        Ok(r#"object
-I   .field
-I   .field:method()
-I   .field:method():method()
-I   .field
-I   .field:method():method()"#.to_string())
-    );
-
-    let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_table_dot_index: Some(1),
-        newline_format_method_call: Some(1),
-        // enable_oneline_talbe_field: Some(true),
-        indent_table_dot_index: Some(true),
-        indent_method_call: Some(true),
-        ..Config::default()
-    };
-    let ts = |s: &str| ts_base(s, &cfg);
-
-    assert_eq!(
-        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
-        Ok(r#"object
-I   .field
-I   .field
-I   :method()
-I   .field
-I   :method()
-I   :method()
-I   .field
-I   .field
-I   :method()
-I   :method()"#.to_string())
-    );
-
-    let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_table_dot_index: Some(1),
-        newline_format_method_call: Some(1),
-        enable_oneline_table_dot_index: Some(true),
-        indent_table_dot_index: Some(true),
-        indent_method_call: Some(true),
-        ..Config::default()
-    };
-    let ts = |s: &str| ts_base(s, &cfg);
-
-    assert_eq!(
-        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
-        Ok(r#"object.field.field
-I   :method().field
-I   :method()
-I   :method().field
-I   .field
-I   :method()
-I   :method()"#.to_string())
-    );
-
-    let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_table_dot_index: Some(1),
-        newline_format_method_call: Some(1),
-        enable_oneline_table_dot_index: Some(true),
-        enable_oneline_method_call: Some(true),
-        indent_table_dot_index: Some(true),
-        indent_method_call: Some(true),
+        newline_format_table_suffix: Some(1),
+        enable_oneline_table_suffix: Some(true),
+        indent_table_suffix: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -871,5 +739,119 @@ I   :method().field
 I   :method():method()
 I   .field.field
 I   :method():method()"#.to_string())
+    );
+}
+
+#[test]
+fn test_table_field() {
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_table_suffix: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object
+.field
+.field
+:method()
+.field
+:method()
+:method()
+.field
+.field
+:method()
+:method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_table_suffix: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object
+.field
+.field
+:method()
+.field
+:method()
+:method()
+.field
+.field
+:method()
+:method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_table_suffix: Some(1),
+        indent_table_suffix: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object
+I   .field
+I   .field
+I   :method()
+I   .field
+I   :method()
+I   :method()
+I   .field
+I   .field
+I   :method()
+I   :method()"#.to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_table_suffix: Some(1),
+        enable_oneline_table_suffix: Some(true),
+        indent_table_suffix: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object.field.field:method().field:method():method().field.field:method():method()"#),
+        Ok(r#"object.field.field
+I   :method().field
+I   :method():method()
+I   .field.field
+I   :method():method()"#.to_string())
+    );
+}
+
+#[test]
+fn test_exp_list() {
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_exp_list: Some(1),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"local a = b
+fn(12, "abc", a)"#),
+        Ok(r#"local a =
+b
+fn(
+12,
+"abc",
+a)"#.to_string())
     );
 }

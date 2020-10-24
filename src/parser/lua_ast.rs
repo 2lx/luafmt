@@ -120,7 +120,7 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_indent(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
+    fn need_newline(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
         use Node::*;
         match self {
             VarsExprs(..) | RepeatUntil(..) | RepeatBUntil(..) | LocalNames(..) | LocalNamesExprs(..) | Break(..)
@@ -128,9 +128,21 @@ impl<'a> list::NoSepListItem<'a> for Node {
             | IfThenElse(..) | IfThenBElse(..) | IfThenElseB(..) | IfThenBElseB(..) | IfThenElseIf(..)
             | IfThenBElseIf(..) | IfThenElseIfElse(..) | IfThenBElseIfElse(..) | IfThenElseIfElseB(..)
             | IfThenBElseIfElseB(..) | ForInt(..) | ForIntB(..) | ForIntStep(..) | ForIntStepB(..)
-            | ForRange(..) | ForRangeB(..) | FuncDecl(..) | LocalFuncDecl(..) | Var(..) | VarRoundSuffix(..)
-            | RoundBrackets(..) => cfg.newline_format_statement.is_some(),
-
+            | ForRange(..) | ForRangeB(..) | FuncDecl(..) | LocalFuncDecl(..) => {
+                cfg.newline_format_statement.is_some()
+            }
+            RoundBrackets(..) | Var(..) | VarRoundSuffix(..) => {
+                if cfg.newline_format_statement.is_some() {
+                    return true;
+                }
+                match cfg.newline_format_exp_list {
+                    Some(1) => match cfg.enable_oneline_exp_list {
+                        Some(true) => self.test_oneline_exp_list(f, cfg, buf, state) == None,
+                        _ => true
+                    }
+                    _ => false
+                }
+            }
             ElseIfThen(..) | ElseIfThenB(..) => cfg.newline_format_if == Some(1),
             FieldNamedBracket(..) | FieldNamed(..) | FieldSequential(..) => {
                 match cfg.newline_format_table_field {
@@ -141,17 +153,40 @@ impl<'a> list::NoSepListItem<'a> for Node {
                     _ => false
                 }
             }
+            BinaryOp(..) | UnaryOp(..) | UnaryNot(..) | Nil(..) | False(..) | True(..) | Numeral(..)
+            | CharStringLiteral(..) | NormalStringLiteral(..) | MultiLineStringLiteral(..) | VarArg(..)
+            | FunctionDef(..) | Name(..) | TableConstructor(..) | TableConstructorEmpty(..) => {
+                match cfg.newline_format_exp_list {
+                    Some(1) => match cfg.enable_oneline_exp_list {
+                        Some(true) => self.test_oneline_exp_list(f, cfg, buf, state) == None,
+                        _ => true
+                    }
+                    _ => false
+                }
+            }
             _ => false,
         }
     }
 
-    fn need_first_indent(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
+    fn need_first_newline(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
         use Node::*;
         match self {
             FieldNamedBracket(..) | FieldNamed(..) | FieldSequential(..) => {
                 match cfg.newline_format_table_field {
                     Some(1) => match cfg.enable_oneline_table_field {
                         Some(true) => self.test_oneline_table_field(f, cfg, buf, state) == None,
+                        _ => true
+                    }
+                    _ => false
+                }
+            }
+            BinaryOp(..) | UnaryOp(..) | UnaryNot(..) | Nil(..) | False(..) | True(..) | Numeral(..)
+            | CharStringLiteral(..) | NormalStringLiteral(..) | MultiLineStringLiteral(..) | VarArg(..)
+            | FunctionDef(..) | Name(..) | TableConstructor(..) | TableConstructorEmpty(..) | RoundBrackets(..)
+            | Var(..) | VarRoundSuffix(..) => {
+                match cfg.newline_format_exp_list {
+                    Some(1) => match cfg.enable_oneline_exp_list {
+                        Some(true) => self.test_oneline_exp_list(f, cfg, buf, state) == None,
                         _ => true
                     }
                     _ => false
@@ -200,14 +235,61 @@ impl list::SepListOfItems<Node> for Node {
         }
     }
 
-    fn need_indent_items(&self, cfg: &Config) -> bool {
+    fn need_newlines(&self, cfg: &Config) -> bool {
         use Node::*;
         match self {
             Fields(..) => cfg.newline_format_table_field == Some(1),
+            ExpList(..) => cfg.newline_format_exp_list == Some(1),
             _ => false,
         }
     }
+
+    fn need_indent(&self, _cfg: &Config) -> bool {
+        // use Node::*;
+        match self {
+            _ => false,
+            // _ => true,
+        }
+    }
 }
+
+impl list::ListOfItems<Node> for Node {
+    fn items(&self) -> Option<&Vec::<(Loc, Node)>> {
+        use Node::*;
+        match self {
+            StatementList(_, items) | VarSuffixList(_, items) | ElseIfThenVec(_, items) => Some(items),
+            _ => None,
+        }
+    }
+
+    fn element_prefix_hint(&self) -> &str {
+        // use Node::*;
+        match self {
+            // StatementList(_, items) | VarSuffixList(_, items) | ElseIfThenVec(_, items) => Some(items),
+            _ => "",
+        }
+    }
+
+    fn need_newlines(&self, cfg: &Config) -> bool {
+        use Node::*;
+        match self {
+            StatementList(..) => cfg.newline_format_statement.is_some(),
+            ElseIfThenVec(..) => cfg.newline_format_if == Some(1),
+            // VarSuffixList(_, items) | ElseIfThenVec(_, items) => Some(items),
+            _ => false,
+        }
+    }
+
+    fn need_indent(&self, cfg: &Config) -> bool {
+        use Node::*;
+        match self {
+            VarSuffixList(..) => cfg.indent_table_suffix == Some(true),
+            _ => false,
+            // _ => true,
+        }
+    }
+}
+
 
 impl Node {
     fn test_oneline(&self, f: &String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
@@ -239,9 +321,15 @@ impl Node {
         None
     }
 
+    fn test_oneline_exp_list(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
+        if cfg.max_width.is_some() && cfg.newline_format_exp_list.is_some() {
+            return self.test_oneline(f, cfg, buf, state);
+        }
+        None
+    }
+
     fn test_oneline_table_field(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
         if cfg.max_width.is_some() && cfg.newline_format_table_field.is_some() {
-
             return self.test_oneline(f, cfg, buf, state);
         }
         None
@@ -368,21 +456,19 @@ impl ConfiguredWrite for Node {
 
             TableIndex(_, locs, e) => cfg_write!(f, cfg, buf, state, "[", Hint(&locs[0], ""), e, Hint(&locs[1], ""), "]"),
             TableMember(_, locs, n) => {
-                let mut nl = cfg.newline_format_table_dot_index == Some(1);
+                let mut nl = cfg.newline_format_table_suffix == Some(1);
 
-                if nl && cfg.enable_oneline_table_dot_index == Some(true)
+                if nl && cfg.enable_oneline_table_suffix == Some(true)
                     && test_oneline!(f, cfg, buf, state, ".", Hint(&locs[0], ""), n).is_some() {
                     nl = false;
                 }
 
-                let indent = cfg.indent_table_dot_index == Some(true);
-                cfg_write!(f, cfg, buf, state, If(indent, &IncIndent(None)), IfNewLine(nl, Hint(&Loc(0, 0), "")), ".",
-                           Hint(&locs[0], ""), n, If(indent, &DecIndent()))
+                cfg_write!(f, cfg, buf, state, IfNewLine(nl, Hint(&Loc(0, 0), "")), ".", Hint(&locs[0], ""), n)
             }
             ExpList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             NameList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             VarList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
-            StatementList(_, stts) => cfg_write_list_items(f, cfg, buf, state, stts),
+            stts@StatementList(..) => cfg_write_list_items(f, cfg, buf, state, stts),
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => {
                 let nl = cfg.newline_format_do_end == Some(1);
@@ -397,19 +483,17 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")", Hint(&locs[2], ""),
                            n2)
             }
-            VarSuffixList(_, suffs) => cfg_write_list_items(f, cfg, buf, state, suffs),
+            suffs@VarSuffixList(..) => cfg_write_list_items(f, cfg, buf, state, suffs),
             FnMethodCall(_, locs, n1, n2) => {
-                let mut nl = cfg.newline_format_method_call == Some(1);
-                if nl && cfg.enable_oneline_method_call == Some(true) {
+                let mut nl = cfg.newline_format_table_suffix == Some(1);
+                if nl && cfg.enable_oneline_table_suffix == Some(true) {
                     if test_oneline!(f, cfg, buf, state, Str(":"), Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2).is_some() {
                         nl = false;
                     }
                 }
 
-                let indent = cfg.indent_method_call == Some(true);
-                cfg_write!(f, cfg, buf, state, If(indent, &IncIndent(None)),
-                           IfNewLine(nl, Hint(&Loc(0, 0), "")), ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2,
-                           If(indent, &DecIndent()))
+                cfg_write!(f, cfg, buf, state, IfNewLine(nl, Hint(&Loc(0, 0), "")), ":", Hint(&locs[0], ""), n1,
+                           Hint(&locs[1], ""), n2)
             }
             ParList(..) => cfg_write_sep_list(f, cfg, buf, state, self),
             FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n),
@@ -438,8 +522,8 @@ impl ConfiguredWrite for Node {
                 }
 
                 let nl = cfg.newline_format_function == Some(1);
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")",
-                           IfNewLine(nl, Hint(&locs[2], " ")), "end")
+                cfg_write!(f, cfg, buf, state, "(", IncIndent(None), Hint(&locs[0], ""), n1, Hint(&locs[1], ""),
+                           DecIndent(), ")", IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
             FuncPBodyB(_, locs, n1, n2) => {
                 if let Some(line) = self.test_oneline_function(f, cfg, buf, state) {
@@ -447,8 +531,8 @@ impl ConfiguredWrite for Node {
                 }
 
                 let nl = cfg.newline_format_function == Some(1);
-                cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")",
-                           IncIndent(None), IncFuncLevel(), IfNewLine(nl, Hint(&locs[2], " ")), n2,
+                cfg_write!(f, cfg, buf, state, "(", IncIndent(None), Hint(&locs[0], ""), n1, Hint(&locs[1], ""),
+                           DecIndent(), ")", IncIndent(None), IncFuncLevel(), IfNewLine(nl, Hint(&locs[2], " ")), n2,
                            DecIndent(), DecFuncLevel(), IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
             FuncName(..) => cfg_write_sep_list(f, cfg, buf, state, self),
@@ -601,7 +685,7 @@ impl ConfiguredWrite for Node {
                            IncIndent(None), IfNewLine(nl, Hint(&locs[5], " ")), b2,
                            DecIndent(), IfNewLine(nl, Hint(&locs[6], " ")), "end")
             }
-            ElseIfThenVec(_, elems) => cfg_write_list_items(f, cfg, buf, state, elems),
+            elems@ElseIfThenVec(..) => cfg_write_list_items(f, cfg, buf, state, elems),
             ElseIfThen(_, locs, e) => {
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then")
             }

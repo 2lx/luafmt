@@ -19,3 +19,4 @@ fn test_charstring_and_normalstring() {
         Ok(r#"local a, b, c = "abc\\\"", "\"bcd\\\\\"", "c\'d\'e" "#.to_string())
     );
 }
+

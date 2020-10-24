@@ -18,6 +18,39 @@ pub enum Node {
     Chunk(Loc, Box<Node>, Loc),
 }
 
+impl list::ListOfItems<Node> for Node {
+    fn items(&self) -> Option<&Vec::<(Loc, Node)>> {
+        use Node::*;
+        match self {
+            VariantList(_, items) | CommentList(_, items) | NewLineList(_, items) => Some(items),
+            _ => None,
+        }
+    }
+
+    fn element_prefix_hint(&self) -> &str {
+        // use Node::*;
+        match self {
+            _ => "",
+        }
+    }
+
+    fn need_newlines(&self, cfg: &Config) -> bool {
+        use Node::*;
+        match self {
+            CommentList(..) =>
+                cfg.newline_format_oneline_comment == Some(1) || cfg.newline_format_multiline_comment == Some(1),
+            _ => false,
+        }
+    }
+
+    fn need_indent(&self, _cfg: &Config) -> bool {
+        // use Node::*;
+        match self {
+            _ => false,
+        }
+    }
+}
+
 impl<'a> list::NoSepListItem<'a> for Node {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
@@ -41,19 +74,17 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_indent(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
+    fn need_newline(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
-            OneLineComment(..) => cfg.indent_oneline_comments == Some(true),
-            MultiLineComment(..) => cfg.indent_multiline_comments == Some(true),
-            CommentList(_, comments) => {
+            OneLineComment(..) => cfg.newline_format_oneline_comment == Some(1),
+            MultiLineComment(..) => cfg.newline_format_multiline_comment == Some(1),
+            CommentList(_, comments) if !comments.is_empty() => {
                 // indentation of the first comment, if it is not the first token in the Loc
-                if !comments.is_empty() {
-                    if let (_, OneLineComment(..)) = &comments[0] {
-                        return cfg.indent_oneline_comments == Some(true);
-                    } else if let (_, MultiLineComment(..)) = &comments[0] {
-                        return cfg.indent_multiline_comments == Some(true);
-                    }
+                if let (_, OneLineComment(..)) = &comments[0] {
+                    return cfg.newline_format_first_oneline_comment == Some(1);
+                } else if let (_, MultiLineComment(..)) = &comments[0] {
+                    return cfg.newline_format_first_multiline_comment == Some(1);
                 }
                 false
             }
@@ -61,11 +92,11 @@ impl<'a> list::NoSepListItem<'a> for Node {
         }
     }
 
-    fn need_first_indent(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
+    fn need_first_newline(&self, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
         use Node::*;
         match self {
-            OneLineComment(..) => cfg.indent_first_oneline_comment == Some(true),
-            MultiLineComment(..) => cfg.indent_first_multiline_comment == Some(true),
+            OneLineComment(..) => cfg.newline_format_first_oneline_comment == Some(1),
+            MultiLineComment(..) => cfg.newline_format_first_multiline_comment == Some(1),
             _ => false,
         }
     }
@@ -77,7 +108,7 @@ impl ConfiguredWrite for Node {
 
         #[allow(non_snake_case)]
         let Hint = SpaceLocHint;
-        let cfg_write_vector = list::cfg_write_list_items::<Node, SpaceLocHint>;
+        let cfg_write_list_items = list::cfg_write_list_items::<Node, SpaceLocHint>;
 
         match self {
             Chunk(locl, n, locr) => {
@@ -92,10 +123,10 @@ impl ConfiguredWrite for Node {
                     }
                 }
 
-                cfg_write_vector(f, cfg, buf, state, variants)
+                cfg_write_list_items(f, cfg, buf, state, self)
             }
-            CommentList(_, comments) => cfg_write_vector(f, cfg, buf, state, comments),
-            NewLineList(_, newlines) => cfg_write_vector(f, cfg, buf, state, newlines),
+            comments@CommentList(..) => cfg_write_list_items(f, cfg, buf, state, comments),
+            newlines@NewLineList(..) => cfg_write_list_items(f, cfg, buf, state, newlines),
 
             OneLineComment(_, s) => match cfg.remove_comments {
                 Some(true) => match cfg.remove_all_newlines {

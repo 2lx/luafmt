@@ -720,7 +720,7 @@ print(h)"#.to_string())
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
         newline_format_statement: Some(1),
-        indent_oneline_comments: Some(true),
+        newline_format_oneline_comment: Some(1),
         newline_format_do_end: Some(1),
         newline_format_for: Some(1),
         newline_format_function: Some(1),
@@ -737,12 +737,12 @@ print(h)"#.to_string())
 --1234
 print(b)
 do
-I     --com
+--com
 I     print(c) --1
 I     --2
 I     --3
 I     while a<c do
-I     I     --135
+--135
 I     I     print(d)
 I     I     print(e)
 I     I     repeat
@@ -759,8 +759,8 @@ print(h)"#.to_string())
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
         newline_format_statement: Some(1),
-        indent_first_oneline_comment: Some(true),
-        indent_oneline_comments: Some(true),
+        newline_format_first_oneline_comment: Some(1),
+        newline_format_oneline_comment: Some(1),
         newline_format_do_end: Some(1),
         newline_format_for: Some(1),
         newline_format_function: Some(1),
@@ -830,8 +830,7 @@ print(h)"#.to_string())
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
         newline_format_statement: Some(1),
-        // indent_first_multiline_comment: Some(true),
-        indent_multiline_comments: Some(true),
+        newline_format_multiline_comment: Some(1),
         newline_format_do_end: Some(1),
         newline_format_for: Some(1),
         newline_format_function: Some(1),
@@ -873,8 +872,8 @@ print(h)"#.to_string())
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
         newline_format_statement: Some(1),
-        indent_first_multiline_comment: Some(true),
-        indent_multiline_comments: Some(true),
+        newline_format_first_multiline_comment: Some(1),
+        newline_format_multiline_comment: Some(1),
         newline_format_do_end: Some(1),
         newline_format_for: Some(1),
         newline_format_function: Some(1),
@@ -920,10 +919,10 @@ print(h)"#.to_string())
     let cfg = Config {
         indentation_string: Some("I     ".to_string()),
         newline_format_statement: Some(1),
-        indent_first_oneline_comment: Some(true),
-        indent_oneline_comments: Some(true),
-        indent_first_multiline_comment: Some(true),
-        indent_multiline_comments: Some(true),
+        newline_format_first_oneline_comment: Some(1),
+        newline_format_oneline_comment: Some(1),
+        newline_format_first_multiline_comment: Some(1),
+        newline_format_multiline_comment: Some(1),
         newline_format_do_end: Some(1),
         newline_format_for: Some(1),
         newline_format_function: Some(1),

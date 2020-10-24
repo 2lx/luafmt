@@ -12,9 +12,9 @@ replace_zero_spaces_with_hint = true
 -- indent
 indentation_string = "    "
 newline_format_statement = 1
-indent_oneline_comments = true
--- indent_multiline_comments = false
-indent_first_oneline_comment = true
+newline_format_oneline_comment = 1
+-- indent_multiline_comment = false
+newline_format_first_oneline_comment = 1
 -- indent_first_multiline_comment = false
 newline_format_do_end = 1
 newline_format_for = 1
