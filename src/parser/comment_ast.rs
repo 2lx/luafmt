@@ -83,7 +83,7 @@ impl ConfiguredWrite for Node {
 
         #[allow(non_snake_case)]
         let Hint = SpaceLocHint;
-        let cfg_write_list_items = list::cfg_write_list_items::<Node, SpaceLocHint>;
+        let cfg_write_list = list::cfg_write_list::<Node, SpaceLocHint>;
 
         match self {
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),
@@ -96,10 +96,17 @@ impl ConfiguredWrite for Node {
                     }
                 }
 
-                cfg_write_list_items(f, cfg, buf, state, self)
+                cfg_write_list(f, cfg, buf, state, self)?;
+                Ok(())
             }
-            comments@CommentList(..) => cfg_write_list_items(f, cfg, buf, state, comments),
-            newlines@NewLineList(..) => cfg_write_list_items(f, cfg, buf, state, newlines),
+            comments@CommentList(..) => {
+                cfg_write_list(f, cfg, buf, state, comments)?;
+                Ok(())
+            }
+            newlines@NewLineList(..) => {
+                cfg_write_list(f, cfg, buf, state, newlines)?;
+                Ok(())
+            }
 
             OneLineComment(_, s) => match cfg.remove_comments {
                 Some(true) => match cfg.remove_all_newlines {

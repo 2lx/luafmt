@@ -73,32 +73,35 @@ where
     Ok(indent)
 }
 
-pub fn cfg_write_list_items<'a, 'b, 'n: 'a + 'b, Node, Hint>(
+pub fn cfg_write_list<'a, 'b, 'n: 'a + 'b, Node, Hint>(
     f: &mut String,
     cfg: &'n Config,
     buf: &str,
     state: &mut State,
     list_node: &'n Node,
-) -> Result<(), core::fmt::Error>
+) -> Result<bool, core::fmt::Error>
 where
     Node: ConfiguredWrite + ListOfItems<Node> + AnyListItem<'n, Node>,
     Hint: ConfiguredWrite + LocHintConstructible<'a, 'b>,
 {
+    let mut indent = false;
     match list_node.items() {
         Some(items) if !items.is_empty() => {
             let first = &items[0];
 
             let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
+            indent = indent || need_newline;
             cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&first.0, "")), first.1)?;
 
             for i in 1..items.len() {
                 let hint = items[i].1.list_item_prefix_hint(cfg);
                 let need_newline = list_node.need_newlines(cfg) && items[i].1.need_newline(list_node, f, cfg, buf, state);
+                indent = indent || need_newline;
 
                 cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&items[i].0, hint)), items[i].1)?;
             }
         }
         _ => {}
     }
-    Ok(())
+    Ok(indent)
 }

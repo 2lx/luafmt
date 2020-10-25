@@ -713,8 +713,8 @@ fn test_table_suffix() {
         Ok(r#"object.field.field
 :method().field
 :method():method()
-.field.field
-:method():method()"#
+.field.field:method()
+:method()"#
             .to_string())
     );
 
@@ -733,8 +733,8 @@ fn test_table_suffix() {
         Ok(r#"object.field.field
 I   :method().field
 I   :method():method()
-I   .field.field
-I   :method():method()"#
+I   .field.field:method()
+I   :method()"#
             .to_string())
     );
 }
@@ -829,8 +829,95 @@ I   :method()"#
         Ok(r#"object.field.field
 I   :method().field
 I   :method():method()
-I   .field.field
-I   :method():method()"#
+I   .field.field:method()
+I   :method()"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"object:method(object2.field:method(object3.field:method(object4)))"#),
+        Ok(r#"object
+I   :method(object2
+I   I   .field
+I   I   :method(object3
+I   I   I   .field
+I   I   I   :method(object4)))"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"object:method1(object1.field1.field2):method2(object2):method3():method4(object4:method(object5.field))"#),
+        Ok(r#"object
+I   :method1(object1
+I   I   .field1.field2)
+I   :method2(object2)
+I   :method3()
+I   :method4(object4
+I   I   :method(object5
+I   I   I   .field))"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"object:method1(object1):method2(object2):method3(object3.field31.field32):method4(object4:method41())"#),
+        Ok(r#"object:method1(object1)
+I   :method2(object2)
+I   :method3(object3
+I   I   .field31
+I   I   .field32)
+I   :method4(object4
+I   I   :method41())"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(24),
+        newline_format_table_suffix: Some(1),
+        enable_oneline_table_suffix: Some(true),
+        indent_table_suffix: Some(true),
+        indent_exp_list: Some(true),
+        newline_format_exp_list_first: Some(1),
+        enable_oneline_exp_list: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"object:method(object2.field:method(object3.field:method(object4)))"#),
+        Ok(r#"object:method(
+I   object2.field
+I   I   :method(
+I   I   I   object3
+I   I   I   I   .field
+I   I   I   I   :method(
+I   I   I   I   I   object4)))"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"object:method1(object1.field1.field2):method2(object2):method3():method4(object4:method(object5.field))"#),
+        Ok(r#"object:method1(
+I   I   object1.field1
+I   I   I   .field2)
+I   :method2(object2)
+I   :method3():method4(
+I   I   object4:method(
+I   I   I   object5
+I   I   I   I   .field))"#
+            .to_string())
+    );
+
+    assert_eq!(
+        ts(r#"object:method1(object1):method2(object2):method3(object3.field31.field32):method4(object4:method41())"#),
+        Ok(r#"object:method1(object1)
+I   :method2(object2)
+I   :method3(
+I   I   object3.field31
+I   I   I   .field32)
+I   :method4(
+I   I   object4
+I   I   I   :method41())"#
             .to_string())
     );
 }
