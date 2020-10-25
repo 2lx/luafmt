@@ -293,24 +293,24 @@ impl Node {
         None
     }
 
-    fn test_indent_exp_list(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State, hint: CommentLocHint)
+    fn test_indent(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State, hint: CommentLocHint)
             -> Result<bool, std::fmt::Error> {
         let cfg_write_sep_list = list::cfg_write_sep_list::<Node, CommentLocHint>;
 
-        let mut ind = cfg.indent_exp_list == Some(true);
-        if let Node::ExpList(_, exprs) = self {
-            match exprs.len() {
-                0 => ind = false,
-                1 => ind = ind && cfg.indent_one_line_exp_list == Some(true),
+        let ind = match self {
+            Node::ExpList(_, exprs) => match exprs.len() {
+                0 => false,
+                1 => cfg.indent_exp_list == Some(true) && cfg.indent_one_line_exp_list == Some(true),
                 _ => {
                     let mut test_f = f.clone();
                     let mut test_state = state.clone();
                     cfg_write!(&mut test_f, cfg, buf, &mut test_state, hint)?;
-                    ind = ind && (cfg.indent_one_line_exp_list == Some(true)
-                        || cfg_write_sep_list(&mut test_f, cfg, buf, &mut test_state, self) == Ok(true));
+                    cfg.indent_exp_list == Some(true) && (cfg.indent_one_line_exp_list == Some(true)
+                        || cfg_write_sep_list(&mut test_f, cfg, buf, &mut test_state, self) == Ok(true))
                 }
             }
-        }
+            _ => false,
+        };
 
         Ok(ind)
     }
@@ -350,7 +350,7 @@ impl ConfiguredWrite for Node {
             }
             ArgsRoundBrackets(_, locs, r) => {
                 cfg_write!(f, cfg, buf, state, "(")?;
-                let ind = r.test_indent_exp_list(f, cfg, buf, state, Hint(&locs[0], "")) == Ok(true);
+                let ind = r.test_indent(f, cfg, buf, state, Hint(&locs[0], "")) == Ok(true);
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], ""), r,
                            If(ind, &DecIndent()), Hint(&locs[1], ""), ")")
             }
@@ -445,7 +445,7 @@ impl ConfiguredWrite for Node {
             }
             VarsExprs(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, state, n1, Hint(&locs[0], " "), "=")?;
-                let ind = n2.test_indent_exp_list(f, cfg, buf, state, Hint(&locs[1], " ")) == Ok(true);
+                let ind = n2.test_indent(f, cfg, buf, state, Hint(&locs[1], " ")) == Ok(true);
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[1], " "), n2, If(ind, &DecIndent()))
             }
 
@@ -462,9 +462,9 @@ impl ConfiguredWrite for Node {
                     }
                 }
 
-                let need_indent = cfg.indent_table_suffix == Some(true);
-                cfg_write!(f, cfg, buf, state, If(need_indent, &IncIndent(None)), IfNewLine(nl, Hint(&Loc(0, 0), "")),
-                           ":", Hint(&locs[0], ""), n1, If(need_indent, &DecIndent()), Hint(&locs[1], ""), n2)
+                let ind = cfg.indent_table_suffix == Some(true);
+                cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), IfNewLine(nl, Hint(&Loc(0, 0), "")),
+                           ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2, If(ind, &DecIndent()))
             }
             ParList(..) => {
                 cfg_write_sep_list(f, cfg, buf, state, self)?;
@@ -528,7 +528,7 @@ impl ConfiguredWrite for Node {
             LocalNames(_, locs, n) => cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), n),
             LocalNamesExprs(_, locs, n1, n2) => {
                 cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), n1, Hint(&locs[1], " "), "=")?;
-                let ind = n2.test_indent_exp_list(f, cfg, buf, state, Hint(&locs[2], " ")) == Ok(true);
+                let ind = n2.test_indent(f, cfg, buf, state, Hint(&locs[2], " ")) == Ok(true);
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[2], " "), n2, If(ind, &DecIndent()))
             }
 
@@ -731,14 +731,14 @@ impl ConfiguredWrite for Node {
                 let nl = cfg.newline_format_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in")?;
 
-                let ind = e.test_indent_exp_list(f, cfg, buf, state, Hint(&locs[2], " ")) == Ok(true);
+                let ind = e.test_indent(f, cfg, buf, state, Hint(&locs[2], " ")) == Ok(true);
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[2], " "), e, If(ind, &DecIndent()),
                            Hint(&locs[3], " "), "do", IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
             ForRangeB(_, locs, n, e, b) => {
                 let nl = cfg.newline_format_for == Some(1);
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in")?;
-                let ind = e.test_indent_exp_list(f, cfg, buf, state, Hint(&locs[2], " ")) == Ok(true);
+                let ind = e.test_indent(f, cfg, buf, state, Hint(&locs[2], " ")) == Ok(true);
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[2], " "), e, If(ind, &DecIndent()),
                            Hint(&locs[3], " "), "do", IncIndent(None), IfNewLine(nl, Hint(&locs[4], " ")), b, DecIndent(),
                            IfNewLine(nl, Hint(&locs[5], " ")), "end")
@@ -747,13 +747,13 @@ impl ConfiguredWrite for Node {
             RetStatNone(_) => write!(f, "return"),
             RetStatExpr(_, locs, n) => {
                 cfg_write!(f, cfg, buf, state, "return")?;
-                let ind = n.test_indent_exp_list(f, cfg, buf, state, Hint(&locs[0], " ")) == Ok(true);
+                let ind = n.test_indent(f, cfg, buf, state, Hint(&locs[0], " ")) == Ok(true);
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], " "), n, If(ind, &DecIndent()))
             }
             RetStatNoneComma(_, locs) => cfg_write!(f, cfg, buf, state, "return", Hint(&locs[0], ""), ";"),
             RetStatExprComma(_, locs, n) => {
                 cfg_write!(f, cfg, buf, state, "return")?;
-                let ind = n.test_indent_exp_list(f, cfg, buf, state, Hint(&locs[0], " ")) == Ok(true);
+                let ind = n.test_indent(f, cfg, buf, state, Hint(&locs[0], " ")) == Ok(true);
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], " "), n, Hint(&locs[1], ""),
                            If(ind, &DecIndent()), ";")
             }
