@@ -1,6 +1,7 @@
 use crate::config;
 use crate::config::{Config, ConfiguredWrite};
 use crate::file_util;
+use crate::formatting::reconstruction;
 use crate::parser;
 use std::fs;
 use std::path::PathBuf;
@@ -39,9 +40,12 @@ fn process_file_with_config(file_path: &PathBuf, cfg: &Config) -> Result<String,
     use FormatterError::*;
     match fs::read_to_string(file_path) {
         Ok(content) => match parser::parse_lua(&content) {
-            Ok(node_tree) => {
+            Ok(mut node_tree) => {
                 let mut outbuffer = String::new();
                 let mut state = config::State::default();
+
+                // process the tree
+                reconstruction::reconstruct_node_tree(&mut node_tree, cfg);
 
                 match node_tree.configured_write(&mut outbuffer, &cfg, &content, &mut state) {
                     Ok(_) => Ok(outbuffer),

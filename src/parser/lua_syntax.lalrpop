@@ -421,13 +421,13 @@ Par: Node = {
 
 TableConstructor: Node = {
     <ls:@L> "{" <l1:@R> <r1:@L> <e:FieldList> <l2:@R> <r2:@L> "}" <rs:@R>
-        => Node::TableConstructor(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e)),
+        => Node::TableConstructor(Loc(ls, rs), [Loc(l1, r1), Loc(l2, r2)], Box::new(e), TableConstructorOpts::default()),
     <ls:@L> "{" <l1:@R> <r1:@L> "}" <rs:@R>
         => Node::TableConstructorEmpty(Loc(ls, rs), [Loc(l1, r1)]),
 }
 
 FieldList: Node = {
-    <ls:@L> <v:TSepEndList<Field, FieldSep>> <rs:@R> => Node::Fields(Loc(ls, rs), v),
+    <ls:@L> <v:TSepEndList<Field, FieldSep>> <rs:@R> => Node::Fields(Loc(ls, rs), v, FieldsOpts::default()),
 }
 
 Field: Node = {

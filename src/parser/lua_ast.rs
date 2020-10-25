@@ -9,6 +9,32 @@ use crate::formatting::util;
 use crate::formatting::decoration::*;
 
 #[derive(Debug)]
+pub struct TableConstructorOpts {
+    pub is_all_sequential: Option<bool>,
+}
+
+impl TableConstructorOpts {
+    pub const fn default() -> Self {
+        TableConstructorOpts {
+            is_all_sequential: None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct FieldsOpts {
+    pub is_all_sequential: Option<bool>,
+}
+
+impl FieldsOpts {
+    pub const fn default() -> Self {
+        FieldsOpts {
+            is_all_sequential: None,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum Node {
     BinaryOp(Loc, [Loc; 2], Str<'static>, Box<Node>, Box<Node>),
     UnaryOp(Loc, [Loc; 1], Str<'static>, Box<Node>),
@@ -29,9 +55,9 @@ pub enum Node {
     CharStringLiteral(Loc, String),
     MultiLineStringLiteral(Loc, usize, String),
 
-    TableConstructor(Loc, [Loc; 2], Box<Node>),
+    TableConstructor(Loc, [Loc; 2], Box<Node>, TableConstructorOpts),
     TableConstructorEmpty(Loc, [Loc; 1]),
-    Fields(Loc, Vec<(Loc, Node, Loc, String)>),
+    Fields(Loc, Vec<(Loc, Node, Loc, String)>, FieldsOpts),
     FieldNamedBracket(Loc, [Loc; 4], Box<Node>, Box<Node>),
     FieldNamed(Loc, [Loc; 2], Box<Node>, Box<Node>),
     FieldSequential(Loc, Box<Node>),
@@ -181,7 +207,7 @@ impl list::SepListOfItems<Node> for Node {
     fn items(&self) -> Option<&Vec::<(Loc, Node, Loc, String)>> {
         use Node::*;
         match self {
-            Fields(_, items) | ExpList(_, items) | NameList(_, items) | VarList(_, items) | ParList(_, items)
+            Fields(_, items, _) | ExpList(_, items) | NameList(_, items) | VarList(_, items) | ParList(_, items)
                 | FuncName(_, items) | FuncNameSelf(_, _, items, _) => Some(items),
             _ => None,
         }
@@ -400,18 +426,13 @@ impl ConfiguredWrite for Node {
             // literals
             Numeral(_, s) => write!(f, "{}", s),
             NormalStringLiteral(_, s) => write!(f, "\"{}\"", s),
-            CharStringLiteral(_, s) => {
-                if cfg.convert_charstring_to_normalstring == Some(true) {
-                    return write!(f, "\"{}\"", util::charstring_to_normalstring(s));
-                }
-                write!(f, "'{}'", s)
-            }
+            CharStringLiteral(_, s) => write!(f, "'{}'", s),
             MultiLineStringLiteral(_, level, s) => {
                 let level_str = (0..*level).map(|_| "=").collect::<String>();
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)
             }
 
-            TableConstructor(_, locs, r) => {
+            TableConstructor(_, locs, r, _) => {
                 if let Some(line) = self.test_oneline_table_constructor(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }

@@ -1,7 +1,7 @@
 use std::fmt::Write;
 use crate::config::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Loc(pub usize, pub usize);
 
 #[derive(Debug)]

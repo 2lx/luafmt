@@ -81,6 +81,7 @@ pub struct Config {
     pub enable_oneline_binary_op: Option<bool>,
     pub enable_oneline_table_constructor: Option<bool>,
     pub enable_oneline_table_field: Option<bool>,
+    pub enable_oneline_iv_table: Option<bool>,
     pub enable_oneline_if: Option<bool>,
     pub enable_oneline_top_level_function: Option<bool>,
     pub enable_oneline_scoped_function: Option<bool>,
@@ -142,6 +143,7 @@ impl Config {
             enable_oneline_binary_op: None,
             enable_oneline_table_constructor: None,
             enable_oneline_table_field: None,
+            enable_oneline_iv_table: None,
             enable_oneline_if: None,
             enable_oneline_top_level_function: None,
             enable_oneline_scoped_function: None,
@@ -218,6 +220,7 @@ impl Config {
             "enable_oneline_binary_op" => set_param_value_as!(self.enable_oneline_binary_op, bool),
             "enable_oneline_table_constructor" => set_param_value_as!(self.enable_oneline_table_constructor, bool),
             "enable_oneline_table_field" => set_param_value_as!(self.enable_oneline_table_field, bool),
+            "enable_oneline_iv_table" => set_param_value_as!(self.enable_oneline_iv_table, bool),
             "enable_oneline_if" => set_param_value_as!(self.enable_oneline_if, bool),
             "enable_oneline_top_level_function" => set_param_value_as!(self.enable_oneline_top_level_function, bool),
             "enable_oneline_scoped_function" => set_param_value_as!(self.enable_oneline_scoped_function, bool),
@@ -342,6 +345,7 @@ impl fmt::Display for Config {
         print_opt!(self.enable_oneline_binary_op, "enable_oneline_binary_op");
         print_opt!(self.enable_oneline_table_constructor, "enable_oneline_table_constructor");
         print_opt!(self.enable_oneline_table_field, "enable_oneline_table_field");
+        print_opt!(self.enable_oneline_iv_table, "enable_oneline_iv_table");
         print_opt!(self.enable_oneline_if, "enable_oneline_if");
         print_opt!(self.enable_oneline_top_level_function, "enable_oneline_top_level_function");
         print_opt!(self.enable_oneline_scoped_function, "enable_oneline_scoped_function");
