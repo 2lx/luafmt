@@ -45,7 +45,7 @@ pub struct Config {
 
     // indentation
     pub indentation_string: Option<String>,
-    pub indent_one_item_exp_list: Option<bool>,
+    pub indent_one_line_exp_list: Option<bool>,
     pub indent_table_suffix: Option<bool>,
     pub indent_exp_list: Option<bool>,
 
@@ -107,7 +107,7 @@ impl Config {
 
             // indentation
             indentation_string: None,
-            indent_one_item_exp_list: None,
+            indent_one_line_exp_list: None,
             indent_table_suffix: None,
             indent_exp_list: None,
 
@@ -182,7 +182,7 @@ impl Config {
 
             // indentation
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
-            "indent_one_item_exp_list" => set_param_value_as!(self.indent_one_item_exp_list, bool),
+            "indent_one_line_exp_list" => set_param_value_as!(self.indent_one_line_exp_list, bool),
             "indent_table_suffix" => set_param_value_as!(self.indent_table_suffix, bool),
             "indent_exp_list" => set_param_value_as!(self.indent_exp_list, bool),
 
@@ -305,7 +305,7 @@ impl fmt::Display for Config {
 
         // indentation
         print_opt!(self.indentation_string, "indentation_string");
-        print_opt!(self.indent_one_item_exp_list, "indent_one_item_exp_list");
+        print_opt!(self.indent_one_line_exp_list, "indent_one_line_exp_list");
         print_opt!(self.indent_table_suffix, "indent_table_suffix");
         print_opt!(self.indent_exp_list, "indent_exp_list");
 

@@ -998,7 +998,7 @@ fn test_indent_exp_list() {
 
         indent_exp_list: Some(true),
         indent_table_suffix: Some(true),
-        indent_one_item_exp_list: Some(true),
+        indent_one_line_exp_list: Some(true),
         newline_format_exp_list: Some(1),
         enable_oneline_exp_list: Some(true),
 
@@ -1047,7 +1047,7 @@ I   field.field:method();"#.to_string())
 
         indent_exp_list: Some(true),
         indent_table_suffix: Some(true),
-        // indent_one_item_exp_list: Some(true),
+        // indent_one_line_exp_list: Some(true),
         newline_format_exp_list: Some(1),
         enable_oneline_exp_list: Some(true),
 
@@ -1058,17 +1058,70 @@ I   field.field:method();"#.to_string())
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    let source = r#"value = class(function()
+    assert_eq!(
+        ts(r#"value = class(function()
     self.a = 1
     self.b = 2
 end)
-local a = b"#;
-    assert_eq!(
-        ts(source),
+local a = b"#),
         Ok(r#"value = class(function()
 I   self.a = 1
 I   self.b = 2
 end)
+local a = b"#.to_string())
+    );
+
+    assert_eq!(
+        ts(r#"value = class(vara, varb, function()
+    self.a = 1
+    self.b = 2
+end)
+local a = b"#),
+        Ok(r#"value = class(vara, varb, function()
+I   self.a = 1
+I   self.b = 2
+end)
+local a = b"#.to_string())
+    );
+
+    assert_eq!(
+        ts(r#"value = class(vara, varb, function()
+    self.a = 1
+    self.b = 2
+end, function()
+    self.a = 3
+    self.b = 4
+end, something_else)
+local a = b"#),
+        Ok(r#"value = class(vara, varb, function()
+I   self.a = 1
+I   self.b = 2
+end, function()
+I   self.a = 3
+I   self.b = 4
+end, something_else)
+local a = b"#.to_string())
+    );
+
+    assert_eq!(
+        ts(r#"value = class(vara, varb, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec)
+local a = b"#),
+        Ok(r#"value = class(vara, varb, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec,
+I   varqweqweqweqweqwec)
+local a = b"#.to_string())
+    );
+
+    assert_eq!(
+        ts(r#"value = class(vara, varb, function()
+    self.a = 1
+    self.b = 2
+end, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec)
+local a = b"#),
+        Ok(r#"value = class(vara, varb, function()
+I   I   self.a = 1
+I   I   self.b = 2
+I   end, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec,
+I   varqweqweqweqweqwec, varqweqweqweqweqwec)
 local a = b"#.to_string())
     );
 }
