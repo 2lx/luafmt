@@ -1,5 +1,5 @@
-use std::fmt::Write;
 use crate::config::*;
+use std::fmt::Write;
 
 #[derive(Debug, Clone)]
 pub struct Loc(pub usize, pub usize);

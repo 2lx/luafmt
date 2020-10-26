@@ -229,7 +229,7 @@ I   e
         indentation_string: Some("I   ".to_string()),
         newline_format_table_constructor: Some(1),
         newline_format_table_field: Some(1),
-        max_width: Some(50),
+        max_width: Some(40),
         enable_oneline_table_constructor: Some(true),
         ..Config::default()
     };
@@ -252,6 +252,25 @@ I   e
         indentation_string: Some("I   ".to_string()),
         newline_format_table_constructor: Some(1),
         newline_format_table_field: Some(1),
+        max_width: Some(55),
+        enable_oneline_table_constructor: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"), Ok(r#"local a = {a=3, b=23-1, c=a}"#.to_string()));
+    assert_eq!(
+        ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
+        Ok(r#"local a =
+I   { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
         max_width: Some(27),
         enable_oneline_table_constructor: Some(true),
         ..Config::default()
@@ -260,12 +279,9 @@ I   e
 
     assert_eq!(
         ts("local a = {a=3, b=23-1, c=a}"),
-        Ok(r#"local a = {
-I   a=3,
-I   b=23-1,
-I   c=a
-}"#
-        .to_string())
+        Ok(r#"local a =
+I   {a=3, b=23-1, c=a}"#
+            .to_string())
     );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
@@ -289,7 +305,7 @@ I   e
         indentation_string: Some("I   ".to_string()),
         newline_format_table_constructor: Some(1),
         newline_format_table_field: Some(1),
-        max_width: Some(27),
+        max_width: Some(15),
         enable_oneline_table_constructor: Some(true),
         field_separator: Some(";".to_string()),
         write_trailing_field_separator: Some(true),
@@ -304,6 +320,25 @@ I   a=3;
 I   b=23-1;
 I   c=a;
 }"#
+        .to_string())
+    );
+    let cfg = Config {
+        remove_single_newlines: Some(true),
+        indentation_string: Some("I   ".to_string()),
+        newline_format_table_constructor: Some(1),
+        newline_format_table_field: Some(1),
+        max_width: Some(27),
+        enable_oneline_table_constructor: Some(true),
+        field_separator: Some(";".to_string()),
+        write_trailing_field_separator: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts("local a = {a=3, b=23-1, c=a}"),
+        Ok(r#"local a =
+I   {a=3; b=23-1; c=a}"#
         .to_string())
     );
     assert_eq!(
@@ -339,8 +374,8 @@ I   e;
 
     assert_eq!(
         ts("local a = {a=3, b=23-1, c=a}"),
-        Ok(r#"local a = {a=3; b=23-1; c=a;
-}"#
+        Ok(r#"local a =
+I   {a=3; b=23-1; c=a}"#
         .to_string())
     );
     assert_eq!(
@@ -846,7 +881,9 @@ I   I   I   :method(object4)))"#
     );
 
     assert_eq!(
-        ts(r#"object:method1(object1.field1.field2):method2(object2):method3():method4(object4:method(object5.field))"#),
+        ts(
+            r#"object:method1(object1.field1.field2):method2(object2):method3():method4(object4:method(object5.field))"#
+        ),
         Ok(r#"object
 I   :method1(object1
 I   I   .field1.field2)
@@ -896,7 +933,9 @@ I   I   I   I   I   object4)))"#
     );
 
     assert_eq!(
-        ts(r#"object:method1(object1.field1.field2):method2(object2):method3():method4(object4:method(object5.field))"#),
+        ts(
+            r#"object:method1(object1.field1.field2):method2(object2):method3():method4(object4:method(object5.field))"#
+        ),
         Ok(r#"object:method1(
 I   I   object1.field1
 I   I   I   .field2)
@@ -1046,6 +1085,31 @@ I   b, "asdasdsad",
 I   12312321
 fn(12, "abc", abvad,
 I   {a=12321, b="asdad"})"#
+            .to_string())
+    );
+
+    let cfg = Config {
+        indentation_string: Some("I   ".to_string()),
+        max_width: Some(26),
+        newline_format_exp_list: Some(1),
+        newline_format_function: Some(1),
+        newline_format_statement: Some(1),
+        enable_oneline_exp_list: Some(true),
+        remove_single_newlines: Some(true),
+        indent_exp_list: Some(true),
+        ..Config::default()
+    };
+    let ts = |s: &str| ts_base(s, &cfg);
+
+    assert_eq!(
+        ts(r#"a = fn("str", function(a) print(a) print(a + 1) end, 123, function(b) print(b) print(b + 1) end)"#),
+        Ok(r#"a = fn("str", function(a)
+I   print(a)
+I   print(a + 1)
+end, 123, function(b)
+I   print(b)
+I   print(b + 1)
+end)"#
             .to_string())
     );
 }

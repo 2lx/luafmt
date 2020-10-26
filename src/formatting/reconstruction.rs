@@ -1,6 +1,6 @@
 use crate::config::Config;
-use crate::parser::lua_ast::Node;
 use crate::formatting::util;
+use crate::parser::lua_ast::Node;
 
 pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
     use Node::*;
@@ -67,9 +67,7 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
             reconstruct_node_tree(&mut *n3, cfg);
         }
 
-        ForIntB(_, _, n1, n2, n3, n4)
-        | ForIntStep(_, _, n1, n2, n3, n4)
-        | IfThenBElseIfElseB(_, _, n1, n2, n3, n4) => {
+        ForIntB(_, _, n1, n2, n3, n4) | ForIntStep(_, _, n1, n2, n3, n4) | IfThenBElseIfElseB(_, _, n1, n2, n3, n4) => {
             reconstruct_node_tree(&mut *n1, cfg);
             reconstruct_node_tree(&mut *n2, cfg);
             reconstruct_node_tree(&mut *n3, cfg);
@@ -124,25 +122,26 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
             let mut is_all_sequential = true;
             let has_single_child = v.len() == 1;
 
-            for (_, node, _, _) in v {
+            for (index, (_, node, _, _)) in v.into_iter().enumerate() {
                 match node {
                     FieldSequential(_, e) => {
                         if let TableConstructor(_, _, _, nested_opts) = &mut **e {
                             nested_opts.is_single_child = Some(has_single_child);
-                            nested_opts.children_of_single_child = opts.is_single_child;
+                            nested_opts.is_first_child = Some(index == 0);
                         }
                     }
-                    _ => { is_all_sequential = false; }
+                    _ => {
+                        is_all_sequential = false;
+                    }
                 }
                 reconstruct_node_tree(node, cfg);
             }
 
             opts.is_all_sequential = Some(is_all_sequential);
-            opts.has_single_child = Some(has_single_child);
         }
         TableConstructor(_, _, r, opts) => {
-            if opts.children_of_single_child.is_none() {
-                opts.children_of_single_child = Some(true);
+            if opts.is_first_child.is_none() {
+                opts.is_first_child = Some(true);
             }
             if opts.is_single_child.is_none() {
                 opts.is_single_child = Some(true);
@@ -150,14 +149,12 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
 
             if let Fields(_, _, field_opts) = &mut **r {
                 field_opts.is_single_child = opts.is_single_child;
-                field_opts.children_of_single_child = opts.children_of_single_child;
             }
 
             reconstruct_node_tree(&mut *r, cfg);
 
             if let Fields(_, _, field_opts) = &**r {
                 opts.is_all_sequential = field_opts.is_all_sequential;
-                opts.has_single_child = field_opts.has_single_child;
             }
         }
         CharStringLiteral(pos, s) => {
