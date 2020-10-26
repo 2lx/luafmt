@@ -2,11 +2,18 @@ pub mod comment_ast;
 pub mod common;
 pub mod lua_ast;
 
+mod lexer_util;
+
 mod comment_lexer;
+#[allow(clippy::all)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 mod comment_syntax;
 mod comment_test;
-mod lexer_util;
+
 mod lua_lexer;
+
+#[allow(clippy::all)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 mod lua_syntax;
 mod lua_test;
 

@@ -25,11 +25,7 @@ pub trait ListOfItems<Node> {
 }
 
 pub fn cfg_write_sep_list<'a, 'b, 'c, 'n: 'a + 'b + 'c, Node, Hint>(
-    f: &mut String,
-    cfg: &'n Config,
-    buf: &str,
-    state: &mut State,
-    list_node: &'n Node,
+    f: &mut String, cfg: &'n Config, buf: &str, state: &mut State, list_node: &'n Node,
 ) -> Result<bool, core::fmt::Error>
 where
     Node: ConfiguredWrite + SepListOfItems<Node> + AnyListItem<'n, Node>,
@@ -47,8 +43,11 @@ where
             };
 
             let first = &items[0];
-            let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
+            let need_newline =
+                list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
             indent = indent || need_newline;
+
+            #[cfg_attr(rustfmt, rustfmt_skip)]
             cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&first.0, "")), first.1,
                        Hint::new(&first.2, ""))?;
 
@@ -58,6 +57,8 @@ where
                 let item = &items[i];
                 let need_newline = list_node.need_newlines(cfg) && item.1.need_newline(list_node, f, cfg, buf, state);
                 indent = indent || need_newline;
+
+                #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&item.0, list_node.element_prefix_hint())),
                            item.1, Hint::new(&item.2, ""))?;
             }
@@ -74,11 +75,7 @@ where
 }
 
 pub fn cfg_write_list<'a, 'b, 'n: 'a + 'b, Node, Hint>(
-    f: &mut String,
-    cfg: &'n Config,
-    buf: &str,
-    state: &mut State,
-    list_node: &'n Node,
+    f: &mut String, cfg: &'n Config, buf: &str, state: &mut State, list_node: &'n Node,
 ) -> Result<bool, core::fmt::Error>
 where
     Node: ConfiguredWrite + ListOfItems<Node> + AnyListItem<'n, Node>,
@@ -89,15 +86,20 @@ where
         Some(items) if !items.is_empty() => {
             let first = &items[0];
 
-            let need_newline = list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
+            let need_newline =
+                list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
             indent = indent || need_newline;
+
+            #[cfg_attr(rustfmt, rustfmt_skip)]
             cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&first.0, "")), first.1)?;
 
             for i in 1..items.len() {
                 let hint = items[i].1.list_item_prefix_hint(cfg);
-                let need_newline = list_node.need_newlines(cfg) && items[i].1.need_newline(list_node, f, cfg, buf, state);
+                let need_newline =
+                    list_node.need_newlines(cfg) && items[i].1.need_newline(list_node, f, cfg, buf, state);
                 indent = indent || need_newline;
 
+                #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&items[i].0, hint)), items[i].1)?;
             }
         }

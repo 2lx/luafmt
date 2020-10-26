@@ -97,7 +97,6 @@ impl ConfiguredWrite for If<'_> {
     }
 }
 
-
 #[test]
 fn test_decors() -> std::fmt::Result {
     use crate::{cfg_write, cfg_write_helper};
@@ -134,15 +133,7 @@ fn test_decors() -> std::fmt::Result {
     assert_eq!(state.stack_indent, vec![]);
 
     // 4
-    cfg_write!(
-        &mut buf,
-        &cfg,
-        "",
-        &mut state,
-        IncIndent(Some("1")),
-        IncIndent(None),
-        IncIndent(Some("1"))
-    )?;
+    cfg_write!(&mut buf, &cfg, "", &mut state, IncIndent(Some("1")), IncIndent(None), IncIndent(Some("1")))?;
     assert_eq!(state.indent_level, 3);
     assert_eq!(state.stack_indent, vec![Some("1"), None, Some("1")]);
 

@@ -45,8 +45,8 @@ pub struct Config {
 
     // indentation
     pub indentation_string: Option<String>,
-    pub indent_table_suffix: Option<bool>,
-    pub indent_one_line_table_suffix: Option<bool>,
+    pub indent_var_suffix: Option<bool>,
+    pub indent_one_line_var_suffix: Option<bool>,
     pub indent_exp_list: Option<bool>,
     pub indent_one_line_exp_list: Option<bool>,
 
@@ -65,7 +65,7 @@ pub struct Config {
     pub newline_format_table_field: Option<usize>,
     pub newline_format_while: Option<usize>,
     pub newline_format_binary_op: Option<usize>,
-    pub newline_format_table_suffix: Option<usize>,
+    pub newline_format_var_suffix: Option<usize>,
     pub newline_format_exp_list: Option<usize>,
     pub newline_format_exp_list_first: Option<usize>,
 
@@ -85,7 +85,7 @@ pub struct Config {
     pub enable_oneline_if: Option<bool>,
     pub enable_oneline_top_level_function: Option<bool>,
     pub enable_oneline_scoped_function: Option<bool>,
-    pub enable_oneline_table_suffix: Option<bool>,
+    pub enable_oneline_var_suffix: Option<bool>,
     pub enable_oneline_exp_list: Option<bool>,
 }
 
@@ -109,8 +109,8 @@ impl Config {
 
             // indentation
             indentation_string: None,
-            indent_table_suffix: None,
-            indent_one_line_table_suffix: None,
+            indent_var_suffix: None,
+            indent_one_line_var_suffix: None,
             indent_exp_list: None,
             indent_one_line_exp_list: None,
 
@@ -129,7 +129,7 @@ impl Config {
             newline_format_table_field: None,
             newline_format_while: None,
             newline_format_binary_op: None,
-            newline_format_table_suffix: None,
+            newline_format_var_suffix: None,
             newline_format_exp_list: None,
             newline_format_exp_list_first: None,
 
@@ -147,7 +147,7 @@ impl Config {
             enable_oneline_if: None,
             enable_oneline_top_level_function: None,
             enable_oneline_scoped_function: None,
-            enable_oneline_table_suffix: None,
+            enable_oneline_var_suffix: None,
             enable_oneline_exp_list: None,
         }
     }
@@ -186,14 +186,18 @@ impl Config {
 
             // indentation
             "indentation_string" => set_param_value_as!(self.indentation_string, String),
-            "indent_table_suffix" => set_param_value_as!(self.indent_table_suffix, bool),
-            "indent_one_line_table_suffix" => set_param_value_as!(self.indent_one_line_table_suffix, bool),
+            "indent_var_suffix" => set_param_value_as!(self.indent_var_suffix, bool),
+            "indent_one_line_var_suffix" => set_param_value_as!(self.indent_one_line_var_suffix, bool),
             "indent_exp_list" => set_param_value_as!(self.indent_exp_list, bool),
             "indent_one_line_exp_list" => set_param_value_as!(self.indent_one_line_exp_list, bool),
 
             // format
-            "newline_format_first_oneline_comment" => set_param_value_as!(self.newline_format_first_oneline_comment, usize),
-            "newline_format_first_multiline_comment" => set_param_value_as!(self.newline_format_first_multiline_comment, usize),
+            "newline_format_first_oneline_comment" => {
+                set_param_value_as!(self.newline_format_first_oneline_comment, usize)
+            }
+            "newline_format_first_multiline_comment" => {
+                set_param_value_as!(self.newline_format_first_multiline_comment, usize)
+            }
             "newline_format_oneline_comment" => set_param_value_as!(self.newline_format_oneline_comment, usize),
             "newline_format_multiline_comment" => set_param_value_as!(self.newline_format_multiline_comment, usize),
             "newline_format_statement" => set_param_value_as!(self.newline_format_statement, usize),
@@ -206,7 +210,7 @@ impl Config {
             "newline_format_table_field" => set_param_value_as!(self.newline_format_table_field, usize),
             "newline_format_while" => set_param_value_as!(self.newline_format_while, usize),
             "newline_format_binary_op" => set_param_value_as!(self.newline_format_binary_op, usize),
-            "newline_format_table_suffix" => set_param_value_as!(self.newline_format_table_suffix, usize),
+            "newline_format_var_suffix" => set_param_value_as!(self.newline_format_var_suffix, usize),
             "newline_format_exp_list" => set_param_value_as!(self.newline_format_exp_list, usize),
             "newline_format_exp_list_first" => set_param_value_as!(self.newline_format_exp_list_first, usize),
 
@@ -224,7 +228,7 @@ impl Config {
             "enable_oneline_if" => set_param_value_as!(self.enable_oneline_if, bool),
             "enable_oneline_top_level_function" => set_param_value_as!(self.enable_oneline_top_level_function, bool),
             "enable_oneline_scoped_function" => set_param_value_as!(self.enable_oneline_scoped_function, bool),
-            "enable_oneline_table_suffix" => set_param_value_as!(self.enable_oneline_table_suffix, bool),
+            "enable_oneline_var_suffix" => set_param_value_as!(self.enable_oneline_var_suffix, bool),
             "enable_oneline_exp_list" => set_param_value_as!(self.enable_oneline_exp_list, bool),
 
             _ => eprintln!("Invalid option name `{}`", option_name),
@@ -311,8 +315,8 @@ impl fmt::Display for Config {
 
         // indentation
         print_opt!(self.indentation_string, "indentation_string");
-        print_opt!(self.indent_table_suffix, "indent_table_suffix");
-        print_opt!(self.indent_one_line_table_suffix, "indent_one_line_table_suffix");
+        print_opt!(self.indent_var_suffix, "indent_var_suffix");
+        print_opt!(self.indent_one_line_var_suffix, "indent_one_line_var_suffix");
         print_opt!(self.indent_exp_list, "indent_exp_list");
         print_opt!(self.indent_one_line_exp_list, "indent_one_line_exp_list");
 
@@ -331,7 +335,7 @@ impl fmt::Display for Config {
         print_opt!(self.newline_format_table_field, "newline_format_table_field");
         print_opt!(self.newline_format_while, "newline_format_while");
         print_opt!(self.newline_format_binary_op, "newline_format_binary_op");
-        print_opt!(self.newline_format_table_suffix, "newline_format_table_suffix");
+        print_opt!(self.newline_format_var_suffix, "newline_format_var_suffix");
         print_opt!(self.newline_format_exp_list, "newline_format_exp_list");
         print_opt!(self.newline_format_exp_list_first, "newline_format_exp_list_first");
 
@@ -349,7 +353,7 @@ impl fmt::Display for Config {
         print_opt!(self.enable_oneline_if, "enable_oneline_if");
         print_opt!(self.enable_oneline_top_level_function, "enable_oneline_top_level_function");
         print_opt!(self.enable_oneline_scoped_function, "enable_oneline_scoped_function");
-        print_opt!(self.enable_oneline_table_suffix, "enable_oneline_table_suffix");
+        print_opt!(self.enable_oneline_var_suffix, "enable_oneline_var_suffix");
         print_opt!(self.enable_oneline_exp_list, "enable_oneline_exp_list");
 
         write!(f, "}}")?;

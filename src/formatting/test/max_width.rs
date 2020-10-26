@@ -656,7 +656,7 @@ end"#
 
 #[test]
 fn test_table_suffix() {
-    let cfg = Config { newline_format_table_suffix: Some(1), ..Config::default() };
+    let cfg = Config { newline_format_var_suffix: Some(1), ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -678,7 +678,7 @@ fn test_table_suffix() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(20),
-        newline_format_table_suffix: Some(1),
+        newline_format_var_suffix: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -702,8 +702,8 @@ fn test_table_suffix() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(20),
-        newline_format_table_suffix: Some(1),
-        enable_oneline_table_suffix: Some(true),
+        newline_format_var_suffix: Some(1),
+        enable_oneline_var_suffix: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -721,9 +721,9 @@ fn test_table_suffix() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        newline_format_table_suffix: Some(1),
-        enable_oneline_table_suffix: Some(true),
-        indent_table_suffix: Some(true),
+        newline_format_var_suffix: Some(1),
+        enable_oneline_var_suffix: Some(true),
+        indent_var_suffix: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -744,7 +744,7 @@ fn test_table_field() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        newline_format_table_suffix: Some(1),
+        newline_format_var_suffix: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -768,7 +768,7 @@ fn test_table_field() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        newline_format_table_suffix: Some(1),
+        newline_format_var_suffix: Some(1),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -792,8 +792,8 @@ fn test_table_field() {
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        newline_format_table_suffix: Some(1),
-        indent_table_suffix: Some(true),
+        newline_format_var_suffix: Some(1),
+        indent_var_suffix: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -817,9 +817,9 @@ I   :method()"#
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        newline_format_table_suffix: Some(1),
-        enable_oneline_table_suffix: Some(true),
-        indent_table_suffix: Some(true),
+        newline_format_var_suffix: Some(1),
+        enable_oneline_var_suffix: Some(true),
+        indent_var_suffix: Some(true),
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -873,9 +873,9 @@ I   I   :method41())"#
     let cfg = Config {
         indentation_string: Some("I   ".to_string()),
         max_width: Some(24),
-        newline_format_table_suffix: Some(1),
-        enable_oneline_table_suffix: Some(true),
-        indent_table_suffix: Some(true),
+        newline_format_var_suffix: Some(1),
+        enable_oneline_var_suffix: Some(true),
+        indent_var_suffix: Some(true),
         indent_exp_list: Some(true),
         newline_format_exp_list_first: Some(1),
         enable_oneline_exp_list: Some(true),

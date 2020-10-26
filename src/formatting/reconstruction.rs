@@ -122,27 +122,42 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
         // custom
         Fields(_, v, opts) => {
             let mut is_all_sequential = true;
+            let has_single_child = v.len() == 1;
 
             for (_, node, _, _) in v {
-                reconstruct_node_tree(node, cfg);
-                match &node {
-                    FieldSequential(..) => {},
+                match node {
+                    FieldSequential(_, e) => {
+                        if let TableConstructor(_, _, _, nested_opts) = &mut **e {
+                            nested_opts.is_single_child = Some(has_single_child);
+                            nested_opts.children_of_single_child = opts.is_single_child;
+                        }
+                    }
                     _ => { is_all_sequential = false; }
                 }
+                reconstruct_node_tree(node, cfg);
             }
 
             opts.is_all_sequential = Some(is_all_sequential);
+            opts.has_single_child = Some(has_single_child);
         }
         TableConstructor(_, _, r, opts) => {
+            if opts.children_of_single_child.is_none() {
+                opts.children_of_single_child = Some(true);
+            }
+            if opts.is_single_child.is_none() {
+                opts.is_single_child = Some(true);
+            }
+
+            if let Fields(_, _, field_opts) = &mut **r {
+                field_opts.is_single_child = opts.is_single_child;
+                field_opts.children_of_single_child = opts.children_of_single_child;
+            }
+
             reconstruct_node_tree(&mut *r, cfg);
 
-            match &**r {
-                Fields(_, _, field_opts) => {
-                    opts.is_all_sequential = field_opts.is_all_sequential;
-                }
-                _ => {
-                    opts.is_all_sequential = Some(false);
-                }
+            if let Fields(_, _, field_opts) = &**r {
+                opts.is_all_sequential = field_opts.is_all_sequential;
+                opts.has_single_child = field_opts.has_single_child;
             }
         }
         CharStringLiteral(pos, s) => {

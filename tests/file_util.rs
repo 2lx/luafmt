@@ -1,14 +1,13 @@
 extern crate luapp;
 
-use std::path::Path;
 use luapp::file_util::*;
 use luapp::CFG_PREFIX;
+use std::path::Path;
 
 #[test]
 fn test_get_path_files() {
     let path_buf = Path::new("tests/scripts1").to_path_buf();
-    let mut actual =
-        get_path_files(&path_buf, false, "lua", CFG_PREFIX).ok().unwrap_or(vec![]);
+    let mut actual = get_path_files(&path_buf, false, "lua", CFG_PREFIX).ok().unwrap_or(vec![]);
     actual.sort();
     assert_eq!(
         actual,
@@ -16,14 +15,12 @@ fn test_get_path_files() {
     );
 
     let path_buf = Path::new("tests/scripts1/subdir1/").to_path_buf();
-    let mut actual =
-        get_path_files(&path_buf, false, "lua", CFG_PREFIX).ok().unwrap_or(vec![]);
+    let mut actual = get_path_files(&path_buf, false, "lua", CFG_PREFIX).ok().unwrap_or(vec![]);
     actual.sort();
     assert_eq!(actual, vec![Path::new("tests/scripts1/subdir1/file3.lua").to_path_buf()]);
 
     let path_buf = Path::new("tests/scripts1/subdir1/").to_path_buf();
-    let mut actual =
-        get_path_files(&path_buf, true, "lua", CFG_PREFIX).ok().unwrap_or(vec![]);
+    let mut actual = get_path_files(&path_buf, true, "lua", CFG_PREFIX).ok().unwrap_or(vec![]);
     actual.sort();
     assert_eq!(
         actual,
