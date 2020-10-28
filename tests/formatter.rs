@@ -9,7 +9,7 @@ use std::path::Path;
 fn test_process_file_success() {
     let path_buf = Path::new("tests/scripts1/file1.lua").to_path_buf();
     let config = Config::default();
-    let actual = process_file(&path_buf, &config);
+    let actual = process_file(&path_buf, &config, false);
     let expected = fs::read_to_string("tests/scripts1/file1.lua.out").unwrap_or("".to_string());
 
     assert!(actual.as_ref().ok().is_some(), "{:?}", actual);
@@ -23,7 +23,7 @@ fn test_process_file_failure() {
     // no config
     let path_buf = Path::new("tests/scripts2/no_err.lua").to_path_buf();
     let config = Config::default();
-    let actual = process_file(&path_buf, &config);
+    let actual = process_file(&path_buf, &config, false);
     assert!(actual.is_err());
     assert!(match actual.unwrap_err() {
         NoConfigureFile(..) => true,
@@ -33,7 +33,7 @@ fn test_process_file_failure() {
     // invalid config
     let path_buf = Path::new("tests/scripts_err2/1.lua").to_path_buf();
     let config = Config::default();
-    let actual = process_file(&path_buf, &config);
+    let actual = process_file(&path_buf, &config, false);
     assert!(actual.is_err());
     assert!(match actual.unwrap_err() {
         InvalidConfigFile(..) => true,
@@ -43,7 +43,7 @@ fn test_process_file_failure() {
     // no such file
     let path_buf = Path::new("tests/scripts1/file0.lua").to_path_buf();
     let config = Config::default();
-    let actual = process_file(&path_buf, &config);
+    let actual = process_file(&path_buf, &config, false);
     assert!(actual.is_err());
     assert!(match actual.unwrap_err() {
         ReadingError(..) => true,
@@ -53,7 +53,7 @@ fn test_process_file_failure() {
     // error lua-file syntax
     let path_buf = Path::new("tests/scripts_err/error.lua").to_path_buf();
     let config = Config::default();
-    let actual = process_file(&path_buf, &config);
+    let actual = process_file(&path_buf, &config, false);
     assert!(actual.is_err());
     assert!(match actual.unwrap_err() {
         ParsingError(..) => true,
