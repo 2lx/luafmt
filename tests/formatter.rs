@@ -26,7 +26,7 @@ fn test_process_file_failure() {
     let actual = process_file(&path_buf, &config, false);
     assert!(actual.is_err());
     assert!(match actual.unwrap_err() {
-        NoConfigureFile(..) => true,
+        NoConfigureFile => true,
         _ => false,
     });
 
@@ -46,7 +46,7 @@ fn test_process_file_failure() {
     let actual = process_file(&path_buf, &config, false);
     assert!(actual.is_err());
     assert!(match actual.unwrap_err() {
-        ReadingError(..) => true,
+        ReadingError => true,
         _ => false,
     });
 

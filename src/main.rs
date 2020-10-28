@@ -1,8 +1,8 @@
 use regex::Regex;
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
 use std::io::{self, Read};
+use std::path::{Path, PathBuf};
 
 use luapp::config::Config;
 use luapp::file_util;
@@ -43,7 +43,7 @@ fn parse_options(options: &Vec<String>) -> (Config, ProgramOpts) {
             Some(cap) => match (cap[1].parse(), cap[2].parse()) {
                 (Ok(l1), Ok(l2)) => program_opts.lines = Some((l1, l2)),
                 _ => eprintln!("Invalid `lines` option value"),
-            }
+            },
             None => match re_config_opt.captures_iter(option).next() {
                 Some(cap) => config.set(&cap[1], &cap[2]),
                 None => match re_program_opt.captures_iter(option).next() {
@@ -52,7 +52,7 @@ fn parse_options(options: &Vec<String>) -> (Config, ProgramOpts) {
                     Some(cap) if &cap[1] == "v" || &cap[1] == "verbose" => program_opts.verbose = true,
                     _ => eprintln!("Unrecognized option `{}`", option),
                 },
-            }
+            },
         }
     }
 
@@ -70,7 +70,9 @@ fn process_file_path(file_path: &PathBuf, config: &Config, program_opts: &Progra
             },
             false => print!("{}", output),
         },
-        Err(msg) => eprintln!("{}", format!("An error occured while processing file `{}`: {:?}", file_path.display(), msg)),
+        Err(err) => {
+            eprintln!("{}", format!("An error occured while processing file `{}`: {}", file_path.display(), err))
+        }
     }
 }
 
@@ -89,7 +91,7 @@ fn main() {
 
         match formatter::process_buffer_with_config(&buffer, &config, program_opts.verbose) {
             Ok(output) => print!("{}", output),
-            Err(msg) => eprintln!("{}", format!("An error occured while processing buffer: {:?}", msg)),
+            Err(msg) => eprintln!("{}", format!("An error occured while processing buffer: {}", msg)),
         }
     } else {
         for rel_path in &rel_paths {

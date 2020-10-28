@@ -3,21 +3,35 @@ use crate::config::{Config, ConfiguredWrite};
 use crate::file_util;
 use crate::formatting::reconstruction;
 use crate::parser;
+use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum FormatterError {
-    NoConfigureFile(String),
+    ReadingError,
+    NoConfigureFile,
     InvalidConfigFile(String),
-    ReadingError(String),
     ParsingError(String),
     FormattingError(String),
 }
 
+impl fmt::Display for FormatterError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use FormatterError::*;
+        match self {
+            ReadingError => write!(f, "cannot read file"),
+            NoConfigureFile => write!(f, "configure file was not found"),
+            InvalidConfigFile(conf_fname) => write!(f, "invalid configure file: {}", conf_fname),
+            ParsingError(err) => write!(f, "parsing error: {}", err),
+            FormattingError(err) => write!(f, "formatting error: {}", err),
+        }
+    }
+}
+
 pub fn process_file(file_path: &PathBuf, cfg: &Config, verbose: bool) -> Result<String, FormatterError> {
     if !file_path.is_file() {
-        return Err(ReadingError(format!("An error occured while reading file `{}`", file_path.display())));
+        return Err(ReadingError);
     }
 
     if verbose {
@@ -26,8 +40,10 @@ pub fn process_file(file_path: &PathBuf, cfg: &Config, verbose: bool) -> Result<
 
     let buffer: String;
     match fs::read_to_string(file_path) {
-        Ok(content) => { buffer = content; }
-        _ => return Err(ReadingError(format!("An error occured while reading file `{}`", file_path.display()))),
+        Ok(content) => {
+            buffer = content;
+        }
+        _ => return Err(ReadingError),
     }
 
     use FormatterError::*;
@@ -36,9 +52,9 @@ pub fn process_file(file_path: &PathBuf, cfg: &Config, verbose: bool) -> Result<
             Some(file_config) => match Config::load_from_file(&file_config) {
                 Ok(cfg) => process_buffer_with_config(&buffer, &cfg, verbose),
                 Err(err) => Err(InvalidConfigFile(err)),
-            }
-            None => Err(NoConfigureFile("Configure file was not found".to_string())),
-        }
+            },
+            None => Err(NoConfigureFile),
+        },
         false => process_buffer_with_config(&buffer, &cfg, verbose),
     }
 }
@@ -59,11 +75,9 @@ pub fn process_buffer_with_config(content: &String, cfg: &Config, verbose: bool)
 
             match node_tree.configured_write(&mut outbuffer, &cfg, &content, &mut state) {
                 Ok(_) => Ok(outbuffer),
-                Err(_) => Err(FormattingError(format!("An error occured while formatting: {:?}", node_tree))),
+                Err(_) => Err(FormattingError(format!("{:?}", node_tree))),
             }
         }
-        Err(err) => {
-            Err(ParsingError(format!("An error occured while parsing file: {}", err)))
-        }
+        Err(err) => Err(ParsingError(format!("{}", err))),
     }
 }
