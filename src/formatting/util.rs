@@ -42,20 +42,6 @@ macro_rules! test_oneline_no_nl {
     }};
 }
 
-#[macro_export]
-macro_rules! test_oneline_no_nl_after_nl {
-    ($wrt:expr, $cfg:expr, $buf:expr, $state: expr, $($arg:expr),+) => {{
-        let mut test_state = $state.clone();
-        let mut buffer = $wrt.clone();
-        cfg_write_helper!(&mut buffer, $cfg, $buf, $state, IfNewLine(true, CommentLocHint(&Loc(0, 0), "")))?;
-
-        match test_oneline_no_nl!(&mut buffer, $cfg, $buf, &mut test_state, $( $arg ),+ ) {
-            succ_str @ Some(_) => succ_str,
-            _ => None,
-        }
-    }};
-}
-
 pub fn trim_end_spaces_and_tabs<'a>(string: &'a String) -> &'a str {
     string.trim_end_matches(|ch: char| return ch == ' ' || ch == '\t')
 }

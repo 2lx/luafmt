@@ -2,8 +2,8 @@ use std::fmt::Write;
 
 use super::common::*;
 use crate::config::*;
-use crate::formatting::loc_hint::*;
 use crate::formatting::list;
+use crate::formatting::loc_hint::*;
 use crate::{cfg_write, cfg_write_helper};
 
 #[derive(Debug)]
@@ -19,7 +19,7 @@ pub enum Node {
 }
 
 impl list::ListOfItems<Node> for Node {
-    fn items(&self) -> Option<&Vec::<(Loc, Node)>> {
+    fn items(&self) -> Option<&Vec<(Loc, Node)>> {
         use Node::*;
         match self {
             VariantList(_, items) | CommentList(_, items) | NewLineList(_, items) => Some(items),
@@ -48,7 +48,9 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
         }
     }
 
-    fn need_newline(&self, _parent: &Node, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
+    fn need_newline(
+        &self, _prev: &Node, _parent: &Node, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State,
+    ) -> bool {
         use Node::*;
         match self {
             // here we know, that CommentList is not the first item of VariantList
@@ -56,14 +58,16 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
                 (_, OneLineComment(..)) => cfg.newline_format_oneline_comment == Some(1),
                 (_, MultiLineComment(..)) => cfg.newline_format_multiline_comment == Some(1),
                 _ => false,
-            }
+            },
             OneLineComment(..) => cfg.newline_format_oneline_comment == Some(1),
             MultiLineComment(..) => cfg.newline_format_multiline_comment == Some(1),
             _ => false,
         }
     }
 
-    fn need_first_newline(&self, _parent: &Node, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State) -> bool {
+    fn need_first_newline(
+        &self, _parent: &Node, _f: &mut String, cfg: &Config, _buf: &str, _state: &mut State,
+    ) -> bool {
         use Node::*;
         match self {
             // here we know, that CommentList is the first item of VariantList
@@ -71,7 +75,7 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
                 (_, OneLineComment(..)) => cfg.newline_format_first_oneline_comment == Some(1),
                 (_, MultiLineComment(..)) => cfg.newline_format_first_multiline_comment == Some(1),
                 _ => false,
-            }
+            },
             _ => false,
         }
     }
@@ -91,7 +95,7 @@ impl ConfiguredWrite for Node {
                 if cfg.remove_single_newlines == Some(true) && variants.len() == 1 {
                     if let (_, NewLineList(_, newlines)) = &variants[0] {
                         if newlines.len() == 1 {
-                            return Ok(())
+                            return Ok(());
                         }
                     }
                 }
@@ -99,11 +103,11 @@ impl ConfiguredWrite for Node {
                 cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            comments@CommentList(..) => {
+            comments @ CommentList(..) => {
                 cfg_write_list(f, cfg, buf, state, comments)?;
                 Ok(())
             }
-            newlines@NewLineList(..) => {
+            newlines @ NewLineList(..) => {
                 cfg_write_list(f, cfg, buf, state, newlines)?;
                 Ok(())
             }
@@ -143,9 +147,7 @@ impl ConfiguredWrite for Node {
                         (Some(prefix), None) => {
                             write!(f, "--[{}[{}{}]{}]", level_str, prefix, s.trim_start(), level_str)
                         }
-                        (None, Some(suffix)) => {
-                            write!(f, "--[{}[{}{}]{}]", level_str, s.trim_end(), suffix, level_str)
-                        }
+                        (None, Some(suffix)) => write!(f, "--[{}[{}{}]{}]", level_str, s.trim_end(), suffix, level_str),
                         _ => write!(f, "--[{}[{}]{}]", level_str, s, level_str),
                     }
                 }

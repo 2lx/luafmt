@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::fmt::Write;
 
 use super::common::*;
@@ -6,30 +7,37 @@ use crate::formatting::decoration::*;
 use crate::formatting::list;
 use crate::formatting::loc_hint::*;
 use crate::formatting::util;
-use crate::{cfg_write, cfg_write_helper, test_oneline, test_oneline_no_nl, test_oneline_no_nl_after_nl};
+use crate::{cfg_write, cfg_write_helper, test_oneline, test_oneline_no_nl};
 
 #[derive(Debug)]
 pub struct TableConstructorOpts {
-    pub is_all_sequential: Option<bool>,
+    pub is_iv_table: Option<bool>,
     pub is_single_child: Option<bool>,
     pub is_first_child: Option<bool>,
+    pub is_oneline: Cell<bool>,
 }
 
 impl TableConstructorOpts {
     pub const fn default() -> Self {
-        TableConstructorOpts { is_all_sequential: None, is_single_child: None, is_first_child: None }
+        TableConstructorOpts {
+            is_iv_table: None,
+            is_single_child: None,
+            is_first_child: None,
+            is_oneline: Cell::new(false),
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct FieldsOpts {
-    pub is_all_sequential: Option<bool>,
+    pub is_iv_table: Option<bool>,
     pub is_single_child: Option<bool>,
+    pub has_indent: Cell<bool>,
 }
 
 impl FieldsOpts {
     pub const fn default() -> Self {
-        FieldsOpts { is_all_sequential: None, is_single_child: None }
+        FieldsOpts { is_iv_table: None, is_single_child: None, has_indent: Cell::new(false) }
     }
 }
 
@@ -144,7 +152,9 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
         }
     }
 
-    fn need_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
+    fn need_newline(
+        &self, prev: &Node, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State,
+    ) -> bool {
         use Node::*;
         match parent {
             StatementList(..) => cfg.newline_format_statement.is_some(),
@@ -158,14 +168,25 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
             ElseIfThenVec(..) => cfg.newline_format_if == Some(1),
             Fields(_, _, opts) => match cfg.newline_format_table_field.is_some() {
                 true => {
-                    if cfg.enable_oneline_iv_table == Some(true) && opts.is_all_sequential == Some(true) {
-                        return false;
-                    } else {
-                        match cfg.enable_oneline_table_field {
-                            Some(true) => self.test_oneline_table_field(f, cfg, buf, state) == None,
-                            _ => true,
+                    if opts.is_iv_table == Some(true) && cfg.enable_oneline_iv_table_field == Some(true) {
+                        if cfg.enable_oneline_table == Some(true) {
+                            if let FieldSequential(_, nseq) = prev {
+                                if let TableConstructor(_, _, _, prev_opts) = &**nseq {
+                                    return prev_opts.is_oneline.get() || test_oneline_no_nl!(f, cfg, buf, state, self).is_some();
+                                }
+
+                                return test_oneline_no_nl!(f, cfg, buf, state, self).is_none();
+                            }
                         }
+
+                        return false;
                     }
+
+                    if cfg.enable_oneline_kv_table_field == Some(true) && opts.is_iv_table == Some(false) {
+                        return self.test_oneline_table_field(f, cfg, buf, state).is_none();
+                    }
+
+                    return true;
                 }
                 _ => false,
             },
@@ -200,14 +221,20 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
         match parent {
             Fields(_, _, opts) => match cfg.newline_format_table_field.is_some() {
                 true => {
-                    if cfg.enable_oneline_iv_table == Some(true) && opts.is_all_sequential == Some(true) {
-                        return opts.is_single_child != Some(true);
-                    } else {
-                        match cfg.enable_oneline_table_field {
-                            Some(true) => self.test_oneline_table_field(f, cfg, buf, state) == None,
-                            _ => true,
-                        }
+                    if cfg.enable_oneline_table == Some(true)
+                        && opts.is_iv_table == Some(true)
+                        && cfg.enable_oneline_iv_table_field == Some(true)
+                    {
+                        return opts.has_indent.get() || opts.is_single_child != Some(true);
                     }
+
+                    if cfg.enable_oneline_iv_table_field == Some(true) && opts.is_iv_table == Some(true)
+                        || cfg.enable_oneline_kv_table_field == Some(true) && opts.is_iv_table == Some(false)
+                    {
+                        return self.test_oneline_table_field(f, cfg, buf, state) == None;
+                    }
+
+                    true
                 }
                 _ => false,
             },
@@ -219,7 +246,7 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
                 },
                 _ => false,
             },
-            VarSuffixList(..) => self.need_newline(parent, f, cfg, buf, state),
+            VarSuffixList(..) => self.need_newline(&Node::Name(Loc(0, 0), String::new()), parent, f, cfg, buf, state),
             _ => false,
         }
     }
@@ -263,7 +290,10 @@ impl list::SepListOfItems<Node> for Node {
         use Node::*;
         match self {
             Fields(_, _, opts) => {
-                if cfg.enable_oneline_iv_table == Some(true) && opts.is_all_sequential == Some(true) {
+                if cfg.enable_oneline_table == Some(true)
+                    && (cfg.newline_format_table_field.is_none() && cfg.newline_format_table_constructor.is_none()
+                        || opts.is_iv_table == Some(true) && !opts.has_indent.get())
+                {
                     Some(false)
                 } else {
                     cfg.write_trailing_field_separator.clone()
@@ -277,7 +307,7 @@ impl list::SepListOfItems<Node> for Node {
     fn need_newlines(&self, cfg: &Config) -> bool {
         use Node::*;
         match self {
-            Fields(_, _, _) => cfg.newline_format_table_field == Some(1),
+            Fields(_, _, _) => cfg.newline_format_table_field.is_some(),
             ExpList(..) => cfg.newline_format_exp_list.is_some() || cfg.newline_format_exp_list_first.is_some(),
             _ => false,
         }
@@ -305,19 +335,21 @@ impl list::ListOfItems<Node> for Node {
 }
 
 impl Node {
-    fn test_oneline_table_constructor_cfg(cfg: &Config) -> Option<Config> {
-        if cfg.max_width.is_some()
-            && cfg.newline_format_table_constructor.is_some()
-            && cfg.enable_oneline_table_constructor == Some(true)
-        {
-            // disable IfNewLine within table constructor
-            // one-line tables are forced to have no trailing separator
-            let mut test_cfg = cfg.clone();
-            test_cfg.newline_format_table_constructor = None;
-            test_cfg.newline_format_table_field = None;
-            test_cfg.write_trailing_field_separator = Some(false);
+    fn test_oneline_table_cfg(&self, cfg: &Config) -> Option<Config> {
+        if let Node::TableConstructor(..) = self {
+            if cfg.max_width.is_some()
+                && cfg.newline_format_table_constructor.is_some()
+                && cfg.enable_oneline_table == Some(true)
+            {
+                // disable IfNewLine within table constructor
+                // one-line tables are forced to have no trailing separator
+                let mut test_cfg = cfg.clone();
+                test_cfg.newline_format_table_constructor = None;
+                test_cfg.newline_format_table_field = None;
+                test_cfg.write_trailing_field_separator = Some(false);
 
-            return Some(test_cfg);
+                return Some(test_cfg);
+            }
         }
         None
     }
@@ -386,6 +418,16 @@ impl Node {
                     cfg.indent_exp_list == Some(true)
                         && (cfg.indent_one_line_exp_list == Some(true)
                             || cfg_write_sep_list(&mut test_f, cfg, buf, &mut test_state, self) == Ok(true))
+                }
+            },
+            Node::Fields(_, fields, _) => match fields.len() {
+                0 => false,
+                _ => {
+                    let mut test_f = f.clone();
+                    let mut test_state = state.clone();
+                    cfg_write!(&mut test_f, cfg, buf, &mut test_state, hint)?;
+
+                    cfg_write_sep_list(&mut test_f, cfg, buf, &mut test_state, self) == Ok(true)
                 }
             },
             _ => false,
@@ -460,39 +502,39 @@ impl ConfiguredWrite for Node {
             }
 
             TableConstructor(_, locs, r, opts) => {
-                let ind_ol = opts.is_first_child == Some(true);
-                cfg_write!(f, cfg, buf, state, If(ind_ol, &IncIndent(None)))?;
-
-                if let Some(test_cfg) = Node::test_oneline_table_constructor_cfg(cfg) {
+                if let Some(test_cfg) = self.test_oneline_table_cfg(cfg) {
                     match test_oneline_no_nl!(f, &test_cfg, buf, state, self) {
                         Some(line) => {
+                            opts.is_oneline.set(true);
+
                             #[cfg_attr(rustfmt, rustfmt_skip)]
-                            return cfg_write!(f, cfg, buf, state, Str(&line), If(ind_ol, &DecIndent()));
+                            return cfg_write!(f, cfg, buf, state, Str(&line));
                         }
-                        _ => {
-                            if let Some(line) = test_oneline_no_nl_after_nl!(f, &test_cfg, buf, state, self) {
-                                #[cfg_attr(rustfmt, rustfmt_skip)]
-                                return cfg_write!(f, cfg, buf, state, IfNewLine(true, Hint(&Loc(0, 0), "")), Str(&line),
-                                                  If(ind_ol, &DecIndent()));
-                            }
-                        }
+                        _ => {}
                     }
                 }
-                cfg_write!(f, cfg, buf, state, If(ind_ol, &DecIndent()))?;
 
                 let default_hint = String::new();
                 let hint = cfg.hint_table_constructor.as_ref().unwrap_or(&default_hint);
                 let mut nl = cfg.newline_format_table_constructor == Some(1);
 
-                let ind = !(cfg.enable_oneline_iv_table == Some(true)
-                    && opts.is_all_sequential == Some(true)
-                    && opts.is_single_child != Some(false));
-                if !ind && cfg.enable_oneline_table_constructor == Some(true) {
-                    // do test_indent
+                #[cfg_attr(rustfmt, rustfmt_skip)]
+                cfg_write!(f, cfg, buf, state, "{{", IncFuncLevel())?;
+
+                let ind = match cfg.enable_oneline_table == Some(true)
+                    && opts.is_iv_table == Some(true)
+                    && opts.is_single_child == Some(true)
+                {
+                    false => true,
+                    true => r.test_indent(f, cfg, buf, state, Hint(&locs[0], &hint)) == Ok(true),
+                };
+
+                if let Fields(_, _, fopts) = &**r {
+                    fopts.has_indent.set(ind);
                 }
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
-                cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), "{{", IncFuncLevel(), Hint(&locs[0], &hint), r)?;
+                cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], &hint), r)?;
 
                 if cfg.max_width.is_some() && util::get_len_after_newline(f, cfg) >= cfg.max_width.unwrap() {
                     nl = true;

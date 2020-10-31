@@ -7,7 +7,9 @@ use std::fmt::Write;
 
 pub trait AnyListItem<'a, Node> {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str;
-    fn need_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
+    fn need_newline(
+        &self, prev: &Node, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State,
+    ) -> bool;
     fn need_first_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool;
 }
 
@@ -52,10 +54,12 @@ where
                        Hint::new(&first.2, ""))?;
 
             for i in 1..items.len() {
-                write!(f, "{}", get_sep(&items[i - 1]))?;
-
+                let prev_item_tp = &items[i - 1];
                 let item = &items[i];
-                let need_newline = list_node.need_newlines(cfg) && item.1.need_newline(list_node, f, cfg, buf, state);
+                write!(f, "{}", get_sep(prev_item_tp))?;
+
+                let need_newline =
+                    list_node.need_newlines(cfg) && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
                 indent = indent || need_newline;
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -94,9 +98,12 @@ where
             cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&first.0, "")), first.1)?;
 
             for i in 1..items.len() {
-                let hint = items[i].1.list_item_prefix_hint(cfg);
+                let prev_item_tp = &items[i - 1];
+                let item = &items[i];
+
+                let hint = item.1.list_item_prefix_hint(cfg);
                 let need_newline =
-                    list_node.need_newlines(cfg) && items[i].1.need_newline(list_node, f, cfg, buf, state);
+                    list_node.need_newlines(cfg) && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
                 indent = indent || need_newline;
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]

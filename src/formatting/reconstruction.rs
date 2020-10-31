@@ -119,7 +119,7 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
 
         // custom
         Fields(_, v, opts) => {
-            let mut is_all_sequential = true;
+            let mut is_iv_table = true;
             let has_single_child = v.len() == 1;
 
             for (index, (_, node, _, _)) in v.into_iter().enumerate() {
@@ -131,13 +131,13 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
                         }
                     }
                     _ => {
-                        is_all_sequential = false;
+                        is_iv_table = false;
                     }
                 }
                 reconstruct_node_tree(node, cfg);
             }
 
-            opts.is_all_sequential = Some(is_all_sequential);
+            opts.is_iv_table = Some(is_iv_table);
         }
         TableConstructor(_, _, r, opts) => {
             if opts.is_first_child.is_none() {
@@ -154,7 +154,7 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
             reconstruct_node_tree(&mut *r, cfg);
 
             if let Fields(_, _, field_opts) = &**r {
-                opts.is_all_sequential = field_opts.is_all_sequential;
+                opts.is_iv_table = field_opts.is_iv_table;
             }
         }
         CharStringLiteral(pos, s) => {
