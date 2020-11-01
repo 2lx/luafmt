@@ -1,13 +1,16 @@
-use crate::config::*;
 use super::common::*;
+use crate::config::*;
 
 #[test]
 fn test_spaces_between_tokens_ops() {
     let cfg = Config {
-        replace_zero_spaces_with_hint: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        hint_before_comment: Some(" ".to_string()),
-        hint_after_multiline_comment: Some(" ".to_string()),
+        fmt: FormatOpts {
+            replace_zero_spaces_with_hint: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            hint_before_comment: Some(" ".to_string()),
+            hint_after_multiline_comment: Some(" ".to_string()),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -41,11 +44,14 @@ fn test_spaces_between_tokens_ops() {
 #[test]
 fn test_spaces_between_tokens_other() {
     let cfg = Config {
-        replace_zero_spaces_with_hint: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        hint_before_comment: Some(" ".to_string()),
-        hint_after_multiline_comment: Some(" ".to_string()),
-        hint_table_constructor: Some(" ".to_string()),
+        fmt: FormatOpts {
+            replace_zero_spaces_with_hint: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            hint_before_comment: Some(" ".to_string()),
+            hint_after_multiline_comment: Some(" ".to_string()),
+            hint_table_constructor: Some(" ".to_string()),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &'static str| ts_base(s, &cfg);
@@ -310,10 +316,13 @@ elseif --[[9]] a == 3 --[[10]] then --[[11]] print(3) --[[12]] end"#
 #[test]
 fn test_spaces_between_tokens_special() {
     let cfg = Config {
-        replace_zero_spaces_with_hint: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        hint_before_comment: Some(" ".to_string()),
-        hint_after_multiline_comment: Some(" ".to_string()),
+        fmt: FormatOpts {
+            replace_zero_spaces_with_hint: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            hint_before_comment: Some(" ".to_string()),
+            hint_after_multiline_comment: Some(" ".to_string()),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &'static str| ts_base(s, &cfg);
@@ -322,6 +331,12 @@ fn test_spaces_between_tokens_special() {
     assert_eq!(ts(" --[[1]] "), Ok(" --[[1]] ".to_string()));
     assert_eq!(ts("--[[1]] ; --2\n "), Ok(" --[[1]] ; --2\n".to_string()));
     assert_eq!(ts("--[[1]] print(a) --2\n "), Ok(" --[[1]] print(a) --2\n".to_string()));
-    assert_eq!(ts("#!/usr/bin/lua\n--[[1]] print(a) --2\n "), Ok("#!/usr/bin/lua\n --[[1]] print(a) --2\n".to_string()));
-    assert_eq!(ts("--123\n#!/usr/bin/lua\n--[[1]] print(a) --2\n "), Ok(" --123\n#!/usr/bin/lua\n --[[1]] print(a) --2\n".to_string()));
+    assert_eq!(
+        ts("#!/usr/bin/lua\n--[[1]] print(a) --2\n "),
+        Ok("#!/usr/bin/lua\n --[[1]] print(a) --2\n".to_string())
+    );
+    assert_eq!(
+        ts("--123\n#!/usr/bin/lua\n--[[1]] print(a) --2\n "),
+        Ok(" --123\n#!/usr/bin/lua\n --[[1]] print(a) --2\n".to_string())
+    );
 }

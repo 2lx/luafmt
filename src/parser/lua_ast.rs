@@ -157,22 +157,23 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
     ) -> bool {
         use Node::*;
         match parent {
-            StatementList(..) => cfg.newline_format_statement.is_some(),
-            ExpList(..) => match cfg.newline_format_exp_list {
-                Some(1) => match cfg.enable_oneline_exp_list {
+            StatementList(..) => cfg.fmt.newline_format_statement.is_some(),
+            ExpList(..) => match cfg.fmt.newline_format_exp_list {
+                Some(1) => match cfg.fmt.enable_oneline_exp_list {
                     Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
                     _ => true,
                 },
                 _ => false,
             },
-            ElseIfThenVec(..) => cfg.newline_format_if == Some(1),
-            Fields(_, _, opts) => match cfg.newline_format_table_field.is_some() {
+            ElseIfThenVec(..) => cfg.fmt.newline_format_if == Some(1),
+            Fields(_, _, opts) => match cfg.fmt.newline_format_table_field.is_some() {
                 true => {
-                    if opts.is_iv_table == Some(true) && cfg.enable_oneline_iv_table_field == Some(true) {
-                        if cfg.enable_oneline_table == Some(true) {
+                    if opts.is_iv_table == Some(true) && cfg.fmt.enable_oneline_iv_table_field == Some(true) {
+                        if cfg.fmt.enable_oneline_table == Some(true) {
                             if let FieldSequential(_, nseq) = prev {
                                 if let TableConstructor(_, _, _, prev_opts) = &**nseq {
-                                    return prev_opts.is_oneline.get() || test_oneline_no_nl!(f, cfg, buf, state, self).is_some();
+                                    return prev_opts.is_oneline.get()
+                                        || test_oneline_no_nl!(f, cfg, buf, state, self).is_some();
                                 }
 
                                 return test_oneline_no_nl!(f, cfg, buf, state, self).is_none();
@@ -182,7 +183,7 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
                         return false;
                     }
 
-                    if cfg.enable_oneline_kv_table_field == Some(true) && opts.is_iv_table == Some(false) {
+                    if cfg.fmt.enable_oneline_kv_table_field == Some(true) && opts.is_iv_table == Some(false) {
                         return self.test_oneline_table_field(f, cfg, buf, state).is_none();
                     }
 
@@ -191,14 +192,14 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
                 _ => false,
             },
             VarSuffixList(..) => match self {
-                FnMethodCall(..) | TableMember(..) => match cfg.newline_format_var_suffix.is_some() {
-                    true => match cfg.enable_oneline_var_suffix {
+                FnMethodCall(..) | TableMember(..) => match cfg.fmt.newline_format_var_suffix.is_some() {
+                    true => match cfg.fmt.enable_oneline_var_suffix {
                         Some(true) => match self {
                             FnMethodCall(_, locs, n1, n2) => match &**n2 {
                                 TableConstructorEmpty(..) | TableConstructor(..) | ArgsRoundBracketsEmpty(..) => {
                                     test_oneline!(f, cfg, buf, state, ":", CommentLocHint(&locs[0], ""), n1).is_none()
                                 }
-                                ArgsRoundBrackets(..) if cfg.newline_format_exp_list_first.is_some() => {
+                                ArgsRoundBrackets(..) if cfg.fmt.newline_format_exp_list_first.is_some() => {
                                     test_oneline!(f, cfg, buf, state, ":", CommentLocHint(&locs[0], ""), n1).is_none()
                                 }
                                 _ => test_oneline!(f, cfg, buf, state, self).is_none(),
@@ -219,17 +220,17 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
     fn need_first_newline(&self, parent: &Node, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> bool {
         use Node::*;
         match parent {
-            Fields(_, _, opts) => match cfg.newline_format_table_field.is_some() {
+            Fields(_, _, opts) => match cfg.fmt.newline_format_table_field.is_some() {
                 true => {
-                    if cfg.enable_oneline_table == Some(true)
+                    if cfg.fmt.enable_oneline_table == Some(true)
                         && opts.is_iv_table == Some(true)
-                        && cfg.enable_oneline_iv_table_field == Some(true)
+                        && cfg.fmt.enable_oneline_iv_table_field == Some(true)
                     {
                         return opts.has_indent.get() || opts.is_single_child != Some(true);
                     }
 
-                    if cfg.enable_oneline_iv_table_field == Some(true) && opts.is_iv_table == Some(true)
-                        || cfg.enable_oneline_kv_table_field == Some(true) && opts.is_iv_table == Some(false)
+                    if cfg.fmt.enable_oneline_iv_table_field == Some(true) && opts.is_iv_table == Some(true)
+                        || cfg.fmt.enable_oneline_kv_table_field == Some(true) && opts.is_iv_table == Some(false)
                     {
                         return self.test_oneline_table_field(f, cfg, buf, state) == None;
                     }
@@ -238,9 +239,9 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
                 }
                 _ => false,
             },
-            ExpList(..) => match cfg.newline_format_exp_list_first {
+            ExpList(..) => match cfg.fmt.newline_format_exp_list_first {
                 // first!
-                Some(1) => match cfg.enable_oneline_exp_list {
+                Some(1) => match cfg.fmt.enable_oneline_exp_list {
                     Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
                     _ => true,
                 },
@@ -279,7 +280,7 @@ impl list::SepListOfItems<Node> for Node {
     fn separator(&self, cfg: &Config) -> Option<String> {
         use Node::*;
         match self {
-            Fields(..) => cfg.field_separator.clone(),
+            Fields(..) => cfg.fmt.field_separator.clone(),
             ExpList(..) | NameList(..) | VarList(..) | ParList(..) => Some(",".to_string()),
             FuncName(..) | FuncNameSelf(..) => Some(".".to_string()),
             _ => None,
@@ -290,13 +291,13 @@ impl list::SepListOfItems<Node> for Node {
         use Node::*;
         match self {
             Fields(_, _, opts) => {
-                if cfg.enable_oneline_table == Some(true)
-                    && (cfg.newline_format_table_field.is_none() && cfg.newline_format_table_constructor.is_none()
+                if cfg.fmt.enable_oneline_table == Some(true)
+                    && (cfg.fmt.newline_format_table_field.is_none() && cfg.fmt.newline_format_table_constructor.is_none()
                         || opts.is_iv_table == Some(true) && !opts.has_indent.get())
                 {
                     Some(false)
                 } else {
-                    cfg.write_trailing_field_separator.clone()
+                    cfg.fmt.write_trailing_field_separator.clone()
                 }
             }
             ExpList(..) | NameList(..) | VarList(..) | ParList(..) | FuncName(..) | FuncNameSelf(..) => Some(false),
@@ -307,8 +308,8 @@ impl list::SepListOfItems<Node> for Node {
     fn need_newlines(&self, cfg: &Config) -> bool {
         use Node::*;
         match self {
-            Fields(_, _, _) => cfg.newline_format_table_field.is_some(),
-            ExpList(..) => cfg.newline_format_exp_list.is_some() || cfg.newline_format_exp_list_first.is_some(),
+            Fields(_, _, _) => cfg.fmt.newline_format_table_field.is_some(),
+            ExpList(..) => cfg.fmt.newline_format_exp_list.is_some() || cfg.fmt.newline_format_exp_list_first.is_some(),
             _ => false,
         }
     }
@@ -326,9 +327,9 @@ impl list::ListOfItems<Node> for Node {
     fn need_newlines(&self, cfg: &Config) -> bool {
         use Node::*;
         match self {
-            StatementList(..) => cfg.newline_format_statement.is_some(),
-            ElseIfThenVec(..) => cfg.newline_format_if.is_some(),
-            VarSuffixList(..) => cfg.newline_format_var_suffix.is_some(),
+            StatementList(..) => cfg.fmt.newline_format_statement.is_some(),
+            ElseIfThenVec(..) => cfg.fmt.newline_format_if.is_some(),
+            VarSuffixList(..) => cfg.fmt.newline_format_var_suffix.is_some(),
             _ => false,
         }
     }
@@ -337,16 +338,16 @@ impl list::ListOfItems<Node> for Node {
 impl Node {
     fn test_oneline_table_cfg(&self, cfg: &Config) -> Option<Config> {
         if let Node::TableConstructor(..) = self {
-            if cfg.max_width.is_some()
-                && cfg.newline_format_table_constructor.is_some()
-                && cfg.enable_oneline_table == Some(true)
+            if cfg.fmt.max_width.is_some()
+                && cfg.fmt.newline_format_table_constructor.is_some()
+                && cfg.fmt.enable_oneline_table == Some(true)
             {
                 // disable IfNewLine within table constructor
                 // one-line tables are forced to have no trailing separator
                 let mut test_cfg = cfg.clone();
-                test_cfg.newline_format_table_constructor = None;
-                test_cfg.newline_format_table_field = None;
-                test_cfg.write_trailing_field_separator = Some(false);
+                test_cfg.fmt.newline_format_table_constructor = None;
+                test_cfg.fmt.newline_format_table_field = None;
+                test_cfg.fmt.write_trailing_field_separator = Some(false);
 
                 return Some(test_cfg);
             }
@@ -355,17 +356,17 @@ impl Node {
     }
 
     fn test_oneline_table_field(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.max_width.is_some() && cfg.newline_format_table_field.is_some() {
+        if cfg.fmt.max_width.is_some() && cfg.fmt.newline_format_table_field.is_some() {
             return test_oneline_no_nl!(f, cfg, buf, state, self);
         }
         None
     }
 
     fn test_oneline_if(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.max_width.is_some() && cfg.enable_oneline_if == Some(true) && cfg.newline_format_if.is_some() {
+        if cfg.fmt.max_width.is_some() && cfg.fmt.enable_oneline_if == Some(true) && cfg.fmt.newline_format_if.is_some() {
             // disable IfNewLine within table constructor
             let mut test_cfg = cfg.clone();
-            test_cfg.newline_format_if = None;
+            test_cfg.fmt.newline_format_if = None;
 
             return test_oneline_no_nl!(f, &test_cfg, buf, state, self);
         }
@@ -373,14 +374,14 @@ impl Node {
     }
 
     fn test_oneline_function(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.max_width.is_some()
-            && cfg.newline_format_function.is_some()
-            && ((state.function_nested_level == 0 && cfg.enable_oneline_top_level_function == Some(true))
-                || (state.function_nested_level > 0 && cfg.enable_oneline_scoped_function == Some(true)))
+        if cfg.fmt.max_width.is_some()
+            && cfg.fmt.newline_format_function.is_some()
+            && ((state.function_nested_level == 0 && cfg.fmt.enable_oneline_top_level_function == Some(true))
+                || (state.function_nested_level > 0 && cfg.fmt.enable_oneline_scoped_function == Some(true)))
         {
             // disable IfNewLine within function body
             let mut test_cfg = cfg.clone();
-            test_cfg.newline_format_function = None;
+            test_cfg.fmt.newline_format_function = None;
 
             return test_oneline_no_nl!(f, &test_cfg, buf, state, self);
         }
@@ -400,23 +401,23 @@ impl Node {
                     let mut test_f = f.clone();
                     let mut test_state = state.clone();
                     cfg_write!(&mut test_f, cfg, buf, &mut test_state, hint)?;
-                    cfg.indent_var_suffix == Some(true)
-                        && (cfg.indent_one_line_var_suffix == Some(true)
+                    cfg.fmt.indent_var_suffix == Some(true)
+                        && (cfg.fmt.indent_one_line_var_suffix == Some(true)
                             || cfg_write_list(&mut test_f, cfg, buf, &mut test_state, self) == Ok(true))
                 }
             },
             Node::ExpList(_, exprs) => match exprs.len() {
                 0 => false,
                 // ExpList cannot indent it's first item without this flag
-                1 if cfg.newline_format_exp_list_first.is_none() => {
-                    cfg.indent_exp_list == Some(true) && cfg.indent_one_line_exp_list == Some(true)
+                1 if cfg.fmt.newline_format_exp_list_first.is_none() => {
+                    cfg.fmt.indent_exp_list == Some(true) && cfg.fmt.indent_one_line_exp_list == Some(true)
                 }
                 _ => {
                     let mut test_f = f.clone();
                     let mut test_state = state.clone();
                     cfg_write!(&mut test_f, cfg, buf, &mut test_state, hint)?;
-                    cfg.indent_exp_list == Some(true)
-                        && (cfg.indent_one_line_exp_list == Some(true)
+                    cfg.fmt.indent_exp_list == Some(true)
+                        && (cfg.fmt.indent_one_line_exp_list == Some(true)
                             || cfg_write_sep_list(&mut test_f, cfg, buf, &mut test_state, self) == Ok(true))
                 }
             },
@@ -437,6 +438,8 @@ impl Node {
     }
 }
 
+static DEFAULT_CFG: Config = Config::default();
+
 impl ConfiguredWrite for Node {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
         use Node::*;
@@ -450,9 +453,9 @@ impl ConfiguredWrite for Node {
             BinaryOp(_, locs, tok, l, r) => {
                 cfg_write!(f, cfg, buf, state, IncIndent(Some(tok.0)), l)?;
 
-                let mut nl1 = cfg.newline_format_binary_op == Some(1);
-                let mut nl2 = cfg.newline_format_binary_op == Some(2);
-                if (nl1 || nl2) && cfg.enable_oneline_binary_op == Some(true) {
+                let mut nl1 = cfg.fmt.newline_format_binary_op == Some(1);
+                let mut nl2 = cfg.fmt.newline_format_binary_op == Some(2);
+                if (nl1 || nl2) && cfg.fmt.enable_oneline_binary_op == Some(true) {
                     if test_oneline!(f, cfg, buf, state, Hint(&locs[0], " "), tok, Hint(&locs[1], " "), r).is_some() {
                         nl1 = false;
                         nl2 = false;
@@ -501,7 +504,14 @@ impl ConfiguredWrite for Node {
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)
             }
 
-            TableConstructor(_, locs, r, opts) => {
+            TableConstructor(span, locs, r, opts) => {
+                match cfg.line_range {
+                    Some((l, r)) if span.1 < l || span.0 > r => {
+                        return self.configured_write(f, &DEFAULT_CFG, buf, state);
+                    }
+                    _ => {},
+                }
+
                 if let Some(test_cfg) = self.test_oneline_table_cfg(cfg) {
                     match test_oneline_no_nl!(f, &test_cfg, buf, state, self) {
                         Some(line) => {
@@ -515,13 +525,13 @@ impl ConfiguredWrite for Node {
                 }
 
                 let default_hint = String::new();
-                let hint = cfg.hint_table_constructor.as_ref().unwrap_or(&default_hint);
-                let mut nl = cfg.newline_format_table_constructor == Some(1);
+                let hint = cfg.fmt.hint_table_constructor.as_ref().unwrap_or(&default_hint);
+                let mut nl = cfg.fmt.newline_format_table_constructor == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "{{", IncFuncLevel())?;
 
-                let ind = match cfg.enable_oneline_table == Some(true)
+                let ind = match cfg.fmt.enable_oneline_table == Some(true)
                     && opts.is_iv_table == Some(true)
                     && opts.is_single_child == Some(true)
                 {
@@ -536,7 +546,7 @@ impl ConfiguredWrite for Node {
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], &hint), r)?;
 
-                if cfg.max_width.is_some() && util::get_len_after_newline(f, cfg) >= cfg.max_width.unwrap() {
+                if cfg.fmt.max_width.is_some() && util::get_len_after_newline(f, cfg) >= cfg.fmt.max_width.unwrap() {
                     nl = true;
                 }
                 nl = nl && ind;
@@ -547,7 +557,7 @@ impl ConfiguredWrite for Node {
             }
             TableConstructorEmpty(_, locs) => {
                 let default_hint = String::new();
-                let hint = cfg.hint_table_constructor.as_ref().unwrap_or(&default_hint);
+                let hint = cfg.fmt.hint_table_constructor.as_ref().unwrap_or(&default_hint);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "{{", Hint(&locs[0], &hint), "}}")
@@ -589,7 +599,7 @@ impl ConfiguredWrite for Node {
             }
             DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
             DoBEnd(_, locs, b) => {
-                let nl = cfg.newline_format_do_end == Some(1);
+                let nl = cfg.fmt.newline_format_do_end == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "do", IncIndent(None), IfNewLine(nl, Hint(&locs[0], " ")), b, DecIndent(),
@@ -632,7 +642,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_function == Some(1);
+                let nl = cfg.fmt.newline_format_function == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", IfNewLine(nl, Hint(&locs[1], " ")), "end")
@@ -642,7 +652,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_function == Some(1);
+                let nl = cfg.fmt.newline_format_function == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", IncIndent(None), IncFuncLevel(),
@@ -654,7 +664,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_function == Some(1);
+                let nl = cfg.fmt.newline_format_function == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "(", IncIndent(None), Hint(&locs[0], ""), n1, Hint(&locs[1], ""),
@@ -665,7 +675,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_function == Some(1);
+                let nl = cfg.fmt.newline_format_function == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "(", IncIndent(None), Hint(&locs[0], ""), n1, Hint(&locs[1], ""),
@@ -711,7 +721,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -722,7 +732,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -734,7 +744,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -745,7 +755,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -757,7 +767,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -769,7 +779,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -783,7 +793,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -794,7 +804,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -806,7 +816,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -818,7 +828,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -831,7 +841,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -844,7 +854,7 @@ impl ConfiguredWrite for Node {
                     return write!(f, "{}", line);
                 }
 
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
@@ -863,7 +873,7 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then")
             }
             ElseIfThenB(_, locs, e, b) => {
-                let nl = cfg.newline_format_if == Some(1);
+                let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then",
@@ -874,14 +884,14 @@ impl ConfiguredWrite for Node {
             Label(_, locs, n) => cfg_write!(f, cfg, buf, state, "::", Hint(&locs[0], ""), n, Hint(&locs[1], ""), "::"),
             GoTo(_, locs, n) => cfg_write!(f, cfg, buf, state, "goto", Hint(&locs[0], " "), n),
             WhileDo(_, locs, e) => {
-                let nl = cfg.newline_format_while == Some(1);
+                let nl = cfg.fmt.newline_format_while == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
                            IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
             WhileDoB(_, locs, e, n) => {
-                let nl = cfg.newline_format_while == Some(1);
+                let nl = cfg.fmt.newline_format_while == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
@@ -889,14 +899,14 @@ impl ConfiguredWrite for Node {
                            IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
             RepeatUntil(_, locs, e) => {
-                let nl = cfg.newline_format_repeat_until == Some(1);
+                let nl = cfg.fmt.newline_format_repeat_until == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "repeat", IfNewLine(nl, Hint(&locs[0], " ")), "until",
                            Hint(&locs[1], " "), e)
             }
             RepeatBUntil(_, locs, b, e) => {
-                let nl = cfg.newline_format_repeat_until == Some(1);
+                let nl = cfg.fmt.newline_format_repeat_until == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "repeat", IncIndent(None), IfNewLine(nl, Hint(&locs[0], " ")), b,
@@ -911,7 +921,7 @@ impl ConfiguredWrite for Node {
                            Hint(&locs[5], " "), "do", Hint(&locs[6], " "), "end")
             }
             ForIntB(_, locs, n, e1, e2, b) => {
-                let nl = cfg.newline_format_for == Some(1);
+                let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
@@ -920,7 +930,7 @@ impl ConfiguredWrite for Node {
                            DecIndent(), IfNewLine(nl, Hint(&locs[7], " ")), "end")
             }
             ForIntStep(_, locs, n, e1, e2, e3) => {
-                let nl = cfg.newline_format_for == Some(1);
+                let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
@@ -929,7 +939,7 @@ impl ConfiguredWrite for Node {
                            "end")
             }
             ForIntStepB(_, locs, n, e1, e2, e3, b) => {
-                let nl = cfg.newline_format_for == Some(1);
+                let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
@@ -938,7 +948,7 @@ impl ConfiguredWrite for Node {
                            IfNewLine(nl, Hint(&locs[8], " ")), b, DecIndent(), IfNewLine(nl, Hint(&locs[9], " ")), "end")
             }
             ForRange(_, locs, n, e) => {
-                let nl = cfg.newline_format_for == Some(1);
+                let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in")?;
@@ -950,7 +960,7 @@ impl ConfiguredWrite for Node {
                            Hint(&locs[3], " "), "do", IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
             ForRangeB(_, locs, n, e, b) => {
-                let nl = cfg.newline_format_for == Some(1);
+                let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "in")?;
@@ -983,15 +993,15 @@ impl ConfiguredWrite for Node {
                 )
             }
             StatsRetStat(_, locs, n1, n2) => {
-                let nl = cfg.newline_format_statement.is_some();
+                let nl = cfg.fmt.newline_format_statement.is_some();
                 cfg_write!(f, cfg, buf, state, n1, IfNewLine(nl, Hint(&locs[0], " ")), n2)
             }
             Chunk(locl, n, locr) => {
-                let nl = cfg.write_newline_at_eof == Some(true);
+                let nl = cfg.fmt.write_newline_at_eof == Some(true);
                 cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, IfNewLine(nl, Hint(&locr, "")))
             }
             SheBangChunk(locl, n, locm, b, locr) => {
-                let nl = cfg.write_newline_at_eof == Some(true);
+                let nl = cfg.fmt.write_newline_at_eof == Some(true);
                 cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locm, ""), b, IfNewLine(nl, Hint(&locr, "")))
             }
 

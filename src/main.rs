@@ -21,12 +21,11 @@ pub struct ProgramOpts {
     pub inplace: bool,
     pub recursive: bool,
     pub verbose: bool,
-    pub lines: Option<(usize, usize)>,
 }
 
 impl ProgramOpts {
     pub const fn default() -> Self {
-        ProgramOpts { inplace: false, recursive: false, verbose: false, lines: None }
+        ProgramOpts { inplace: false, recursive: false, verbose: false }
     }
 }
 
@@ -35,23 +34,16 @@ fn parse_options(options: &Vec<String>) -> (Config, ProgramOpts) {
     let mut program_opts = ProgramOpts::default();
 
     for option in options.iter() {
-        let re_lines_opt = Regex::new(r"^[-]+lines\s*=([0-9]+):([0-9]+)$").unwrap();
-        let re_config_opt = Regex::new(r"^[-]+([a-zA-Z_0-9]+)\s*=(.*)$").unwrap();
-        let re_program_opt = Regex::new(r"^[-]+([a-zA-Z_0-9]+)$").unwrap();
+        let re_config_opt = Regex::new(r"^--([a-zA-Z_0-9]+)=(.*)$").unwrap();
+        let re_program_opt = Regex::new(r"^[-]{1,2}([a-z]+)$").unwrap();
 
-        match re_lines_opt.captures_iter(option).next() {
-            Some(cap) => match (cap[1].parse(), cap[2].parse()) {
-                (Ok(l1), Ok(l2)) => program_opts.lines = Some((l1, l2)),
-                _ => eprintln!("Invalid `lines` option value"),
-            },
-            None => match re_config_opt.captures_iter(option).next() {
-                Some(cap) => config.set(&cap[1], &cap[2]),
-                None => match re_program_opt.captures_iter(option).next() {
-                    Some(cap) if &cap[1] == "i" || &cap[1] == "inplace" => program_opts.inplace = true,
-                    Some(cap) if &cap[1] == "r" || &cap[1] == "recursive" => program_opts.recursive = true,
-                    Some(cap) if &cap[1] == "v" || &cap[1] == "verbose" => program_opts.verbose = true,
-                    _ => eprintln!("Unrecognized option `{}`", option),
-                },
+        match re_config_opt.captures_iter(option).next() {
+            Some(cap) => config.set(&cap[1], &cap[2]),
+            None => match re_program_opt.captures_iter(option).next() {
+                Some(cap) if &cap[1] == "i" || &cap[1] == "inplace" => program_opts.inplace = true,
+                Some(cap) if &cap[1] == "r" || &cap[1] == "recursive" => program_opts.recursive = true,
+                Some(cap) if &cap[1] == "v" || &cap[1] == "verbose" => program_opts.verbose = true,
+                _ => eprintln!("Unrecognized option `{}`", option),
             },
         }
     }
@@ -111,6 +103,8 @@ fn main() {
 
 #[test]
 fn test_parse_options() {
+    use luapp::config::FormatOpts;
+
     let options = vec![
         "--field_separator=,".to_string(),
         "--inplace".to_string(),
@@ -119,18 +113,26 @@ fn test_parse_options() {
         "-r".to_string(),
         "/home/files/file.txt".to_string(),
     ];
-    let cfg = Config { field_separator: Some(",".to_string()), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts { field_separator: Some(",".to_string()), ..FormatOpts::default() },
+        ..Config::default()
+    };
     let po = ProgramOpts { inplace: true, recursive: true, ..ProgramOpts::default() };
     assert_eq!(parse_options(&options), (cfg, po));
 
     let options = vec!["-i".to_string(), "--recursive".to_string(), "--newline_format_if=1".to_string()];
-    let cfg = Config { newline_format_if: Some(1), ..Config::default() };
+    let cfg = Config { fmt: FormatOpts { newline_format_if: Some(1), ..FormatOpts::default() }, ..Config::default() };
     let po = ProgramOpts { inplace: true, recursive: true, ..ProgramOpts::default() };
     assert_eq!(parse_options(&options), (cfg, po));
 
-    let options = vec!["--lines=1:324".to_string()];
-    let cfg = Config { ..Config::default() };
-    let po = ProgramOpts { lines: Some((1, 324)), ..ProgramOpts::default() };
+    let options = vec!["--line_range=1:324".to_string()];
+    let cfg = Config { line_range: Some((1, 324)), ..Config::default() };
+    let po = ProgramOpts { ..ProgramOpts::default() };
+    assert_eq!(parse_options(&options), (cfg, po));
+
+    let options = vec!["-v".to_string(), "--line_range=1:324".to_string(), "-i".to_string()];
+    let cfg = Config { line_range: Some((1, 324)), ..Config::default() };
+    let po = ProgramOpts { verbose: true, inplace: true, ..ProgramOpts::default() };
     assert_eq!(parse_options(&options), (cfg, po));
 
     let options = vec![];

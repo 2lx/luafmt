@@ -1,9 +1,9 @@
-use crate::config::*;
 use super::common::*;
+use crate::config::*;
 
 #[test]
 fn test_remove_comments_ops() {
-    let cfg = Config { remove_comments: Some(true), ..Config::default() };
+    let cfg = Config { fmt: FormatOpts { remove_comments: Some(true), ..FormatOpts::default() }, ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     // binary ops
@@ -34,20 +34,14 @@ fn test_remove_comments_ops() {
 
 #[test]
 fn test_remove_comments_other() {
-    let cfg = Config { remove_comments: Some(true), ..Config::default() };
+    let cfg = Config { fmt: FormatOpts { remove_comments: Some(true), ..FormatOpts::default() }, ..Config::default() };
     let ts = |s: &'static str| ts_base(s, &cfg);
 
     // TableConstructor
     assert_eq!(ts("t={--\n}"), Ok("t={\n}".to_string()));
     assert_eq!(ts("t = { a --\n  =  --[[]]  3}"), Ok("t = { a \n  =    3}".to_string()));
-    assert_eq!(
-        ts("t = { [ --c1\n a --[[c2]]] --c3\n= --c4\n 3}"),
-        Ok("t = { [ \n a ] \n= \n 3}".to_string())
-    );
-    assert_eq!(
-        ts("t = { [ --c1\n 'a' --[[c2]]] --c3\n= --c4\n 3}"),
-        Ok("t = { [ \n 'a' ] \n= \n 3}".to_string())
-    );
+    assert_eq!(ts("t = { [ --c1\n a --[[c2]]] --c3\n= --c4\n 3}"), Ok("t = { [ \n a ] \n= \n 3}".to_string()));
+    assert_eq!(ts("t = { [ --c1\n 'a' --[[c2]]] --c3\n= --c4\n 3}"), Ok("t = { [ \n 'a' ] \n= \n 3}".to_string()));
     assert_eq!(
         ts("t = { [ --c1\n \"a\" --[[c2]]] --c3\n= --c4\n 3} --123213"),
         Ok("t = { [ \n \"a\" ] \n= \n 3} \n".to_string())
@@ -56,7 +50,7 @@ fn test_remove_comments_other() {
 
 #[test]
 fn test_remove_comments_special() {
-    let cfg = Config { remove_comments: Some(true), ..Config::default() };
+    let cfg = Config { fmt: FormatOpts { remove_comments: Some(true), ..FormatOpts::default() }, ..Config::default() };
     let ts = |s: &'static str| ts_base(s, &cfg);
 
     assert_eq!(ts("   "), Ok("   ".to_string()));

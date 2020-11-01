@@ -27,11 +27,14 @@ fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
 #[allow(dead_code)]
 fn tscln(source: &'static str) -> Result<String, TestError> {
     let cfg = Config {
-        remove_comments: Some(true),
-        remove_all_newlines: Some(true),
-        replace_zero_spaces_with_hint: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        hint_table_constructor: Some(" ".to_string()),
+        fmt: FormatOpts {
+            remove_comments: Some(true),
+            remove_all_newlines: Some(true),
+            replace_zero_spaces_with_hint: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            hint_table_constructor: Some(" ".to_string()),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     ts_base(source, &cfg)

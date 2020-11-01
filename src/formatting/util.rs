@@ -22,7 +22,7 @@ macro_rules! test_oneline {
                 let left_len = util::get_len_after_newline($wrt, $cfg);
                 let right_len = util::get_len_till_newline(&buffer, $cfg);
 
-                match left_len + right_len < $cfg.max_width.unwrap() {
+                match left_len + right_len < $cfg.fmt.max_width.unwrap() {
                     true => Some(buffer),
                     false => None,
                 }
@@ -76,7 +76,7 @@ pub fn charstring_to_normalstring(s: &str) -> String {
 }
 
 pub fn write_indent(f: &mut String, cfg: &Config, state: &State) -> std::fmt::Result {
-    let indentation = match &cfg.indentation_string {
+    let indentation = match &cfg.fmt.indentation_string {
         Some(indent_str) => (0..state.indent_level).map(|_| &indent_str[..]).collect::<String>(),
         None => String::new(),
     };

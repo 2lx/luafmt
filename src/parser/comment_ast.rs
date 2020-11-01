@@ -40,7 +40,7 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str {
         use Node::*;
         match self {
-            MultiLineComment(_, _, _) | OneLineComment(_, _) => match cfg.hint_before_comment.as_ref() {
+            MultiLineComment(_, _, _) | OneLineComment(_, _) => match cfg.fmt.hint_before_comment.as_ref() {
                 Some(s) => s,
                 None => "",
             },
@@ -55,12 +55,12 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
         match self {
             // here we know, that CommentList is not the first item of VariantList
             CommentList(_, comments) if !comments.is_empty() => match &comments[0] {
-                (_, OneLineComment(..)) => cfg.newline_format_oneline_comment == Some(1),
-                (_, MultiLineComment(..)) => cfg.newline_format_multiline_comment == Some(1),
+                (_, OneLineComment(..)) => cfg.fmt.newline_format_oneline_comment == Some(1),
+                (_, MultiLineComment(..)) => cfg.fmt.newline_format_multiline_comment == Some(1),
                 _ => false,
             },
-            OneLineComment(..) => cfg.newline_format_oneline_comment == Some(1),
-            MultiLineComment(..) => cfg.newline_format_multiline_comment == Some(1),
+            OneLineComment(..) => cfg.fmt.newline_format_oneline_comment == Some(1),
+            MultiLineComment(..) => cfg.fmt.newline_format_multiline_comment == Some(1),
             _ => false,
         }
     }
@@ -72,8 +72,8 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
         match self {
             // here we know, that CommentList is the first item of VariantList
             CommentList(_, comments) if !comments.is_empty() => match &comments[0] {
-                (_, OneLineComment(..)) => cfg.newline_format_first_oneline_comment == Some(1),
-                (_, MultiLineComment(..)) => cfg.newline_format_first_multiline_comment == Some(1),
+                (_, OneLineComment(..)) => cfg.fmt.newline_format_first_oneline_comment == Some(1),
+                (_, MultiLineComment(..)) => cfg.fmt.newline_format_first_multiline_comment == Some(1),
                 _ => false,
             },
             _ => false,
@@ -92,7 +92,7 @@ impl ConfiguredWrite for Node {
         match self {
             Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),
             VariantList(_, variants) => {
-                if cfg.remove_single_newlines == Some(true) && variants.len() == 1 {
+                if cfg.fmt.remove_single_newlines == Some(true) && variants.len() == 1 {
                     if let (_, NewLineList(_, newlines)) = &variants[0] {
                         if newlines.len() == 1 {
                             return Ok(());
@@ -112,12 +112,12 @@ impl ConfiguredWrite for Node {
                 Ok(())
             }
 
-            OneLineComment(_, s) => match cfg.remove_comments {
-                Some(true) => match cfg.remove_all_newlines {
+            OneLineComment(_, s) => match cfg.fmt.remove_comments {
+                Some(true) => match cfg.fmt.remove_all_newlines {
                     Some(true) => Ok(()),
                     _ => write!(f, "\n"),
                 },
-                _ => match cfg.hint_before_oneline_comment_text.as_ref() {
+                _ => match cfg.fmt.hint_before_oneline_comment_text.as_ref() {
                     Some(prefix) => {
                         let strimmed = s.trim_start();
 
@@ -133,13 +133,13 @@ impl ConfiguredWrite for Node {
                 },
             },
 
-            MultiLineComment(_, level, s) => match cfg.remove_comments {
+            MultiLineComment(_, level, s) => match cfg.fmt.remove_comments {
                 Some(true) => Ok(()),
                 _ => {
                     let level_str = (0..*level).map(|_| "=").collect::<String>();
                     match (
-                        cfg.hint_before_multiline_comment_text.as_ref(),
-                        cfg.hint_after_multiline_comment_text.as_ref(),
+                        cfg.fmt.hint_before_multiline_comment_text.as_ref(),
+                        cfg.fmt.hint_after_multiline_comment_text.as_ref(),
                     ) {
                         (Some(prefix), Some(suffix)) => {
                             write!(f, "--[{}[{}{}{}]{}]", level_str, prefix, s.trim(), suffix, level_str)
@@ -152,7 +152,7 @@ impl ConfiguredWrite for Node {
                     }
                 }
             },
-            NewLine(_) => match cfg.remove_all_newlines {
+            NewLine(_) => match cfg.fmt.remove_all_newlines {
                 Some(true) => Ok(()),
                 _ => write!(f, "\n"),
             },

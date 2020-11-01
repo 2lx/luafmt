@@ -158,7 +158,7 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
             }
         }
         CharStringLiteral(pos, s) => {
-            if cfg.convert_charstring_to_normalstring == Some(true) {
+            if cfg.fmt.convert_charstring_to_normalstring == Some(true) {
                 *node = NormalStringLiteral(pos.clone(), util::charstring_to_normalstring(&s));
             }
         }

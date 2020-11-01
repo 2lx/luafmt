@@ -47,10 +47,10 @@ pub fn process_file(file_path: &PathBuf, cfg: &Config, verbose: bool) -> Result<
     }
 
     use FormatterError::*;
-    match cfg.is_empty() {
+    match cfg.has_empty_format() {
         true => match file_util::get_file_config(file_path, crate::CFG_PREFIX) {
-            Some(file_config) => match Config::load_from_file(&file_config) {
-                Ok(cfg) => process_buffer_with_config(&buffer, &cfg, verbose),
+            Some(file_config) => match cfg.reload_format_from_file(&file_config) {
+                Ok(new_cfg) => process_buffer_with_config(&buffer, &new_cfg, verbose),
                 Err(err) => Err(InvalidConfigFile(err)),
             },
             None => Err(NoConfigureFile),

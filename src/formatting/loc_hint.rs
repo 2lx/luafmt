@@ -36,22 +36,22 @@ impl CommentLocHint<'_, '_> {
 
         // if `comment_block` is empty
         if comment_block.is_empty() {
-            if cfg.replace_zero_spaces_with_hint == Some(true) {
+            if cfg.fmt.replace_zero_spaces_with_hint == Some(true) {
                 write!(f, "{}", self.1)?;
             }
             return Ok(());
         }
 
         // hint before comment block, starting with '-'
-        if cfg.hint_before_comment.is_some() && comment_block.chars().next() == Some('-') {
-            write!(f, "{}", cfg.hint_before_comment.as_ref().unwrap())?;
+        if cfg.fmt.hint_before_comment.is_some() && comment_block.chars().next() == Some('-') {
+            write!(f, "{}", cfg.fmt.hint_before_comment.as_ref().unwrap())?;
         }
 
         write!(f, "{}", comment_block)?;
 
         // hint after comment block, ending with ']'
-        if cfg.hint_after_multiline_comment.is_some() && comment_block.chars().last() == Some(']') {
-            write!(f, "{}", cfg.hint_after_multiline_comment.as_ref().unwrap())?;
+        if cfg.fmt.hint_after_multiline_comment.is_some() && comment_block.chars().last() == Some(']') {
+            write!(f, "{}", cfg.fmt.hint_after_multiline_comment.as_ref().unwrap())?;
         }
 
         Ok(())
@@ -78,7 +78,7 @@ impl ConfiguredWrite for CommentLocHint<'_, '_> {
 
 impl ConfiguredWrite for SpaceLocHint<'_, '_> {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, _state: &mut State) -> std::fmt::Result {
-        if cfg.remove_spaces_between_tokens == Some(true) {
+        if cfg.fmt.remove_spaces_between_tokens == Some(true) {
             return write!(f, "{}", self.1)
         }
 

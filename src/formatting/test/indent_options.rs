@@ -11,8 +11,14 @@ fn test_indent_do_end() {
         Ok("do --comment\n print(a) print(b) --[[123]] end".to_string())
     );
 
-    let cfg =
-        Config { indentation_string: Some("I   ".to_string()), newline_format_do_end: Some(1), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            newline_format_do_end: Some(1),
+            ..FormatOpts::default()
+        },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(
         ts("do print(a) print(b) end"),
@@ -72,8 +78,11 @@ fn test_newline_format_statement() {
     );
 
     let cfg = Config {
-        indentation_string: Some("INDENT".to_string()),
-        newline_format_statement: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_statement: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -129,8 +138,14 @@ fn test_indent_for() {
         Ok("for --[[1]]a--[[2]] in--[[3]] ipairs(t)--4\ndo--9\n --[[10]]end".to_string())
     );
 
-    let cfg =
-        Config { indentation_string: Some("INDENT".to_string()), newline_format_for: Some(1), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts {
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_for: Some(1),
+            ..FormatOpts::default()
+        },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -186,9 +201,12 @@ fn test_indent_for() {
     );
 
     let cfg = Config {
-        indentation_string: Some("INDENT".to_string()),
-        newline_format_for: Some(1),
-        newline_format_statement: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_for: Some(1),
+            newline_format_statement: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -210,8 +228,14 @@ fn test_indent_if_then_else() {
         Ok("if a > b --comment\n then print(a) print(b) end".to_string())
     );
 
-    let cfg =
-        Config { indentation_string: Some("INDENT".to_string()), newline_format_if: Some(1), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts {
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_if: Some(1),
+            ..FormatOpts::default()
+        },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
     assert_eq!(
         ts(
@@ -348,8 +372,11 @@ fn test_indent_function() {
     );
 
     let cfg = Config {
-        indentation_string: Some("INDENT".to_string()),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_function: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -372,9 +399,12 @@ end"#
     );
 
     let cfg = Config {
-        newline_format_statement: Some(1),
-        indentation_string: Some("INDENT".to_string()),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            newline_format_statement: Some(1),
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_function: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -433,8 +463,11 @@ fn test_indent_repeat_until() {
     );
 
     let cfg = Config {
-        indentation_string: Some("INDENT".to_string()),
-        newline_format_repeat_until: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_repeat_until: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -454,9 +487,12 @@ until --[[123]] a>3"#
     );
 
     let cfg = Config {
-        newline_format_statement: Some(1),
-        indentation_string: Some("INDENT".to_string()),
-        newline_format_repeat_until: Some(1),
+        fmt: FormatOpts {
+            newline_format_statement: Some(1),
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_repeat_until: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -481,8 +517,14 @@ fn test_indent_while_do() {
         Ok("while a < 3 --[[123]] do --234\n print(a) print(b) --[[345]] print(c) --456\n end".to_string())
     );
 
-    let cfg =
-        Config { indentation_string: Some("INDENT".to_string()), newline_format_while: Some(1), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts {
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_while: Some(1),
+            ..FormatOpts::default()
+        },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(ts("while a < 3 --123\n do --234\n end"), Ok("while a < 3 --123\n do --234\nend".to_string()));
@@ -495,9 +537,12 @@ end"#
     );
 
     let cfg = Config {
-        newline_format_statement: Some(1),
-        indentation_string: Some("INDENT".to_string()),
-        newline_format_while: Some(1),
+        fmt: FormatOpts {
+            newline_format_statement: Some(1),
+            indentation_string: Some("INDENT".to_string()),
+            newline_format_while: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -523,8 +568,11 @@ fn test_indent_table() {
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -545,17 +593,16 @@ I   }, d = {}, e
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_field: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_field: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(
-        ts("local a = {}"),
-        Ok(r#"local a = {}"#
-            .to_string())
-    );
+    assert_eq!(ts("local a = {}"), Ok(r#"local a = {}"#.to_string()));
     assert_eq!(
         ts("local a = {a}"),
         Ok(r#"local a = {
@@ -594,9 +641,12 @@ I   e }"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -631,9 +681,12 @@ I   e
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_statement: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_statement: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -644,9 +697,12 @@ I   e
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        hint_table_constructor: Some(" ".to_string()),
-        replace_zero_spaces_with_hint: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            hint_table_constructor: Some(" ".to_string()),
+            replace_zero_spaces_with_hint: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -658,11 +714,14 @@ I   e
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        hint_table_constructor: Some(" ".to_string()),
-        replace_zero_spaces_with_hint: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            hint_table_constructor: Some(" ".to_string()),
+            replace_zero_spaces_with_hint: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -700,14 +759,17 @@ I   e
 #[test]
 fn test_indent_all() {
     let cfg = Config {
-        indentation_string: Some("I     ".to_string()),
-        newline_format_statement: Some(1),
-        newline_format_do_end: Some(1),
-        newline_format_for: Some(1),
-        newline_format_function: Some(1),
-        newline_format_if: Some(1),
-        newline_format_repeat_until: Some(1),
-        newline_format_while: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I     ".to_string()),
+            newline_format_statement: Some(1),
+            newline_format_do_end: Some(1),
+            newline_format_for: Some(1),
+            newline_format_function: Some(1),
+            newline_format_if: Some(1),
+            newline_format_repeat_until: Some(1),
+            newline_format_while: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -735,15 +797,18 @@ print(h)"#.to_string())
 
     // oneline one
     let cfg = Config {
-        indentation_string: Some("I     ".to_string()),
-        newline_format_statement: Some(1),
-        newline_format_oneline_comment: Some(1),
-        newline_format_do_end: Some(1),
-        newline_format_for: Some(1),
-        newline_format_function: Some(1),
-        newline_format_if: Some(1),
-        newline_format_repeat_until: Some(1),
-        newline_format_while: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I     ".to_string()),
+            newline_format_statement: Some(1),
+            newline_format_oneline_comment: Some(1),
+            newline_format_do_end: Some(1),
+            newline_format_for: Some(1),
+            newline_format_function: Some(1),
+            newline_format_if: Some(1),
+            newline_format_repeat_until: Some(1),
+            newline_format_while: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -774,16 +839,19 @@ print(h)"#.to_string())
 
     // oneline both
     let cfg = Config {
-        indentation_string: Some("I     ".to_string()),
-        newline_format_statement: Some(1),
-        newline_format_first_oneline_comment: Some(1),
-        newline_format_oneline_comment: Some(1),
-        newline_format_do_end: Some(1),
-        newline_format_for: Some(1),
-        newline_format_function: Some(1),
-        newline_format_if: Some(1),
-        newline_format_repeat_until: Some(1),
-        newline_format_while: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I     ".to_string()),
+            newline_format_statement: Some(1),
+            newline_format_first_oneline_comment: Some(1),
+            newline_format_oneline_comment: Some(1),
+            newline_format_do_end: Some(1),
+            newline_format_for: Some(1),
+            newline_format_function: Some(1),
+            newline_format_if: Some(1),
+            newline_format_repeat_until: Some(1),
+            newline_format_while: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -845,15 +913,18 @@ print(h)"#.to_string())
 
     // multiline one
     let cfg = Config {
-        indentation_string: Some("I     ".to_string()),
-        newline_format_statement: Some(1),
-        newline_format_multiline_comment: Some(1),
-        newline_format_do_end: Some(1),
-        newline_format_for: Some(1),
-        newline_format_function: Some(1),
-        newline_format_if: Some(1),
-        newline_format_repeat_until: Some(1),
-        newline_format_while: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I     ".to_string()),
+            newline_format_statement: Some(1),
+            newline_format_multiline_comment: Some(1),
+            newline_format_do_end: Some(1),
+            newline_format_for: Some(1),
+            newline_format_function: Some(1),
+            newline_format_if: Some(1),
+            newline_format_repeat_until: Some(1),
+            newline_format_while: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -887,16 +958,19 @@ print(h)"#.to_string())
 
     // multiline both
     let cfg = Config {
-        indentation_string: Some("I     ".to_string()),
-        newline_format_statement: Some(1),
-        newline_format_first_multiline_comment: Some(1),
-        newline_format_multiline_comment: Some(1),
-        newline_format_do_end: Some(1),
-        newline_format_for: Some(1),
-        newline_format_function: Some(1),
-        newline_format_if: Some(1),
-        newline_format_repeat_until: Some(1),
-        newline_format_while: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I     ".to_string()),
+            newline_format_statement: Some(1),
+            newline_format_first_multiline_comment: Some(1),
+            newline_format_multiline_comment: Some(1),
+            newline_format_do_end: Some(1),
+            newline_format_for: Some(1),
+            newline_format_function: Some(1),
+            newline_format_if: Some(1),
+            newline_format_repeat_until: Some(1),
+            newline_format_while: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -934,18 +1008,21 @@ print(h)"#.to_string())
 
     // multiline and oneline all
     let cfg = Config {
-        indentation_string: Some("I     ".to_string()),
-        newline_format_statement: Some(1),
-        newline_format_first_oneline_comment: Some(1),
-        newline_format_oneline_comment: Some(1),
-        newline_format_first_multiline_comment: Some(1),
-        newline_format_multiline_comment: Some(1),
-        newline_format_do_end: Some(1),
-        newline_format_for: Some(1),
-        newline_format_function: Some(1),
-        newline_format_if: Some(1),
-        newline_format_repeat_until: Some(1),
-        newline_format_while: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I     ".to_string()),
+            newline_format_statement: Some(1),
+            newline_format_first_oneline_comment: Some(1),
+            newline_format_oneline_comment: Some(1),
+            newline_format_first_multiline_comment: Some(1),
+            newline_format_multiline_comment: Some(1),
+            newline_format_do_end: Some(1),
+            newline_format_for: Some(1),
+            newline_format_function: Some(1),
+            newline_format_if: Some(1),
+            newline_format_repeat_until: Some(1),
+            newline_format_while: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -988,23 +1065,25 @@ print(h)"#.to_string())
     );
 }
 
-
 #[test]
 fn test_indent_exp_list() {
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        newline_format_statement: Some(1),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            newline_format_statement: Some(1),
+            newline_format_function: Some(1),
 
-        indent_exp_list: Some(true),
-        indent_var_suffix: Some(true),
-        indent_one_line_exp_list: Some(true),
-        newline_format_exp_list: Some(1),
-        enable_oneline_exp_list: Some(true),
+            indent_exp_list: Some(true),
+            indent_var_suffix: Some(true),
+            indent_one_line_exp_list: Some(true),
+            newline_format_exp_list: Some(1),
+            enable_oneline_exp_list: Some(true),
 
-        newline_format_var_suffix: Some(1),
-        enable_oneline_var_suffix: Some(true),
-        max_width: Some(50),
+            newline_format_var_suffix: Some(1),
+            enable_oneline_var_suffix: Some(true),
+            max_width: Some(50),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -1019,41 +1098,50 @@ local a = b"#),
 I   I   I   self.a = 1
 I   I   I   self.b = 2
 I   I   end)
-local a = b"#.to_string())
+local a = b"#
+            .to_string())
     );
     assert_eq!(
-        ts(r#"for a, b, c in fn.field.field:method(), b.field.field:method():method().field, field.field:method() do end"#),
+        ts(
+            r#"for a, b, c in fn.field.field:method(), b.field.field:method():method().field, field.field:method() do end"#
+        ),
         Ok(r#"for a, b, c in fn.field.field:method(),
 I   b.field.field:method():method().field,
-I   field.field:method() do end"#.to_string())
+I   field.field:method() do end"#
+            .to_string())
     );
     assert_eq!(
         ts(r#"return fn.field.field:method(), b.field.field:method():method().field, field.field:method()"#),
         Ok(r#"return fn.field.field:method(),
 I   b.field.field:method():method().field,
-I   field.field:method()"#.to_string())
+I   field.field:method()"#
+            .to_string())
     );
     assert_eq!(
         ts(r#"return fn.field.field:method(), b.field.field:method():method().field, field.field:method();"#),
         Ok(r#"return fn.field.field:method(),
 I   b.field.field:method():method().field,
-I   field.field:method();"#.to_string())
+I   field.field:method();"#
+            .to_string())
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        newline_format_statement: Some(1),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            newline_format_statement: Some(1),
+            newline_format_function: Some(1),
 
-        indent_exp_list: Some(true),
-        indent_var_suffix: Some(true),
-        // indent_one_line_exp_list: Some(true),
-        newline_format_exp_list: Some(1),
-        enable_oneline_exp_list: Some(true),
+            indent_exp_list: Some(true),
+            indent_var_suffix: Some(true),
+            // indent_one_line_exp_list: Some(true),
+            newline_format_exp_list: Some(1),
+            enable_oneline_exp_list: Some(true),
 
-        newline_format_var_suffix: Some(1),
-        enable_oneline_var_suffix: Some(true),
-        max_width: Some(100),
+            newline_format_var_suffix: Some(1),
+            enable_oneline_var_suffix: Some(true),
+            max_width: Some(100),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -1068,7 +1156,8 @@ local a = b"#),
 I   self.a = 1
 I   self.b = 2
 end)
-local a = b"#.to_string())
+local a = b"#
+            .to_string())
     );
 
     assert_eq!(
@@ -1081,7 +1170,8 @@ local a = b"#),
 I   self.a = 1
 I   self.b = 2
 end)
-local a = b"#.to_string())
+local a = b"#
+            .to_string())
     );
 
     assert_eq!(
@@ -1100,15 +1190,19 @@ end, function()
 I   self.a = 3
 I   self.b = 4
 end, something_else)
-local a = b"#.to_string())
+local a = b"#
+            .to_string())
     );
 
     assert_eq!(
-        ts(r#"value = class(vara, varb, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec)
-local a = b"#),
+        ts(
+            r#"value = class(vara, varb, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec)
+local a = b"#
+        ),
         Ok(r#"value = class(vara, varb, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec,
 I   varqweqweqweqweqwec)
-local a = b"#.to_string())
+local a = b"#
+            .to_string())
     );
 
     assert_eq!(
@@ -1122,6 +1216,7 @@ I   I   self.a = 1
 I   I   self.b = 2
 I   end, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec, varqweqweqweqweqwec,
 I   varqweqweqweqweqwec, varqweqweqweqweqwec)
-local a = b"#.to_string())
+local a = b"#
+            .to_string())
     );
 }

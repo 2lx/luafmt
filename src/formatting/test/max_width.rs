@@ -4,9 +4,12 @@ use crate::config::*;
 #[test]
 fn test_binary_ops() {
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_binary_op: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_binary_op: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -33,9 +36,12 @@ I   I   and e"
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_binary_op: Some(2),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_binary_op: Some(2),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -62,11 +68,14 @@ I   I   e"
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_binary_op: Some(1),
-        max_width: Some(30),
-        enable_oneline_binary_op: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_binary_op: Some(1),
+            max_width: Some(30),
+            enable_oneline_binary_op: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -96,11 +105,14 @@ I   I   and (c and d and e)"
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_binary_op: Some(1),
-        max_width: Some(50),
-        enable_oneline_binary_op: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_binary_op: Some(1),
+            max_width: Some(50),
+            enable_oneline_binary_op: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -128,11 +140,14 @@ I   or fn3(d, e, c) and (c and d and e)"
 #[test]
 fn test_binary_op_same() {
     let cfg = Config {
-        // remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_binary_op: Some(1),
-        max_width: Some(50),
-        enable_oneline_binary_op: Some(true),
+        fmt: FormatOpts {
+            // remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_binary_op: Some(1),
+            max_width: Some(50),
+            enable_oneline_binary_op: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -146,11 +161,14 @@ I   .. 'abcdefg7'"#
     );
 
     let cfg = Config {
-        // remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_binary_op: Some(1),
-        max_width: Some(40),
-        enable_oneline_binary_op: Some(true),
+        fmt: FormatOpts {
+            // remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_binary_op: Some(1),
+            max_width: Some(40),
+            enable_oneline_binary_op: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -165,11 +183,14 @@ I   .. 'abcdefg7'"#
     );
 
     let cfg = Config {
-        // remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_binary_op: Some(1),
-        max_width: Some(33),
-        enable_oneline_binary_op: Some(true),
+        fmt: FormatOpts {
+            // remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_binary_op: Some(1),
+            max_width: Some(33),
+            enable_oneline_binary_op: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -187,10 +208,13 @@ I   .. 'abcdefgh' .. 'abcdefgh'"#
 #[test]
 fn test_table() {
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -225,12 +249,15 @@ I   e
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        max_width: Some(40),
-        enable_oneline_table: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            max_width: Some(40),
+            enable_oneline_table: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -248,13 +275,16 @@ I   e
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        max_width: Some(55),
-        enable_oneline_table: Some(true),
-        enable_oneline_kv_table_field: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            max_width: Some(55),
+            enable_oneline_table: Some(true),
+            enable_oneline_kv_table_field: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -265,16 +295,19 @@ I   e
         Ok(r#"local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {},
 I   e
 }"#
-            .to_string())
+        .to_string())
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        max_width: Some(27),
-        enable_oneline_table: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            max_width: Some(27),
+            enable_oneline_table: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -286,7 +319,7 @@ I   a=3,
 I   b=23-1,
 I   c=a
 }"#
-            .to_string())
+        .to_string())
     );
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
@@ -306,14 +339,17 @@ I   e
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        max_width: Some(15),
-        enable_oneline_table: Some(true),
-        field_separator: Some(";".to_string()),
-        write_trailing_field_separator: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            max_width: Some(15),
+            enable_oneline_table: Some(true),
+            field_separator: Some(";".to_string()),
+            write_trailing_field_separator: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -328,14 +364,17 @@ I   c=a;
         .to_string())
     );
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        max_width: Some(27),
-        enable_oneline_table: Some(true),
-        field_separator: Some(";".to_string()),
-        write_trailing_field_separator: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            max_width: Some(27),
+            enable_oneline_table: Some(true),
+            field_separator: Some(";".to_string()),
+            write_trailing_field_separator: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -367,16 +406,19 @@ I   e;
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        enable_oneline_table: Some(true),
-        enable_oneline_iv_table_field: Some(true),
-        enable_oneline_kv_table_field: Some(true),
-        max_width: Some(28),
-        field_separator: Some(";".to_string()),
-        write_trailing_field_separator: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            enable_oneline_table: Some(true),
+            enable_oneline_iv_table_field: Some(true),
+            enable_oneline_kv_table_field: Some(true),
+            max_width: Some(28),
+            field_separator: Some(";".to_string()),
+            write_trailing_field_separator: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -399,25 +441,24 @@ I   }; d = {}; e;
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        // newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        // enable_oneline_table: Some(true),
-        enable_oneline_iv_table_field: Some(true),
-        enable_oneline_kv_table_field: Some(true),
-        max_width: Some(29),
-        field_separator: Some(";".to_string()),
-        write_trailing_field_separator: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            // newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            // enable_oneline_table: Some(true),
+            enable_oneline_iv_table_field: Some(true),
+            enable_oneline_kv_table_field: Some(true),
+            max_width: Some(29),
+            field_separator: Some(";".to_string()),
+            write_trailing_field_separator: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
 
-    assert_eq!(
-        ts("local a = {a=3, b=23-1, c=a}"),
-        Ok(r#"local a = {a=3; b=23-1; c=a;}"#
-        .to_string())
-    );
+    assert_eq!(ts("local a = {a=3, b=23-1, c=a}"), Ok(r#"local a = {a=3; b=23-1; c=a;}"#.to_string()));
     assert_eq!(
         ts("local a = { b = 123, c={1, 2, 3, {a=1, b=2}, 5}, d = {}, e}"),
         Ok(r#"local a = { b = 123;
@@ -427,16 +468,19 @@ I   }; d = {}; e;}"#
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        // newline_format_table_constructor: Some(1),
-        newline_format_table_field: Some(1),
-        // enable_oneline_table: Some(true),
-        enable_oneline_iv_table_field: Some(true),
-        enable_oneline_kv_table_field: Some(true),
-        max_width: Some(35),
-        field_separator: Some(";".to_string()),
-        write_trailing_field_separator: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            // newline_format_table_constructor: Some(1),
+            newline_format_table_field: Some(1),
+            // enable_oneline_table: Some(true),
+            enable_oneline_iv_table_field: Some(true),
+            enable_oneline_kv_table_field: Some(true),
+            max_width: Some(35),
+            field_separator: Some(";".to_string()),
+            write_trailing_field_separator: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -454,9 +498,12 @@ I   d = {}; e;}"#
 #[test]
 fn test_if() {
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_if: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_if: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -489,11 +536,14 @@ end"#
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_if: Some(1),
-        max_width: Some(120),
-        enable_oneline_if: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_if: Some(1),
+            max_width: Some(120),
+            enable_oneline_if: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -521,11 +571,14 @@ end"#
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_if: Some(1),
-        max_width: Some(20),
-        enable_oneline_if: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_if: Some(1),
+            max_width: Some(20),
+            enable_oneline_if: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -541,11 +594,14 @@ end"#
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_if: Some(1),
-        max_width: Some(2000),
-        enable_oneline_if: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_if: Some(1),
+            max_width: Some(2000),
+            enable_oneline_if: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -575,10 +631,13 @@ end"#
 #[test]
 fn test_function() {
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
-        newline_format_statement: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            newline_format_statement: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -606,12 +665,15 @@ end"#
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
-        newline_format_statement: Some(1),
-        max_width: Some(120),
-        enable_oneline_top_level_function: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            newline_format_statement: Some(1),
+            max_width: Some(120),
+            enable_oneline_top_level_function: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -634,12 +696,15 @@ end"#
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
-        newline_format_statement: Some(1),
-        max_width: Some(120),
-        enable_oneline_scoped_function: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            newline_format_statement: Some(1),
+            max_width: Some(120),
+            enable_oneline_scoped_function: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -663,13 +728,16 @@ end"#
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
-        newline_format_statement: Some(1),
-        max_width: Some(120),
-        enable_oneline_top_level_function: Some(true),
-        enable_oneline_scoped_function: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            newline_format_statement: Some(1),
+            max_width: Some(120),
+            enable_oneline_top_level_function: Some(true),
+            enable_oneline_scoped_function: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -702,7 +770,8 @@ end"#
 
 #[test]
 fn test_table_suffix() {
-    let cfg = Config { newline_format_var_suffix: Some(1), ..Config::default() };
+    let cfg =
+        Config { fmt: FormatOpts { newline_format_var_suffix: Some(1), ..FormatOpts::default() }, ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -722,9 +791,12 @@ fn test_table_suffix() {
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(20),
-        newline_format_var_suffix: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(20),
+            newline_format_var_suffix: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -746,10 +818,13 @@ fn test_table_suffix() {
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(20),
-        newline_format_var_suffix: Some(1),
-        enable_oneline_var_suffix: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(20),
+            newline_format_var_suffix: Some(1),
+            enable_oneline_var_suffix: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -765,11 +840,14 @@ fn test_table_suffix() {
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_var_suffix: Some(1),
-        enable_oneline_var_suffix: Some(true),
-        indent_var_suffix: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_var_suffix: Some(1),
+            enable_oneline_var_suffix: Some(true),
+            indent_var_suffix: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -788,9 +866,12 @@ I   :method()"#
 #[test]
 fn test_table_field() {
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_var_suffix: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_var_suffix: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -812,9 +893,12 @@ fn test_table_field() {
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_var_suffix: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_var_suffix: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -836,10 +920,13 @@ fn test_table_field() {
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_var_suffix: Some(1),
-        indent_var_suffix: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_var_suffix: Some(1),
+            indent_var_suffix: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -861,11 +948,14 @@ I   :method()"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_var_suffix: Some(1),
-        enable_oneline_var_suffix: Some(true),
-        indent_var_suffix: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_var_suffix: Some(1),
+            enable_oneline_var_suffix: Some(true),
+            indent_var_suffix: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -919,14 +1009,17 @@ I   I   :method41())"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_var_suffix: Some(1),
-        enable_oneline_var_suffix: Some(true),
-        indent_var_suffix: Some(true),
-        indent_exp_list: Some(true),
-        newline_format_exp_list_first: Some(1),
-        enable_oneline_exp_list: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_var_suffix: Some(1),
+            enable_oneline_var_suffix: Some(true),
+            indent_var_suffix: Some(true),
+            indent_exp_list: Some(true),
+            newline_format_exp_list_first: Some(1),
+            enable_oneline_exp_list: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -975,9 +1068,12 @@ I   I   I   :method41())"#
 #[test]
 fn test_exp_list() {
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_exp_list: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_exp_list: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -993,10 +1089,13 @@ a)"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_exp_list: Some(1),
-        newline_format_exp_list_first: Some(1),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_exp_list: Some(1),
+            newline_format_exp_list_first: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -1014,10 +1113,13 @@ a)"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_exp_list: Some(1),
-        enable_oneline_exp_list: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_exp_list: Some(1),
+            enable_oneline_exp_list: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -1031,11 +1133,14 @@ fn(12, "abc", a)"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_exp_list: Some(1),
-        newline_format_exp_list_first: Some(1),
-        enable_oneline_exp_list: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_exp_list: Some(1),
+            newline_format_exp_list_first: Some(1),
+            enable_oneline_exp_list: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -1049,11 +1154,14 @@ fn(12, "abc", a)"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_exp_list: Some(1),
-        enable_oneline_exp_list: Some(true),
-        indent_exp_list: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_exp_list: Some(1),
+            enable_oneline_exp_list: Some(true),
+            indent_exp_list: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -1069,12 +1177,15 @@ I   {a=12321, b="asdad"})"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(24),
-        newline_format_exp_list: Some(1),
-        newline_format_exp_list_first: Some(1),
-        enable_oneline_exp_list: Some(true),
-        indent_exp_list: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(24),
+            newline_format_exp_list: Some(1),
+            newline_format_exp_list_first: Some(1),
+            enable_oneline_exp_list: Some(true),
+            indent_exp_list: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -1100,14 +1211,17 @@ I   {a=12321, b="asdad"})"#
     );
 
     let cfg = Config {
-        indentation_string: Some("I   ".to_string()),
-        max_width: Some(26),
-        newline_format_exp_list: Some(1),
-        newline_format_function: Some(1),
-        newline_format_statement: Some(1),
-        enable_oneline_exp_list: Some(true),
-        remove_single_newlines: Some(true),
-        indent_exp_list: Some(true),
+        fmt: FormatOpts {
+            indentation_string: Some("I   ".to_string()),
+            max_width: Some(26),
+            newline_format_exp_list: Some(1),
+            newline_format_function: Some(1),
+            newline_format_statement: Some(1),
+            enable_oneline_exp_list: Some(true),
+            remove_single_newlines: Some(true),
+            indent_exp_list: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);

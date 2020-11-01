@@ -3,7 +3,10 @@ use crate::config::*;
 
 #[test]
 fn test_replace_zero_spaces_with_hint() {
-    let cfg = Config { replace_zero_spaces_with_hint: Some(true), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts { replace_zero_spaces_with_hint: Some(true), ..FormatOpts::default() },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(ts("for a=1,   4do print  (1,4)end"), Ok("for a = 1,   4 do print  (1, 4) end".to_string()));
@@ -12,7 +15,10 @@ fn test_replace_zero_spaces_with_hint() {
         Ok("for a = 1,--[[  asd ]]  \n  4 do print --1\n (1, 4) end".to_string())
     );
 
-    let cfg = Config { remove_spaces_between_tokens: Some(true), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts { remove_spaces_between_tokens: Some(true), ..FormatOpts::default() },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -26,8 +32,11 @@ fn test_replace_zero_spaces_with_hint() {
     );
 
     let cfg = Config {
-        replace_zero_spaces_with_hint: Some(true),
-        remove_spaces_between_tokens: Some(true),
+        fmt: FormatOpts {
+            replace_zero_spaces_with_hint: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -46,7 +55,10 @@ fn test_replace_zero_spaces_with_hint() {
 
 #[test]
 fn test_comment_hints() {
-    let cfg = Config { hint_after_multiline_comment: Some("W".to_string()), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts { hint_after_multiline_comment: Some("W".to_string()), ..FormatOpts::default() },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -60,7 +72,10 @@ fn test_comment_hints() {
             .to_string())
     );
 
-    let cfg = Config { hint_before_comment: Some("W".to_string()), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts { hint_before_comment: Some("W".to_string()), ..FormatOpts::default() },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -75,9 +90,12 @@ fn test_comment_hints() {
     );
 
     let cfg = Config {
-        hint_before_oneline_comment_text: Some("W1".to_string()),
-        hint_before_multiline_comment_text: Some("W2".to_string()),
-        hint_after_multiline_comment_text: Some("W3".to_string()),
+        fmt: FormatOpts {
+            hint_before_oneline_comment_text: Some("W1".to_string()),
+            hint_before_multiline_comment_text: Some("W2".to_string()),
+            hint_after_multiline_comment_text: Some("W3".to_string()),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -92,7 +110,10 @@ fn test_comment_hints() {
         Ok("#!/usr/bin/lua\n local --W11\n b = {2, 3} for a=1,--[[W2asdW3]]  \n  4do print--W11\n (1,4)end--[=[W21232W3]=]".to_string())
     );
 
-    let cfg = Config { hint_after_multiline_comment_text: Some("W3".to_string()), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts { hint_after_multiline_comment_text: Some("W3".to_string()), ..FormatOpts::default() },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -106,7 +127,10 @@ fn test_comment_hints() {
             .to_string())
     );
 
-    let cfg = Config { hint_before_multiline_comment_text: Some("W2".to_string()), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts { hint_before_multiline_comment_text: Some("W2".to_string()), ..FormatOpts::default() },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -123,7 +147,7 @@ fn test_comment_hints() {
 
 #[test]
 fn test_remove_comments_newlines() {
-    let cfg = Config { remove_comments: Some(true), ..Config::default() };
+    let cfg = Config { fmt: FormatOpts { remove_comments: Some(true), ..FormatOpts::default() }, ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -136,7 +160,8 @@ fn test_remove_comments_newlines() {
         Ok("#!/usr/bin/lua\n local \n b = {2, 3} for a=1,  \n  4do print\n (1,4)end".to_string())
     );
 
-    let cfg = Config { remove_all_newlines: Some(true), ..Config::default() };
+    let cfg =
+        Config { fmt: FormatOpts { remove_all_newlines: Some(true), ..FormatOpts::default() }, ..Config::default() };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -150,7 +175,10 @@ fn test_remove_comments_newlines() {
             .to_string())
     );
 
-    let cfg = Config { remove_comments: Some(true), remove_all_newlines: Some(true), ..Config::default() };
+    let cfg = Config {
+        fmt: FormatOpts { remove_comments: Some(true), remove_all_newlines: Some(true), ..FormatOpts::default() },
+        ..Config::default()
+    };
     let ts = |s: &str| ts_base(s, &cfg);
 
     assert_eq!(
@@ -167,9 +195,12 @@ fn test_remove_comments_newlines() {
 #[test]
 fn test_eof_hint() {
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        write_newline_at_eof: Some(true),
-        replace_zero_spaces_with_hint: Some(true),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            write_newline_at_eof: Some(true),
+            replace_zero_spaces_with_hint: Some(true),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -181,21 +212,25 @@ fn test_eof_hint() {
 
     assert_eq!(
         ts("#!/usr/bin/lua\n local \n b = {2, 3} for a=1,--[[  asd ]]  \n  4do print--1\n (1,4)end--[=[1232 ]=]"),
-        Ok("#!/usr/bin/lua\n local  b = {2, 3} for a = 1,--[[  asd ]]  \n  4 do print--1\n (1, 4) end--[=[1232 ]=]\n".to_string())
+        Ok("#!/usr/bin/lua\n local  b = {2, 3} for a = 1,--[[  asd ]]  \n  4 do print--1\n (1, 4) end--[=[1232 ]=]\n"
+            .to_string())
     );
 }
 
 #[test]
 fn test_end_of_line_and_not() {
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        replace_zero_spaces_with_hint: Some(true),
-        newline_format_oneline_comment: Some(1),
-        // newline_format_first_oneline_comment: Some(1),
-        newline_format_statement: Some(1),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            replace_zero_spaces_with_hint: Some(true),
+            newline_format_oneline_comment: Some(1),
+            // newline_format_first_oneline_comment: Some(1),
+            newline_format_statement: Some(1),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -218,18 +253,22 @@ I   print(b)
 I   --234
 I   print(c)-- end comment
 I   print(d)
-end"#.to_string())
+end"#
+            .to_string())
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        replace_zero_spaces_with_hint: Some(true),
-        newline_format_oneline_comment: Some(1),
-        newline_format_first_oneline_comment: Some(1),
-        newline_format_statement: Some(1),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            replace_zero_spaces_with_hint: Some(true),
+            newline_format_oneline_comment: Some(1),
+            newline_format_first_oneline_comment: Some(1),
+            newline_format_statement: Some(1),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -254,18 +293,22 @@ I   --234
 I   print(c)
 I   -- end comment
 I   print(d)
-end"#.to_string())
+end"#
+            .to_string())
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        replace_zero_spaces_with_hint: Some(true),
-        // newline_format_multiline_comment: Some(1),
-        // newline_format_first_multiline_comment: Some(1),
-        newline_format_statement: Some(1),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            replace_zero_spaces_with_hint: Some(true),
+            // newline_format_multiline_comment: Some(1),
+            // newline_format_first_multiline_comment: Some(1),
+            newline_format_statement: Some(1),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -288,18 +331,22 @@ I   print(b)
 --[[234]]
 I   print(c)-- end comment
 I   print(d)--[[1231]]
-end"#.to_string())
+end"#
+            .to_string())
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        replace_zero_spaces_with_hint: Some(true),
-        newline_format_multiline_comment: Some(1),
-        // newline_format_first_multiline_comment: Some(1),
-        newline_format_statement: Some(1),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            replace_zero_spaces_with_hint: Some(true),
+            newline_format_multiline_comment: Some(1),
+            // newline_format_first_multiline_comment: Some(1),
+            newline_format_statement: Some(1),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -323,18 +370,22 @@ I   print(b)
 I   --[[234]]
 I   print(c)-- end comment
 I   print(d)--[[1231]]
-end"#.to_string())
+end"#
+            .to_string())
     );
 
     let cfg = Config {
-        remove_single_newlines: Some(true),
-        remove_spaces_between_tokens: Some(true),
-        replace_zero_spaces_with_hint: Some(true),
-        newline_format_multiline_comment: Some(1),
-        newline_format_first_multiline_comment: Some(1),
-        newline_format_statement: Some(1),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            remove_single_newlines: Some(true),
+            remove_spaces_between_tokens: Some(true),
+            replace_zero_spaces_with_hint: Some(true),
+            newline_format_multiline_comment: Some(1),
+            newline_format_first_multiline_comment: Some(1),
+            newline_format_statement: Some(1),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -360,17 +411,21 @@ I   --[[234]]
 I   print(c)-- end comment
 I   print(d)
 --[[1231]]
-end"#.to_string())
+end"#
+            .to_string())
     );
 
     let cfg = Config {
-        newline_format_oneline_comment: Some(1),
-        newline_format_first_oneline_comment: Some(1),
-        newline_format_multiline_comment: Some(1),
-        newline_format_first_multiline_comment: Some(1),
-        newline_format_statement: Some(1),
-        indentation_string: Some("I   ".to_string()),
-        newline_format_function: Some(1),
+        fmt: FormatOpts {
+            newline_format_oneline_comment: Some(1),
+            newline_format_first_oneline_comment: Some(1),
+            newline_format_multiline_comment: Some(1),
+            newline_format_first_multiline_comment: Some(1),
+            newline_format_statement: Some(1),
+            indentation_string: Some("I   ".to_string()),
+            newline_format_function: Some(1),
+            ..FormatOpts::default()
+        },
         ..Config::default()
     };
     let ts = |s: &str| ts_base(s, &cfg);
@@ -397,6 +452,7 @@ I   print(c)
 I   -- end comment
 I   print(d)
 --[[1231]]
-end"#.to_string())
+end"#
+            .to_string())
     );
 }
