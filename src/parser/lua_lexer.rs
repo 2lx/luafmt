@@ -1,10 +1,13 @@
-use super::lexer_util::*;
 use phf::phf_map;
 use std::fmt;
-use std::str::CharIndices;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Token<'input> {
+use super::common::*;
+use super::lexer_util::*;
+
+type TChars<'a> = std::iter::Peekable<std::iter::Enumerate<std::str::Chars<'a>>>;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Token {
     OpExponentiation,
     OpLogicalNot,
     OpLength,
@@ -29,11 +32,11 @@ pub enum Token<'input> {
     OpLogicalAnd,
     OpLogicalOr,
 
-    Variable(&'input str),
-    Numeral(&'input str),
-    NormalStringLiteral(&'input str),
-    CharStringLiteral(&'input str),
-    MultiLineStringLiteral(usize, &'input str),
+    Variable(String),
+    Numeral(String),
+    NormalStringLiteral(String),
+    CharStringLiteral(String),
+    MultiLineStringLiteral(usize, String),
 
     Semicolon,
     Comma,
@@ -69,11 +72,11 @@ pub enum Token<'input> {
     VarArg,
     While,
 
-    SheBang(&'input str),
+    SheBang(String),
     EOF,
 }
 
-impl fmt::Display for Token<'_> {
+impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Token::*;
         match self {
@@ -193,33 +196,28 @@ impl fmt::Display for LexicalError {
 }
 
 pub struct Lexer<'input> {
-    chars: std::iter::Peekable<CharIndices<'input>>,
+    chars: TChars<'input>,
     input: &'input str,
     at_end: bool,
 }
 
 impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
-        Lexer { chars: input.char_indices().peekable(), input, at_end: false }
+        Lexer { chars: input.chars().enumerate().peekable(), input, at_end: false }
     }
 
-    fn consume_ok(
-        &mut self,
-        l: usize,
-        tok: Token<'input>,
-        r: usize,
-    ) -> Option<Result<(usize, Token<'input>, usize), LexicalError>> {
+    fn consume_ok(&mut self, l: usize, tok: Token, r: usize) -> Option<Result<(usize, Token, usize), LexicalError>> {
         self.chars.next();
         return Some(Ok((l, tok, r)));
     }
 }
 
 impl<'input> Iterator for Lexer<'input> {
-    type Item = Result<(usize, Token<'input>, usize), LexicalError>;
+    type Item = Result<(usize, Token, usize), LexicalError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         use Token::*;
-        let ok = |l: usize, tok: Token<'input>, r: usize| -> Option<Self::Item> {
+        let ok = |l: usize, tok: Token, r: usize| -> Option<Self::Item> {
             return Some(Ok((l, tok, r)));
         };
 
@@ -228,7 +226,8 @@ impl<'input> Iterator for Lexer<'input> {
                 None => {
                     if !self.at_end {
                         self.at_end = true;
-                        return ok(self.input.len(), EOF, self.input.len());
+                        let index = self.input.chars().count();
+                        return ok(index, EOF, index);
                     }
                     return None;
                 }
@@ -244,7 +243,7 @@ impl<'input> Iterator for Lexer<'input> {
                         Some(&(_, '!')) => {
                             self.chars.next();
                             let (text_end, end) = get_shebang_ends(&mut self.chars, i + 2);
-                            return ok(i, SheBang(&self.input[i..text_end]), end);
+                            return ok(i, SheBang(Loc(i, text_end).substr(&self.input)), end);
                         }
                         _ => return ok(i, OpLength, i + 1),
                     }
@@ -290,7 +289,7 @@ impl<'input> Iterator for Lexer<'input> {
                         Some(&(_, ch)) if ch.is_ascii_digit() => {
                             let (end, succ) = get_float_end(&mut self.chars, i);
                             match succ {
-                                true => return ok(i, Numeral(&self.input[i..end]), end),
+                                true => return ok(i, Numeral(Loc(i, end).substr(&self.input)), end),
                                 false => return Some(Err(LexicalError::UnexpectedEOF)),
                             }
                         }
@@ -364,8 +363,10 @@ impl<'input> Iterator for Lexer<'input> {
 
                                     match succ {
                                         true => {
-                                            let token =
-                                                MultiLineStringLiteral(level, &self.input[text_start..text_end]);
+                                            let token = MultiLineStringLiteral(
+                                                level,
+                                                Loc(text_start, text_end).substr(&self.input),
+                                            );
                                             return ok(token_start, token, token_end);
                                         }
                                         false => return Some(Err(LexicalError::UnexpectedEOF)),
@@ -382,7 +383,8 @@ impl<'input> Iterator for Lexer<'input> {
 
                             match succ {
                                 true => {
-                                    let token = MultiLineStringLiteral(0, &self.input[text_start..text_end]);
+                                    let token =
+                                        MultiLineStringLiteral(0, Loc(text_start, text_end).substr(&self.input));
                                     return ok(token_start, token, token_end);
                                 }
                                 false => return Some(Err(LexicalError::UnexpectedEOF)),
@@ -396,8 +398,12 @@ impl<'input> Iterator for Lexer<'input> {
                     self.chars.next();
                     let (text_end, token_end, succ) = get_string_ends(&mut self.chars, ch, i);
                     match (succ, ch) {
-                        (true, '\'') => return ok(i, CharStringLiteral(&self.input[i + 1..text_end]), token_end),
-                        (true, '"') => return ok(i, NormalStringLiteral(&self.input[i + 1..text_end]), token_end),
+                        (true, '\'') => {
+                            return ok(i, CharStringLiteral(Loc(i + 1, text_end).substr(&self.input)), token_end)
+                        }
+                        (true, '"') => {
+                            return ok(i, NormalStringLiteral(Loc(i + 1, text_end).substr(&self.input)), token_end)
+                        }
                         _ => return Some(Err(LexicalError::UnexpectedEOF)),
                     }
                 }
@@ -409,14 +415,14 @@ impl<'input> Iterator for Lexer<'input> {
                             self.chars.next();
                             let (end, succ) = get_hex_integer_end(&mut self.chars, i + 2);
                             match succ {
-                                true => return ok(i, Numeral(&self.input[i..end]), end),
+                                true => return ok(i, Numeral(Loc(i, end).substr(&self.input)), end),
                                 false => return Some(Err(LexicalError::UnexpectedEOF)),
                             }
                         }
                         _ => {
                             let (end, succ) = get_float_end(&mut self.chars, i + 1);
                             match succ {
-                                true => return ok(i, Numeral(&self.input[i..end]), end),
+                                true => return ok(i, Numeral(Loc(i, end).substr(&self.input)), end),
                                 false => return Some(Err(LexicalError::UnexpectedEOF)),
                             }
                         }
@@ -427,7 +433,7 @@ impl<'input> Iterator for Lexer<'input> {
                     self.chars.next();
                     let (end, succ) = get_float_end(&mut self.chars, i + 1);
                     match succ {
-                        true => return ok(i, Numeral(&self.input[i..end]), end),
+                        true => return ok(i, Numeral(Loc(i, end).substr(&self.input)), end),
                         false => return Some(Err(LexicalError::UnexpectedEOF)),
                     }
                 }
@@ -436,11 +442,11 @@ impl<'input> Iterator for Lexer<'input> {
                     let (end, succ) = get_variable_end(&mut self.chars, i);
                     match succ {
                         true => {
-                            let variable = &self.input[i..end];
+                            let variable = Loc(i, end).substr(&self.input);
 
-                            match KEYWORDS.get(variable) {
-                                Some(w) => return ok(i, *w, end),
-                                _ => return ok(i, Variable(&self.input[i..end]), end),
+                            match KEYWORDS.get(&variable[..]) {
+                                Some(w) => return ok(i, w.clone(), end),
+                                _ => return ok(i, Variable(Loc(i, end).substr(&self.input)), end),
                             };
                         }
                         false => return Some(Err(LexicalError::UnexpectedEOF)),
@@ -458,7 +464,7 @@ impl<'input> Iterator for Lexer<'input> {
 
 #[test]
 fn test_lua_lexer() {
-    type TRes<'a> = Vec<Result<(usize, Token<'a>, usize), LexicalError>>;
+    type TRes<'a> = Vec<Result<(usize, Token, usize), LexicalError>>;
     use Token::*;
 
     let tokens = Lexer::new("").collect::<TRes>();
@@ -477,21 +483,26 @@ fn test_lua_lexer() {
     assert_eq!(tokens, vec!(Ok((17, EOF, 17))));
 
     let tokens = Lexer::new("\n#!/usr/bin/lua\n  ").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((1, SheBang("#!/usr/bin/lua"), 16)), Ok((18, EOF, 18))));
+    assert_eq!(tokens, vec!(Ok((1, SheBang("#!/usr/bin/lua".to_string()), 16)), Ok((18, EOF, 18))));
 
     let tokens = Lexer::new("  a = b  ").collect::<TRes>();
     assert_eq!(
         tokens,
-        vec!(Ok((2, Variable("a"), 3)), Ok((4, EqualsSign, 5)), Ok((6, Variable("b"), 7)), Ok((9, EOF, 9)))
+        vec!(
+            Ok((2, Variable("a".to_string()), 3)),
+            Ok((4, EqualsSign, 5)),
+            Ok((6, Variable("b".to_string()), 7)),
+            Ok((9, EOF, 9))
+        )
     );
 
     let tokens = Lexer::new("a = \"st'ri'[[n]]g\"").collect::<TRes>();
     assert_eq!(
         tokens,
         vec!(
-            Ok((0, Variable("a"), 1)),
+            Ok((0, Variable("a".to_string()), 1)),
             Ok((2, EqualsSign, 3)),
-            Ok((4, NormalStringLiteral("st'ri'[[n]]g"), 18)),
+            Ok((4, NormalStringLiteral("st'ri'[[n]]g".to_string()), 18)),
             Ok((18, EOF, 18))
         )
     );
@@ -500,9 +511,9 @@ fn test_lua_lexer() {
     assert_eq!(
         tokens,
         vec!(
-            Ok((0, Variable("a"), 1)),
+            Ok((0, Variable("a".to_string()), 1)),
             Ok((2, EqualsSign, 3)),
-            Ok((4, CharStringLiteral("[[s]]t\"ri\"ng"), 18)),
+            Ok((4, CharStringLiteral("[[s]]t\"ri\"ng".to_string()), 18)),
             Ok((18, EOF, 18))
         )
     );
@@ -511,9 +522,9 @@ fn test_lua_lexer() {
     assert_eq!(
         tokens,
         vec!(
-            Ok((0, Variable("a"), 1)),
+            Ok((0, Variable("a".to_string()), 1)),
             Ok((2, EqualsSign, 3)),
-            Ok((4, MultiLineStringLiteral(0, ""), 8)),
+            Ok((4, MultiLineStringLiteral(0, "".to_string()), 8)),
             Ok((8, EOF, 8))
         )
     );
@@ -522,9 +533,9 @@ fn test_lua_lexer() {
     assert_eq!(
         tokens,
         vec!(
-            Ok((0, Variable("a"), 1)),
+            Ok((0, Variable("a".to_string()), 1)),
             Ok((2, EqualsSign, 3)),
-            Ok((4, MultiLineStringLiteral(0, "st\"r'i\"n'g"), 18)),
+            Ok((4, MultiLineStringLiteral(0, "st\"r'i\"n'g".to_string()), 18)),
             Ok((18, EOF, 18))
         )
     );
@@ -533,9 +544,9 @@ fn test_lua_lexer() {
     assert_eq!(
         tokens,
         vec!(
-            Ok((0, Variable("a"), 1)),
+            Ok((0, Variable("a".to_string()), 1)),
             Ok((2, EqualsSign, 3)),
-            Ok((4, MultiLineStringLiteral(1, ""), 10)),
+            Ok((4, MultiLineStringLiteral(1, "".to_string()), 10)),
             Ok((10, EOF, 10))
         )
     );
@@ -544,33 +555,33 @@ fn test_lua_lexer() {
     assert_eq!(
         tokens,
         vec!(
-            Ok((0, Variable("a"), 1)),
+            Ok((0, Variable("a".to_string()), 1)),
             Ok((2, EqualsSign, 3)),
-            Ok((4, MultiLineStringLiteral(3, "st\"r'i\"n'g"), 24)),
+            Ok((4, MultiLineStringLiteral(3, "st\"r'i\"n'g".to_string()), 24)),
             Ok((24, EOF, 24))
         )
     );
 
     let tokens = Lexer::new("[===[]=]]]]==]==]===]").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, MultiLineStringLiteral(3, "]=]]]]==]=="), 21)), Ok((21, EOF, 21))));
+    assert_eq!(tokens, vec!(Ok((0, MultiLineStringLiteral(3, "]=]]]]==]==".to_string()), 21)), Ok((21, EOF, 21))));
 
     let tokens = Lexer::new("for a in pairs(tbl) do x.fn(a) end").collect::<TRes>();
     assert_eq!(
         tokens,
         vec!(
             Ok((0, For, 3)),
-            Ok((4, Variable("a"), 5)),
+            Ok((4, Variable("a".to_string()), 5)),
             Ok((6, In, 8)),
-            Ok((9, Variable("pairs"), 14)),
+            Ok((9, Variable("pairs".to_string()), 14)),
             Ok((14, OpenRoundBracket, 15)),
-            Ok((15, Variable("tbl"), 18)),
+            Ok((15, Variable("tbl".to_string()), 18)),
             Ok((18, CloseRoundBracket, 19)),
             Ok((20, Do, 22)),
-            Ok((23, Variable("x"), 24)),
+            Ok((23, Variable("x".to_string()), 24)),
             Ok((24, Period, 25)),
-            Ok((25, Variable("fn"), 27)),
+            Ok((25, Variable("fn".to_string()), 27)),
             Ok((27, OpenRoundBracket, 28)),
-            Ok((28, Variable("a"), 29)),
+            Ok((28, Variable("a".to_string()), 29)),
             Ok((29, CloseRoundBracket, 30)),
             Ok((31, End, 34)),
             Ok((34, EOF, 34))
@@ -582,20 +593,20 @@ fn test_lua_lexer() {
         tokens,
         vec!(
             Ok((0, For, 3)),
-            Ok((4, Variable("a"), 5)),
+            Ok((4, Variable("a".to_string()), 5)),
             Ok((6, EqualsSign, 7)),
-            Ok((8, Numeral("5"), 9)),
+            Ok((8, Numeral("5".to_string()), 9)),
             Ok((9, Comma, 10)),
-            Ok((11, Numeral("1"), 12)),
+            Ok((11, Numeral("1".to_string()), 12)),
             Ok((12, Comma, 13)),
             Ok((14, Minus, 15)),
-            Ok((15, Numeral("1"), 16)),
+            Ok((15, Numeral("1".to_string()), 16)),
             Ok((17, Do, 19)),
-            Ok((20, Variable("x"), 21)),
+            Ok((20, Variable("x".to_string()), 21)),
             Ok((21, Period, 22)),
-            Ok((22, Variable("fn"), 24)),
+            Ok((22, Variable("fn".to_string()), 24)),
             Ok((24, OpenRoundBracket, 25)),
-            Ok((25, Variable("a"), 26)),
+            Ok((25, Variable("a".to_string()), 26)),
             Ok((26, CloseRoundBracket, 27)),
             Ok((28, End, 31)),
             Ok((31, EOF, 31))
@@ -606,17 +617,17 @@ fn test_lua_lexer() {
     assert_eq!(
         tokens,
         vec!(
-            Ok((0, Variable("a"), 1)),
+            Ok((0, Variable("a".to_string()), 1)),
             Ok((2, EqualsSign, 3)),
             Ok((4, OpenRoundBracket, 5)),
             Ok((5, OpenCurlyBracket, 6)),
-            Ok((6, Variable("a"), 7)),
+            Ok((6, Variable("a".to_string()), 7)),
             Ok((7, EqualsSign, 8)),
-            Ok((8, Numeral("3"), 9)),
+            Ok((8, Numeral("3".to_string()), 9)),
             Ok((9, CloseCurlyBracket, 10)),
             Ok((10, CloseRoundBracket, 11)),
             Ok((11, Period, 12)),
-            Ok((12, Variable("a"), 13)),
+            Ok((12, Variable("a".to_string()), 13)),
             Ok((13, EOF, 13))
         )
     );
@@ -625,46 +636,91 @@ fn test_lua_lexer() {
     assert_eq!(
         tokens,
         vec!(
-            Ok((0, Variable("c"), 1)),
+            Ok((0, Variable("c".to_string()), 1)),
             Ok((2, EqualsSign, 3)),
-            Ok((4, Variable("a"), 5)),
+            Ok((4, Variable("a".to_string()), 5)),
             Ok((8, OpAddition, 9)),
-            Ok((18, Variable("b"), 19)),
+            Ok((18, Variable("b".to_string()), 19)),
             Ok((19, EOF, 19))
+        )
+    );
+
+    // test unicode
+    let source = r#"local tbl = { field1 = "Какой-то текст", field2 = "Some text" }"#;
+    let tokens = Lexer::new(source).collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(
+            Ok((0, Local, 5)),
+            Ok((6, Variable("tbl".to_string()), 9)),
+            Ok((10, EqualsSign, 11)),
+            Ok((12, OpenCurlyBracket, 13)),
+            Ok((14, Variable("field1".to_string()), 20)),
+            Ok((21, EqualsSign, 22)),
+            Ok((23, NormalStringLiteral("Какой-то текст".to_string()), 39)),
+            Ok((39, Comma, 40)),
+            Ok((41, Variable("field2".to_string()), 47)),
+            Ok((48, EqualsSign, 49)),
+            Ok((50, NormalStringLiteral("Some text".to_string()), 61)),
+            Ok((62, CloseCurlyBracket, 63)),
+            Ok((63, EOF, 63))
         )
     );
 }
 
 #[test]
 fn test_lua_lexer_errors() {
-    type TRes<'a> = Vec<Result<(usize, Token<'a>, usize), LexicalError>>;
+    type TRes<'a> = Vec<Result<(usize, Token, usize), LexicalError>>;
     use LexicalError::*;
     use Token::*;
 
     let tokens = Lexer::new("a = [[str").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((9, EOF, 9))));
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, Variable("a".to_string()), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((9, EOF, 9)))
+    );
 
     let tokens = Lexer::new("--[[string").collect::<TRes>();
     assert_eq!(tokens, vec!(Err(UnexpectedEOF), Ok((10, EOF, 10))));
 
     let tokens = Lexer::new("a = 0.123e").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((10, EOF, 10))));
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, Variable("a".to_string()), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((10, EOF, 10)))
+    );
 
     let tokens = Lexer::new("a = 0.123e-").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11))));
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, Variable("a".to_string()), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11)))
+    );
 
     let tokens = Lexer::new("a = \"string").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11))));
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, Variable("a".to_string()), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11)))
+    );
 
     let tokens = Lexer::new("a = 'string").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11))));
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, Variable("a".to_string()), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11)))
+    );
 
     let tokens = Lexer::new("a = [[strin").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11))));
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, Variable("a".to_string()), 1)), Ok((2, EqualsSign, 3)), Err(UnexpectedEOF), Ok((11, EOF, 11)))
+    );
 
     let tokens = Lexer::new("a = `").collect::<TRes>();
     assert_eq!(
         tokens,
-        vec!(Ok((0, Variable("a"), 1)), Ok((2, EqualsSign, 3)), Err(UnrecognizedSymbol(4, '`')), Ok((5, EOF, 5)))
+        vec!(
+            Ok((0, Variable("a".to_string()), 1)),
+            Ok((2, EqualsSign, 3)),
+            Err(UnrecognizedSymbol(4, '`')),
+            Ok((5, EOF, 5))
+        )
     );
 }

@@ -1,5 +1,4 @@
-use std::str::CharIndices;
-type TChars<'input> = std::iter::Peekable<CharIndices<'input>>;
+type TChars<'a> = std::iter::Peekable<std::iter::Enumerate<std::str::Chars<'a>>>;
 
 fn seek_end_by_predicate(chars: &mut TChars, start: usize, f: &dyn Fn(char, bool) -> bool) -> (usize, bool) {
     match chars.peek() {
@@ -217,32 +216,32 @@ pub fn get_comment_start_ends_and_type(chars: &mut TChars, start: usize) -> (usi
 #[test]
 fn test_get_shebang_end() {
     let mystr = String::from("#!/usr/bin/lua\n  ");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_shebang_ends(&mut iter, 0), (14, 15));
 
     let mystr = String::from("#!/usr/bin/lua\n");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_shebang_ends(&mut iter, 0), (14, 15));
 
     let mystr = String::from("#!/usr/bin/lua");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_shebang_ends(&mut iter, 0), (14, 14));
 
     let mystr = String::from("#");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_shebang_ends(&mut iter, 1), (1, 1));
 
     let mystr = String::from("#!");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_shebang_ends(&mut iter, 1), (2, 2));
 
     let mystr = String::from("#!");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_shebang_ends(&mut iter, 2), (2, 2));
@@ -251,20 +250,20 @@ fn test_get_shebang_end() {
 #[test]
 fn test_get_integer_end() {
     let mystr = String::from("123");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_integer_end(&mut iter, 0), (3, true));
 
     let mystr = String::from("-123");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_integer_end(&mut iter, 0), (4, true));
 
     let mystr = String::from("");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_integer_end(&mut iter, 0), (0, false));
 
     let mystr = String::from("-");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_integer_end(&mut iter, 1), (1, false));
 }
@@ -272,24 +271,24 @@ fn test_get_integer_end() {
 #[test]
 fn test_get_hex_integer_end() {
     let mystr = String::from("123");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_hex_integer_end(&mut iter, 0), (3, true));
 
     let mystr = String::from("1234567890ABCDEF1");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_hex_integer_end(&mut iter, 0), (17, true));
 
     let mystr = String::from("-123AEF");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_hex_integer_end(&mut iter, 0), (7, true));
 
     let mystr = String::from("");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_hex_integer_end(&mut iter, 0), (0, false));
 
     let mystr = String::from("-");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_hex_integer_end(&mut iter, 1), (1, false));
 }
@@ -297,101 +296,101 @@ fn test_get_hex_integer_end() {
 #[test]
 fn test_get_float_end() {
     let mystr = String::from("123.4");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (5, true));
 
     let mystr = String::from("123.4E-3");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (8, true));
 
     let mystr = String::from(".123");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (4, true));
 
     let mystr = String::from("-123.");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_float_end(&mut iter, 0), (5, true));
 
     let mystr = String::from("");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (0, true));
 
     let mystr = String::from(",");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (0, true));
 
     let mystr = String::from("-");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_float_end(&mut iter, 1), (1, true));
 
     let mystr = String::from("123.4E");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (6, false));
 
     let mystr = String::from("123.4e-");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (7, false));
 
     let mystr = String::from("123.4e-5");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (8, true));
 
     let mystr = String::from("123.4E5");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_float_end(&mut iter, 0), (7, true));
 }
 
 #[test]
 fn test_get_variable_end() {
     let mystr = String::from("a");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_variable_end(&mut iter, 0), (1, true));
 
     let mystr = String::from("_ab3b3");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_variable_end(&mut iter, 0), (6, true));
 
     let mystr = String::from("");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_variable_end(&mut iter, 0), (0, false));
 }
 
 #[test]
 fn test_get_string_ends() {
     let mystr = String::from("'123456' ");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_string_ends(&mut iter, '\'', 0), (7, 8, true));
 
     let mystr = String::from("\"123456\"");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_string_ends(&mut iter, '"', 0), (7, 8, true));
 
     let mystr = String::from("\"123456\\\"");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_string_ends(&mut iter, '"', 0), (9, 9, false));
 
     let mystr = String::from("\"123456\\\\\"");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_string_ends(&mut iter, '"', 0), (9, 10, true));
 
     let mystr = String::from("'123456");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_string_ends(&mut iter, '\'', 0), (7, 7, false));
 
     let mystr = String::from("\" str str\ntrt\"");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_string_ends(&mut iter, '"', 0), (13, 14, true));
 
     let mystr = String::from("\" str str\ntrt");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     assert_eq!(get_string_ends(&mut iter, '"', 0), (13, 13, false));
 }
@@ -399,25 +398,25 @@ fn test_get_string_ends() {
 #[test]
 fn test_get_oneline_comment_ends() {
     let mystr = String::from("--\n");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_oneline_comment_ends(&mut iter, 2), (2, 3, true));
 
     let mystr = String::from("--");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_oneline_comment_ends(&mut iter, 2), (2, 2, true));
 
     let mystr = String::from("-- 123\n");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_oneline_comment_ends(&mut iter, 2), (6, 7, true));
 
     let mystr = String::from("-- 123");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_oneline_comment_ends(&mut iter, 2), (6, 6, true));
@@ -426,60 +425,60 @@ fn test_get_oneline_comment_ends() {
 #[test]
 fn test_get_multiline_string_level() {
     let mystr = String::from("=[");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_multiline_string_level(&mut iter, 0), 1);
 
     let mystr = String::from("=");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_multiline_string_level(&mut iter, 0), 1);
 
     let mystr = String::from("===[");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_multiline_string_level(&mut iter, 0), 3);
 
     let mystr = String::from("===");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_multiline_string_level(&mut iter, 0), 3);
 
     let mystr = String::from("[");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_multiline_string_level(&mut iter, 0), 0);
 
     let mystr = String::from("");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     assert_eq!(get_multiline_string_level(&mut iter, 0), 0);
 }
 
 #[test]
 fn test_get_multiline_string_ends() {
     let mystr = String::from("[[123]]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_multiline_string_ends(&mut iter, 0, 2), (5, 7, true));
 
     let mystr = String::from("[[]]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_multiline_string_ends(&mut iter, 0, 2), (2, 4, true));
 
     let mystr = String::from("[=[striing\n\\\"'\"]=]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     iter.next();
     assert_eq!(get_multiline_string_ends(&mut iter, 1, 3), (15, 18, true));
 
     let mystr = String::from("[=[striing\n\"'\"]=]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     iter.next();
     assert_eq!(get_multiline_string_ends(&mut iter, 1, 3), (14, 17, true));
 
     let mystr = String::from("[===[abc]=]]====]==]===]=]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     iter.next();
@@ -488,26 +487,26 @@ fn test_get_multiline_string_ends() {
     assert_eq!(get_multiline_string_ends(&mut iter, 3, 5), (19, 24, true));
 
     let mystr = String::from("[[abc");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_multiline_string_ends(&mut iter, 0, 2), (5, 5, false));
 
     let mystr = String::from("[[abc]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_multiline_string_ends(&mut iter, 0, 2), (6, 6, false));
 
     let mystr = String::from("[=[abc]=");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     iter.next();
     assert_eq!(get_multiline_string_ends(&mut iter, 1, 2), (8, 8, false));
 
     let mystr = String::from("[===[abc]=]]====]==]==]=]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     iter.next();
@@ -519,85 +518,85 @@ fn test_get_multiline_string_ends() {
 #[test]
 fn test_get_comment_start_end_and_type() {
     let mystr = String::from("--\n");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 2, 3, None, true));
 
     let mystr = String::from("--");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 2, 2, None, true));
 
     let mystr = String::from("--123\n");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 5, 6, None, true));
 
     let mystr = String::from("--123");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 5, 5, None, true));
 
     let mystr = String::from("--[[]]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (4, 4, 6, Some(0), true));
 
     let mystr = String::from("--[[123]]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (4, 7, 9, Some(0), true));
 
     let mystr = String::from("--[=[]=]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (5, 5, 8, Some(1), true));
 
     let mystr = String::from("--[===[123]===]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 10, 15, Some(3), true));
 
     let mystr = String::from("--[===123\n");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 9, 10, None, true));
 
     let mystr = String::from("--[===123");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 9, 9, None, true));
 
     let mystr = String::from("--[===[123");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 10, 10, Some(3), false));
 
     let mystr = String::from("--[===[123]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 11, 11, Some(3), false));
 
     let mystr = String::from("--[===[123]===\n");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 15, 15, Some(3), false));
 
     let mystr = String::from("--[===[123]=== ]");
-    let mut iter = mystr.char_indices().peekable();
+    let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
     assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 16, 16, Some(3), false));

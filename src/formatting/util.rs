@@ -6,7 +6,7 @@ use crate::parser::common::Loc;
 macro_rules! out_of_range_write {
     ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr, $($arg:expr),+) => {{
         if util::test_out_of_range(&$state.pos_range, $span) {
-            return write!($wrt, "{}", &$buf[$span.0..$span.1]);
+            return write!($wrt, "{}", $span.substr($buf));
         } else if util::test_not_completely_contained(&$state.pos_range, $span) {
             return cfg_write!($wrt, $cfg, $buf, $state, $($arg),+);
         }
@@ -17,7 +17,7 @@ macro_rules! out_of_range_write {
 macro_rules! out_of_range_only_write {
     ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr) => {{
         if util::test_out_of_range(&$state.pos_range, $span) {
-            return write!($wrt, "{}", &$buf[$span.0..$span.1]);
+            return write!($wrt, "{}", $span.substr($buf));
         }
     }};
 }
@@ -26,7 +26,7 @@ macro_rules! out_of_range_only_write {
 macro_rules! out_of_range_comment_only_write {
     ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr) => {{
         if util::test_out_of_range(&$state.comment_pos_range, $span) {
-            return write!($wrt, "{}", &$buf[$span.0..$span.1]);
+            return write!($wrt, "{}", $span.substr($buf));
         }
     }};
 }
@@ -135,13 +135,13 @@ pub fn line_range_to_pos_range(buf: &str, lr_opt: Option<(usize, usize)>) -> Opt
     nlpos.insert(0, 0);
     nlpos.push(buf.chars().count());
 
-    if let Some(lr) = &lr_opt {
-        let left = match lr.0 > 0 && lr.0 <= lr.1 && lr.0 < nlpos.len() {
-            true => lr.0,
+    if let Some(&(l, r)) = lr_opt.as_ref() {
+        let left = match l > 0 && l <= r && l < nlpos.len() {
+            true => l,
             false => 1,
         };
-        let right = match lr.1 > 0 && lr.0 <= lr.1 && lr.1 < nlpos.len() {
-            true => lr.1,
+        let right = match r > 0 && l <= r && r < nlpos.len() {
+            true => r,
             false => nlpos.len() - 1,
         };
 
@@ -156,30 +156,30 @@ fn test_line_range_to_pos_range() {
     let source = r#"/usr/bin/lua
 
 fn = function(a)
-    print(a)
+    print("Какой-то текст в юникоде")
 end
 
 --comment
 print(123)"#;
 
     assert_eq!(line_range_to_pos_range(&source, None), None);
-    assert_eq!(line_range_to_pos_range(&source, Some((0, 100))), Some((0, 69)));
-    assert_eq!(line_range_to_pos_range(&source, Some((1, 100))), Some((0, 69)));
-    assert_eq!(line_range_to_pos_range(&source, Some((0, 8))), Some((0, 69)));
-    assert_eq!(line_range_to_pos_range(&source, Some((1, 8))), Some((0, 69)));
+    assert_eq!(line_range_to_pos_range(&source, Some((0, 100))), Some((0, 94)));
+    assert_eq!(line_range_to_pos_range(&source, Some((1, 100))), Some((0, 94)));
+    assert_eq!(line_range_to_pos_range(&source, Some((0, 8))), Some((0, 94)));
+    assert_eq!(line_range_to_pos_range(&source, Some((1, 8))), Some((0, 94)));
 
     assert_eq!(line_range_to_pos_range(&source, Some((1, 1))), Some((0, 12)));
     assert_eq!(line_range_to_pos_range(&source, Some((2, 2))), Some((12, 13)));
     assert_eq!(line_range_to_pos_range(&source, Some((3, 3))), Some((13, 30)));
-    assert_eq!(line_range_to_pos_range(&source, Some((4, 4))), Some((30, 43)));
-    assert_eq!(line_range_to_pos_range(&source, Some((5, 5))), Some((43, 47)));
-    assert_eq!(line_range_to_pos_range(&source, Some((6, 6))), Some((47, 48)));
-    assert_eq!(line_range_to_pos_range(&source, Some((7, 7))), Some((48, 58)));
-    assert_eq!(line_range_to_pos_range(&source, Some((8, 8))), Some((58, 69)));
+    assert_eq!(line_range_to_pos_range(&source, Some((4, 4))), Some((30, 68)));
+    assert_eq!(line_range_to_pos_range(&source, Some((5, 5))), Some((68, 72)));
+    assert_eq!(line_range_to_pos_range(&source, Some((6, 6))), Some((72, 73)));
+    assert_eq!(line_range_to_pos_range(&source, Some((7, 7))), Some((73, 83)));
+    assert_eq!(line_range_to_pos_range(&source, Some((8, 8))), Some((83, 94)));
 
     assert_eq!(line_range_to_pos_range(&source, Some((1, 2))), Some((0, 13)));
-    assert_eq!(line_range_to_pos_range(&source, Some((2, 4))), Some((12, 43)));
-    assert_eq!(line_range_to_pos_range(&source, Some((3, 6))), Some((13, 48)));
+    assert_eq!(line_range_to_pos_range(&source, Some((2, 4))), Some((12, 68)));
+    assert_eq!(line_range_to_pos_range(&source, Some((3, 6))), Some((13, 73)));
 }
 
 #[test]

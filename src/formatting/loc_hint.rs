@@ -64,20 +64,21 @@ impl CommentLocHint<'_, '_> {
 
 impl ConfiguredWrite for CommentLocHint<'_, '_> {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
+        // self.0.configured_write(f, cfg, buf, state)
         out_of_range_only_write!(f, cfg, buf, state, self.0);
 
-        let comment_buffer = &buf[self.0.0..self.0.1];
+        let comment_buffer = self.0.substr(buf);
         state.comment_pos_range = match state.pos_range.as_ref() {
             Some(&(l, r)) => Some((l - min(l, self.0.0), r - min(r, self.0.0))),
             None => None,
         };
 
-        match parse_comment(comment_buffer) {
+        match parse_comment(&comment_buffer) {
             Ok(node_tree) => {
                 let mut formatted_comment_block = String::new();
                 formatted_comment_block.push(f.chars().last().unwrap_or(' '));
 
-                match node_tree.configured_write(&mut formatted_comment_block, cfg, comment_buffer, state) {
+                match node_tree.configured_write(&mut formatted_comment_block, cfg, &comment_buffer, state) {
                     Ok(_) => self.write_formatted_comment_block(f, cfg, buf, &formatted_comment_block[1..]),
                     Err(err) => Err(err),
                 }
@@ -95,7 +96,7 @@ impl ConfiguredWrite for SpaceLocHint<'_, '_> {
             return write!(f, "{}", self.1)
         }
 
-        write!(f, "{}", &buf[self.0.0..self.0.1])
+        write!(f, "{}", self.0.substr(buf))
     }
 }
 

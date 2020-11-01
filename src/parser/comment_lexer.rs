@@ -1,16 +1,19 @@
-use super::lexer_util::*;
 use std::fmt;
-use std::str::CharIndices;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Token<'input> {
-    OneLineComment(&'input str),
-    MultiLineComment(usize, &'input str),
+use super::lexer_util::*;
+use super::common::*;
+
+type TChars<'a> = std::iter::Peekable<std::iter::Enumerate<std::str::Chars<'a>>>;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Token {
+    OneLineComment(String),
+    MultiLineComment(usize, String),
     NewLine,
     EOF,
 }
 
-impl fmt::Display for Token<'_> {
+impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Token::*;
         match self {
@@ -43,33 +46,28 @@ impl fmt::Display for LexicalError {
 }
 
 pub struct Lexer<'input> {
-    chars: std::iter::Peekable<CharIndices<'input>>,
+    chars: TChars<'input>,
     input: &'input str,
     at_end: bool,
 }
 
 impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
-        Lexer { chars: input.char_indices().peekable(), input, at_end: false }
+        Lexer { chars: input.chars().enumerate().peekable(), input, at_end: false }
     }
 
-    fn consume_ok(
-        &mut self,
-        l: usize,
-        tok: Token<'input>,
-        r: usize,
-    ) -> Option<Result<(usize, Token<'input>, usize), LexicalError>> {
+    fn consume_ok(&mut self, l: usize, tok: Token, r: usize) -> Option<Result<(usize, Token, usize), LexicalError>> {
         self.chars.next();
         return Some(Ok((l, tok, r)));
     }
 }
 
 impl<'input> Iterator for Lexer<'input> {
-    type Item = Result<(usize, Token<'input>, usize), LexicalError>;
+    type Item = Result<(usize, Token, usize), LexicalError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         use Token::*;
-        let ok = |l: usize, tok: Token<'input>, r: usize| -> Option<Self::Item> {
+        let ok = |l: usize, tok: Token, r: usize| -> Option<Self::Item> {
             return Some(Ok((l, tok, r)));
         };
 
@@ -78,7 +76,8 @@ impl<'input> Iterator for Lexer<'input> {
                 None => {
                     if !self.at_end {
                         self.at_end = true;
-                        return ok(self.input.len(), EOF, self.input.len());
+                        let index = self.input.chars().count();
+                        return ok(index, EOF, index);
                     }
                     return None;
                 }
@@ -101,8 +100,8 @@ impl<'input> Iterator for Lexer<'input> {
 
                             let token;
                             match opt_level {
-                                Some(level) => token = MultiLineComment(level, &self.input[text_start..text_end]),
-                                None => token = OneLineComment(&self.input[text_start..text_end]),
+                                Some(level) => token = MultiLineComment(level, Loc(text_start, text_end).substr(&self.input)),
+                                None => token = OneLineComment(Loc(text_start, text_end).substr(&self.input)),
                             };
                             return ok(token_start, token, token_end);
                         }
@@ -122,7 +121,7 @@ impl<'input> Iterator for Lexer<'input> {
 
 #[test]
 fn test_comment_lexer() {
-    type TRes<'a> = Vec<Result<(usize, Token<'a>, usize), LexicalError>>;
+    type TRes<'a> = Vec<Result<(usize, Token, usize), LexicalError>>;
     use Token::*;
 
     let tokens = Lexer::new("").collect::<TRes>();
@@ -138,57 +137,63 @@ fn test_comment_lexer() {
     assert_eq!(tokens, vec!(Ok((0, NewLine, 1)), Ok((4, NewLine, 5)), Ok((5, EOF, 5))));
 
     let tokens = Lexer::new("--\n").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, OneLineComment(""), 3)), Ok((3, EOF, 3))));
+    assert_eq!(tokens, vec!(Ok((0, OneLineComment("".to_string()), 3)), Ok((3, EOF, 3))));
 
     let tokens = Lexer::new("--123\n").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, OneLineComment("123"), 6)), Ok((6, EOF, 6))));
+    assert_eq!(tokens, vec!(Ok((0, OneLineComment("123".to_string()), 6)), Ok((6, EOF, 6))));
 
     let tokens = Lexer::new("--123").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, OneLineComment("123"), 5)), Ok((5, EOF, 5))));
+    assert_eq!(tokens, vec!(Ok((0, OneLineComment("123".to_string()), 5)), Ok((5, EOF, 5))));
 
     let tokens = Lexer::new("  --  123  \n  ").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((2, OneLineComment("  123  "), 12)), Ok((14, EOF, 14))));
+    assert_eq!(tokens, vec!(Ok((2, OneLineComment("  123  ".to_string()), 12)), Ok((14, EOF, 14))));
 
     let tokens = Lexer::new("--[[]]").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, MultiLineComment(0, ""), 6)), Ok((6, EOF, 6))));
+    assert_eq!(tokens, vec!(Ok((0, MultiLineComment(0, "".to_string()), 6)), Ok((6, EOF, 6))));
 
     let tokens = Lexer::new("--[=[123]=]").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, MultiLineComment(1, "123"), 11)), Ok((11, EOF, 11))));
+    assert_eq!(tokens, vec!(Ok((0, MultiLineComment(1, "123".to_string()), 11)), Ok((11, EOF, 11))));
 
     let tokens = Lexer::new("--[=123]=]\n").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, OneLineComment("[=123]=]"), 11)), Ok((11, EOF, 11))));
+    assert_eq!(tokens, vec!(Ok((0, OneLineComment("[=123]=]".to_string()), 11)), Ok((11, EOF, 11))));
 
     let tokens = Lexer::new("\n\n  --123\n").collect::<TRes>();
     assert_eq!(
         tokens,
-        vec!(Ok((0, NewLine, 1)), Ok((1, NewLine, 2)), Ok((4, OneLineComment("123"), 10)), Ok((10, EOF, 10)))
+        vec!(Ok((0, NewLine, 1)), Ok((1, NewLine, 2)), Ok((4, OneLineComment("123".to_string()), 10)), Ok((10, EOF, 10)))
     );
 
     let tokens = Lexer::new("--[=123]=]").collect::<TRes>();
-    assert_eq!(tokens, vec!(Ok((0, OneLineComment("[=123]=]"), 10)), Ok((10, EOF, 10))));
+    assert_eq!(tokens, vec!(Ok((0, OneLineComment("[=123]=]".to_string()), 10)), Ok((10, EOF, 10))));
 
     let tokens = Lexer::new("--[=123]=]\n--[=[]=]").collect::<TRes>();
     assert_eq!(
         tokens,
-        vec!(Ok((0, OneLineComment("[=123]=]"), 11)), Ok((11, MultiLineComment(1, ""), 19)), Ok((19, EOF, 19)))
+        vec!(Ok((0, OneLineComment("[=123]=]".to_string()), 11)), Ok((11, MultiLineComment(1, "".to_string()), 19)), Ok((19, EOF, 19)))
     );
 
     let tokens = Lexer::new("--12345678\n--[=]=]\n").collect::<TRes>();
     assert_eq!(
         tokens,
-        vec!(Ok((0, OneLineComment("12345678"), 11)), Ok((11, OneLineComment("[=]=]"), 19)), Ok((19, EOF, 19)))
+        vec!(Ok((0, OneLineComment("12345678".to_string()), 11)), Ok((11, OneLineComment("[=]=]".to_string()), 19)), Ok((19, EOF, 19)))
     );
 
     let tokens = Lexer::new("--[===[trtstrst]====]==]==]=]]]========]==]========]===]").collect::<TRes>();
     assert_eq!(
         tokens,
-        vec!(Ok((0, MultiLineComment(3, "trtstrst]====]==]==]=]]]========]==]========"), 56)), Ok((56, EOF, 56)))
+        vec!(Ok((0, MultiLineComment(3, "trtstrst]====]==]==]=]]]========]==]========".to_string()), 56)), Ok((56, EOF, 56)))
+    );
+
+    let tokens = Lexer::new("--[===[Какой-то коммент]===]").collect::<TRes>();
+    assert_eq!(
+        tokens,
+        vec!(Ok((0, MultiLineComment(3, "Какой-то коммент".to_string()), 28)), Ok((28, EOF, 28)))
     );
 }
 
 #[test]
 fn test_comment_lexer_errors() {
-    type TRes<'a> = Vec<Result<(usize, Token<'a>, usize), LexicalError>>;
+    type TRes<'a> = Vec<Result<(usize, Token, usize), LexicalError>>;
     use LexicalError::*;
     use Token::*;
 

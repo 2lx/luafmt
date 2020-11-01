@@ -19,8 +19,8 @@ mod lua_test;
 
 use lalrpop_util::ParseError;
 
-type LuaParserError<'a> = ParseError<usize, lua_lexer::Token<'a>, lua_lexer::LexicalError>;
-type CommentParserError<'a> = ParseError<usize, comment_lexer::Token<'a>, comment_lexer::LexicalError>;
+type LuaParserError = ParseError<usize, lua_lexer::Token, lua_lexer::LexicalError>;
+type CommentParserError = ParseError<usize, comment_lexer::Token, comment_lexer::LexicalError>;
 
 pub fn parse_lua(src: &str) -> Result<lua_ast::Node, LuaParserError> {
     let lexer = lua_lexer::Lexer::new(src);

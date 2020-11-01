@@ -74,8 +74,8 @@ NewLineList: Node = {
 }
 
 Comment: Node = {
-    <ls:@L> <s:OneLineComment> <rs:@R>   => Node::OneLineComment(Loc(ls, rs), s.to_string()),
-    <ls:@L> <v:MultiLineComment> <rs:@R> => Node::MultiLineComment(Loc(ls, rs), v.0, v.1.to_string()),
+    <ls:@L> <s:OneLineComment> <rs:@R>   => Node::OneLineComment(Loc(ls, rs), s),
+    <ls:@L> <v:MultiLineComment> <rs:@R> => Node::MultiLineComment(Loc(ls, rs), v.0, v.1),
 }
 
 NewLine: Node = {
@@ -86,9 +86,9 @@ extern {
     type Location = usize;
     type Error = LexicalError;
 
-    enum Token<'input> {
-        OneLineComment => Token::OneLineComment(<&'input str>),
-        MultiLineComment => Token::MultiLineComment(<usize>, <&'input str>),
+    enum Token {
+        OneLineComment => Token::OneLineComment(<String>),
+        MultiLineComment => Token::MultiLineComment(<usize>, <String>),
         "\n" => Token::NewLine,
         EOF => Token::EOF,
     }
