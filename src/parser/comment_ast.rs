@@ -4,7 +4,7 @@ use super::common::*;
 use crate::config::*;
 use crate::formatting::list;
 use crate::formatting::loc_hint::*;
-use crate::{cfg_write, cfg_write_helper};
+use crate::{cfg_write, cfg_write_helper, out_of_range_write};
 
 #[derive(Debug)]
 pub enum Node {
@@ -90,8 +90,13 @@ impl ConfiguredWrite for Node {
         let cfg_write_list = list::cfg_write_list::<Node, SpaceLocHint>;
 
         match self {
-            Chunk(locl, n, locr) => cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, "")),
-            VariantList(_, variants) => {
+            Chunk(locl, n, locr) => {
+                out_of_range_write!(f, buf, state, (locl.0, locr.1));
+                cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, ""))
+            }
+            VariantList(span, variants) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if cfg.fmt.remove_single_newlines == Some(true) && variants.len() == 1 {
                     if let (_, NewLineList(_, newlines)) = &variants[0] {
                         if newlines.len() == 1 {
@@ -103,59 +108,75 @@ impl ConfiguredWrite for Node {
                 cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            comments @ CommentList(..) => {
-                cfg_write_list(f, cfg, buf, state, comments)?;
+            CommentList(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+                cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            newlines @ NewLineList(..) => {
-                cfg_write_list(f, cfg, buf, state, newlines)?;
+            NewLineList(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+                cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
 
-            OneLineComment(_, s) => match cfg.fmt.remove_comments {
-                Some(true) => match cfg.fmt.remove_all_newlines {
+            OneLineComment(span, s) => {
+                out_of_range_write!(f, buf, state, span);
+
+                match cfg.fmt.remove_comments {
+                    Some(true) => match cfg.fmt.remove_all_newlines {
+                        Some(true) => Ok(()),
+                        _ => write!(f, "\n"),
+                    },
+                    _ => match cfg.fmt.hint_before_oneline_comment_text.as_ref() {
+                        Some(prefix) => {
+                            let strimmed = s.trim_start();
+
+                            // do not print the `prefix` if trimmed `s` is empty
+                            if strimmed.is_empty() {
+                                write!(f, "--\n")?;
+                            } else {
+                                write!(f, "--{}{}\n", prefix, strimmed)?;
+                            }
+                            Ok(())
+                        }
+                        None => write!(f, "--{}\n", s),
+                    },
+                }
+            }
+
+            MultiLineComment(span, level, s) => {
+                out_of_range_write!(f, buf, state, span);
+
+                match cfg.fmt.remove_comments {
                     Some(true) => Ok(()),
-                    _ => write!(f, "\n"),
-                },
-                _ => match cfg.fmt.hint_before_oneline_comment_text.as_ref() {
-                    Some(prefix) => {
-                        let strimmed = s.trim_start();
-
-                        // do not print the `prefix` if trimmed `s` is empty
-                        if strimmed.is_empty() {
-                            write!(f, "--\n")?;
-                        } else {
-                            write!(f, "--{}{}\n", prefix, strimmed)?;
+                    _ => {
+                        let level_str = (0..*level).map(|_| "=").collect::<String>();
+                        match (
+                            cfg.fmt.hint_before_multiline_comment_text.as_ref(),
+                            cfg.fmt.hint_after_multiline_comment_text.as_ref(),
+                        ) {
+                            (Some(prefix), Some(suffix)) => {
+                                write!(f, "--[{}[{}{}{}]{}]", level_str, prefix, s.trim(), suffix, level_str)
+                            }
+                            (Some(prefix), None) => {
+                                write!(f, "--[{}[{}{}]{}]", level_str, prefix, s.trim_start(), level_str)
+                            }
+                            (None, Some(suffix)) => {
+                                write!(f, "--[{}[{}{}]{}]", level_str, s.trim_end(), suffix, level_str)
+                            }
+                            _ => write!(f, "--[{}[{}]{}]", level_str, s, level_str),
                         }
-                        Ok(())
-                    }
-                    None => write!(f, "--{}\n", s),
-                },
-            },
-
-            MultiLineComment(_, level, s) => match cfg.fmt.remove_comments {
-                Some(true) => Ok(()),
-                _ => {
-                    let level_str = (0..*level).map(|_| "=").collect::<String>();
-                    match (
-                        cfg.fmt.hint_before_multiline_comment_text.as_ref(),
-                        cfg.fmt.hint_after_multiline_comment_text.as_ref(),
-                    ) {
-                        (Some(prefix), Some(suffix)) => {
-                            write!(f, "--[{}[{}{}{}]{}]", level_str, prefix, s.trim(), suffix, level_str)
-                        }
-                        (Some(prefix), None) => {
-                            write!(f, "--[{}[{}{}]{}]", level_str, prefix, s.trim_start(), level_str)
-                        }
-                        (None, Some(suffix)) => write!(f, "--[{}[{}{}]{}]", level_str, s.trim_end(), suffix, level_str),
-                        _ => write!(f, "--[{}[{}]{}]", level_str, s, level_str),
                     }
                 }
-            },
-            NewLine(_) => match cfg.fmt.remove_all_newlines {
-                Some(true) => Ok(()),
-                _ => write!(f, "\n"),
-            },
+            }
+            NewLine(span) => {
+                out_of_range_write!(f, buf, state, span);
+
+                match cfg.fmt.remove_all_newlines {
+                    Some(true) => Ok(()),
+                    _ => write!(f, "\n"),
+                }
+            }
         }
     }
 }

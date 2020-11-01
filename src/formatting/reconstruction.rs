@@ -122,12 +122,11 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
             let mut is_iv_table = true;
             let has_single_child = v.len() == 1;
 
-            for (index, (_, node, _, _)) in v.into_iter().enumerate() {
+            for (_, node, _, _) in v {
                 match node {
                     FieldSequential(_, e) => {
                         if let TableConstructor(_, _, _, nested_opts) = &mut **e {
                             nested_opts.is_single_child = Some(has_single_child);
-                            nested_opts.is_first_child = Some(index == 0);
                         }
                     }
                     _ => {
@@ -140,9 +139,6 @@ pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config) {
             opts.is_iv_table = Some(is_iv_table);
         }
         TableConstructor(_, _, r, opts) => {
-            if opts.is_first_child.is_none() {
-                opts.is_first_child = Some(true);
-            }
             if opts.is_single_child.is_none() {
                 opts.is_single_child = Some(true);
             }

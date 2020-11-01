@@ -7,24 +7,18 @@ use crate::formatting::decoration::*;
 use crate::formatting::list;
 use crate::formatting::loc_hint::*;
 use crate::formatting::util;
-use crate::{cfg_write, cfg_write_helper, test_oneline, test_oneline_no_nl};
+use crate::{cfg_write, cfg_write_helper, test_oneline, test_oneline_no_nl, out_of_range_write};
 
 #[derive(Debug)]
 pub struct TableConstructorOpts {
     pub is_iv_table: Option<bool>,
     pub is_single_child: Option<bool>,
-    pub is_first_child: Option<bool>,
     pub is_oneline: Cell<bool>,
 }
 
 impl TableConstructorOpts {
     pub const fn default() -> Self {
-        TableConstructorOpts {
-            is_iv_table: None,
-            is_single_child: None,
-            is_first_child: None,
-            is_oneline: Cell::new(false),
-        }
+        TableConstructorOpts { is_iv_table: None, is_single_child: None, is_oneline: Cell::new(false) }
     }
 }
 
@@ -292,7 +286,8 @@ impl list::SepListOfItems<Node> for Node {
         match self {
             Fields(_, _, opts) => {
                 if cfg.fmt.enable_oneline_table == Some(true)
-                    && (cfg.fmt.newline_format_table_field.is_none() && cfg.fmt.newline_format_table_constructor.is_none()
+                    && (cfg.fmt.newline_format_table_field.is_none()
+                        && cfg.fmt.newline_format_table_constructor.is_none()
                         || opts.is_iv_table == Some(true) && !opts.has_indent.get())
                 {
                     Some(false)
@@ -363,7 +358,8 @@ impl Node {
     }
 
     fn test_oneline_if(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.fmt.max_width.is_some() && cfg.fmt.enable_oneline_if == Some(true) && cfg.fmt.newline_format_if.is_some() {
+        if cfg.fmt.max_width.is_some() && cfg.fmt.enable_oneline_if == Some(true) && cfg.fmt.newline_format_if.is_some()
+        {
             // disable IfNewLine within table constructor
             let mut test_cfg = cfg.clone();
             test_cfg.fmt.newline_format_if = None;
@@ -438,8 +434,6 @@ impl Node {
     }
 }
 
-static DEFAULT_CFG: Config = Config::default();
-
 impl ConfiguredWrite for Node {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
         use Node::*;
@@ -450,7 +444,9 @@ impl ConfiguredWrite for Node {
         let cfg_write_sep_list = list::cfg_write_sep_list::<Node, CommentLocHint>;
 
         match self {
-            BinaryOp(_, locs, tok, l, r) => {
+            BinaryOp(span, locs, tok, l, r) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write!(f, cfg, buf, state, IncIndent(Some(tok.0)), l)?;
 
                 let mut nl1 = cfg.fmt.newline_format_binary_op == Some(1);
@@ -466,20 +462,33 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, IfNewLine(nl1, Hint(&locs[0], " ")), tok,
                            IfNewLine(nl2, Hint(&locs[1], " ")), r, DecIndent())
             }
-            UnaryOp(_, locs, tok, r) => cfg_write!(f, cfg, buf, state, tok, Hint(&locs[0], ""), r),
-            UnaryNot(_, locs, r) => cfg_write!(f, cfg, buf, state, "not", Hint(&locs[0], " "), r),
+            UnaryOp(span, locs, tok, r) => {
+                out_of_range_write!(f, buf, state, span);
 
-            Var(_, locs, n1, n2) => {
+                cfg_write!(f, cfg, buf, state, tok, Hint(&locs[0], ""), r)
+            }
+            UnaryNot(span, locs, r) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write!(f, cfg, buf, state, "not", Hint(&locs[0], " "), r)
+            }
+
+            Var(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write!(f, cfg, buf, state, n1)?;
                 let ind = n2.test_indent(f, cfg, buf, state, Hint(&locs[0], "")) == Ok(true);
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], ""), n2, If(ind, &DecIndent()))
             }
-            RoundBrackets(_, locs, r) =>
-            {
+            RoundBrackets(span, locs, r) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), r, Hint(&locs[1], ""), ")")
             }
-            ArgsRoundBrackets(_, locs, r) => {
+            ArgsRoundBrackets(span, locs, r) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write!(f, cfg, buf, state, "(")?;
                 let ind = r.test_indent(f, cfg, buf, state, Hint(&locs[0], "")) == Ok(true);
 
@@ -504,13 +513,8 @@ impl ConfiguredWrite for Node {
                 write!(f, "[{}[{}]{}]", level_str, s, level_str)
             }
 
-            TableConstructor(span, locs, r, opts) => {
-                match cfg.line_range {
-                    Some((l, r)) if span.1 < l || span.0 > r => {
-                        return self.configured_write(f, &DEFAULT_CFG, buf, state);
-                    }
-                    _ => {},
-                }
+            TableConstructor(span, locs, n, opts) => {
+                out_of_range_write!(f, buf, state, span);
 
                 if let Some(test_cfg) = self.test_oneline_table_cfg(cfg) {
                     match test_oneline_no_nl!(f, &test_cfg, buf, state, self) {
@@ -536,15 +540,15 @@ impl ConfiguredWrite for Node {
                     && opts.is_single_child == Some(true)
                 {
                     false => true,
-                    true => r.test_indent(f, cfg, buf, state, Hint(&locs[0], &hint)) == Ok(true),
+                    true => n.test_indent(f, cfg, buf, state, Hint(&locs[0], &hint)) == Ok(true),
                 };
 
-                if let Fields(_, _, fopts) = &**r {
+                if let Fields(_, _, fopts) = &**n {
                     fopts.has_indent.set(ind);
                 }
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
-                cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], &hint), r)?;
+                cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], &hint), n)?;
 
                 if cfg.fmt.max_width.is_some() && util::get_len_after_newline(f, cfg) >= cfg.fmt.max_width.unwrap() {
                     nl = true;
@@ -555,57 +559,90 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, If(ind, &DecIndent()), DecFuncLevel(),
                            IfNewLine(nl, Hint(&locs[1], &hint)), "}}")
             }
-            TableConstructorEmpty(_, locs) => {
+            TableConstructorEmpty(span, locs) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let default_hint = String::new();
                 let hint = cfg.fmt.hint_table_constructor.as_ref().unwrap_or(&default_hint);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "{{", Hint(&locs[0], &hint), "}}")
             }
-            Fields(..) => {
+            Fields(span, _, _) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write_sep_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            FieldNamedBracket(_, locs, e1, e2) =>
-            {
+            FieldNamedBracket(span, locs, e1, e2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "[", Hint(&locs[0], ""), e1, Hint(&locs[1], ""), "]", Hint(&locs[2], " "),
                            "=", Hint(&locs[3], " "), e2)
             }
-            FieldNamed(_, locs, e1, e2) => {
+            FieldNamed(span, locs, e1, e2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write!(f, cfg, buf, state, e1, Hint(&locs[0], " "), "=", Hint(&locs[1], " "), e2)
             }
-            FieldSequential(_, e) => cfg_write!(f, cfg, buf, state, e),
+            FieldSequential(span, e) => {
+                out_of_range_write!(f, buf, state, span);
 
-            TableIndex(_, locs, e) => {
+                cfg_write!(f, cfg, buf, state, e)
+            }
+
+            TableIndex(span, locs, e) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write!(f, cfg, buf, state, "[", Hint(&locs[0], ""), e, Hint(&locs[1], ""), "]")
             }
-            TableMember(_, locs, n) => cfg_write!(f, cfg, buf, state, ".", Hint(&locs[0], ""), n),
-            ExpList(..) => {
+            TableMember(span, locs, n) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write!(f, cfg, buf, state, ".", Hint(&locs[0], ""), n)
+            }
+            ExpList(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write_sep_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            NameList(..) => {
+            NameList(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write_sep_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            VarList(..) => {
+            VarList(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write_sep_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            stts @ StatementList(..) => {
-                cfg_write_list(f, cfg, buf, state, stts)?;
+            StatementList(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            DoEnd(_, locs) => cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end"),
-            DoBEnd(_, locs, b) => {
+            DoEnd(span, locs) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write!(f, cfg, buf, state, "do", Hint(&locs[0], " "), "end")
+            }
+            DoBEnd(span, locs, b) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_do_end == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "do", IncIndent(None), IfNewLine(nl, Hint(&locs[0], " ")), b, DecIndent(),
                            IfNewLine(nl, Hint(&locs[1], " ")), "end")
             }
-            VarsExprs(_, locs, n1, n2) => {
+            VarsExprs(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, n1, Hint(&locs[0], " "), "=")?;
                 let ind = n2.test_indent(f, cfg, buf, state, Hint(&locs[1], " ")) == Ok(true);
@@ -614,7 +651,9 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[1], " "), n2, If(ind, &DecIndent()))
             }
 
-            VarRoundSuffix(_, locs, n1, n2) => {
+            VarRoundSuffix(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), ")")?;
 
@@ -623,21 +662,32 @@ impl ConfiguredWrite for Node {
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[2], ""), n2, If(ind, &DecIndent()))
             }
-            suffs @ VarSuffixList(..) => {
-                cfg_write_list(f, cfg, buf, state, suffs)?;
+            VarSuffixList(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            FnMethodCall(_, locs, n1, n2) =>
-            {
+            FnMethodCall(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, ":", Hint(&locs[0], ""), n1, Hint(&locs[1], ""), n2)
             }
-            ParList(..) => {
+            ParList(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write_sep_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            FunctionDef(_, locs, n) => cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n),
-            FuncBody(_, locs) => {
+            FunctionDef(span, locs, n) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], ""), n)
+            }
+            FuncBody(span, locs) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_function(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -647,7 +697,9 @@ impl ConfiguredWrite for Node {
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "(", Hint(&locs[0], ""), ")", IfNewLine(nl, Hint(&locs[1], " ")), "end")
             }
-            FuncBodyB(_, locs, n2) => {
+            FuncBodyB(span, locs, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_function(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -659,7 +711,9 @@ impl ConfiguredWrite for Node {
                            IfNewLine(nl, Hint(&locs[1], " ")), n2, DecIndent(), DecFuncLevel(),
                            IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
-            FuncPBody(_, locs, n1) => {
+            FuncPBody(span, locs, n1) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_function(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -670,7 +724,9 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "(", IncIndent(None), Hint(&locs[0], ""), n1, Hint(&locs[1], ""),
                            DecIndent(), ")", IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
-            FuncPBodyB(_, locs, n1, n2) => {
+            FuncPBodyB(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_function(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -682,30 +738,42 @@ impl ConfiguredWrite for Node {
                            DecIndent(), ")", IncIndent(None), IncFuncLevel(), IfNewLine(nl, Hint(&locs[2], " ")), n2,
                            DecIndent(), DecFuncLevel(), IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
-            FuncName(..) => {
+            FuncName(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write_sep_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            FuncNameSelf(_, locs, _, n) => {
+            FuncNameSelf(span, locs, _, n) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write_sep_list(f, cfg, buf, state, self)?;
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, Hint(&locs[0], ""), ":", Hint(&locs[1], ""), n)
             }
-            FuncDecl(_, locs, n1, n2) =>
-            {
+            FuncDecl(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "function", Hint(&locs[0], " "), n1, Hint(&locs[1], ""), n2)
             }
-            LocalFuncDecl(_, locs, n1, n2) =>
-            {
+            LocalFuncDecl(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), "function", Hint(&locs[1], " "), n1,
                            Hint(&locs[2], ""), n2)
             }
 
-            LocalNames(_, locs, n) => cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), n),
-            LocalNamesExprs(_, locs, n1, n2) => {
+            LocalNames(span, locs, n) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), n)
+            }
+            LocalNamesExprs(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "local", Hint(&locs[0], " "), n1, Hint(&locs[1], " "), "=")?;
                 let ind = n2.test_indent(f, cfg, buf, state, Hint(&locs[2], " ")) == Ok(true);
@@ -716,7 +784,9 @@ impl ConfiguredWrite for Node {
             }
 
             // if
-            IfThen(_, locs, e1) => {
+            IfThen(span, locs, e1) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -727,7 +797,9 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
-            IfThenB(_, locs, e1, b1) => {
+            IfThenB(span, locs, e1, b1) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -739,7 +811,9 @@ impl ConfiguredWrite for Node {
                            IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1, DecIndent(),
                            IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
-            IfThenElse(_, locs, e1) => {
+            IfThenElse(span, locs, e1) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -750,7 +824,9 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            Hint(&locs[2], " "), "else", IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
-            IfThenBElse(_, locs, e1, b1) => {
+            IfThenBElse(span, locs, e1, b1) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -762,7 +838,9 @@ impl ConfiguredWrite for Node {
                            IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1, DecIndent(),
                            IfNewLine(nl, Hint(&locs[3], " ")), "else", IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
-            IfThenElseB(_, locs, e1, b2) => {
+            IfThenElseB(span, locs, e1, b2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -774,7 +852,9 @@ impl ConfiguredWrite for Node {
                            Hint(&locs[2], " "), "else", IncIndent(None), IfNewLine(nl, Hint(&locs[3], " ")), b2,
                            DecIndent(), IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
-            IfThenBElseB(_, locs, e1, b1, b2) => {
+            IfThenBElseB(span, locs, e1, b1, b2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -788,7 +868,9 @@ impl ConfiguredWrite for Node {
                            IfNewLine(nl, Hint(&locs[4], " ")), b2, DecIndent(),
                            IfNewLine(nl, Hint(&locs[5], " ")), "end")
             }
-            IfThenElseIf(_, locs, e1, n) => {
+            IfThenElseIf(span, locs, e1, n) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -799,7 +881,9 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, "if", Hint(&locs[0], " "), e1, Hint(&locs[1], " "), "then",
                            IfNewLine(nl, Hint(&locs[2], " ")), n, IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
-            IfThenBElseIf(_, locs, e1, b1, n) => {
+            IfThenBElseIf(span, locs, e1, b1, n) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -811,7 +895,9 @@ impl ConfiguredWrite for Node {
                            IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b1, DecIndent(),
                            IfNewLine(nl, Hint(&locs[3], " ")), n, IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
-            IfThenElseIfElse(_, locs, e1, n) => {
+            IfThenElseIfElse(span, locs, e1, n) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -823,7 +909,9 @@ impl ConfiguredWrite for Node {
                            IfNewLine(nl, Hint(&locs[2], " ")), n, IfNewLine(nl, Hint(&locs[3], " ")), "else",
                            IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
-            IfThenBElseIfElse(_, locs, e1, b1, n) => {
+            IfThenBElseIfElse(span, locs, e1, b1, n) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -836,7 +924,9 @@ impl ConfiguredWrite for Node {
                            IfNewLine(nl, Hint(&locs[3], " ")), n, IfNewLine(nl, Hint(&locs[4], " ")), "else",
                            IfNewLine(nl, Hint(&locs[5], " ")), "end")
             }
-            IfThenElseIfElseB(_, locs, e1, n, b2) => {
+            IfThenElseIfElseB(span, locs, e1, n, b2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -849,7 +939,9 @@ impl ConfiguredWrite for Node {
                            IncIndent(None), IfNewLine(nl, Hint(&locs[4], " ")), b2, DecIndent(),
                            IfNewLine(nl, Hint(&locs[5], " ")), "end")
             }
-            IfThenBElseIfElseB(_, locs, e1, b1, n, b2) => {
+            IfThenBElseIfElseB(span, locs, e1, b1, n, b2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 if let Some(line) = self.test_oneline_if(f, cfg, buf, state) {
                     return write!(f, "{}", line);
                 }
@@ -863,16 +955,21 @@ impl ConfiguredWrite for Node {
                            IncIndent(None), IfNewLine(nl, Hint(&locs[5], " ")), b2, DecIndent(),
                            IfNewLine(nl, Hint(&locs[6], " ")), "end")
             }
-            elems @ ElseIfThenVec(..) => {
-                cfg_write_list(f, cfg, buf, state, elems)?;
+            ElseIfThenVec(span, _) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
-            ElseIfThen(_, locs, e) =>
-            {
+            ElseIfThen(span, locs, e) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "elseif", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "then")
             }
-            ElseIfThenB(_, locs, e, b) => {
+            ElseIfThenB(span, locs, e, b) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_if == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -880,17 +977,33 @@ impl ConfiguredWrite for Node {
                            IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), b, DecIndent())
             }
 
-            Name(_, s) => write!(f, "{}", s),
-            Label(_, locs, n) => cfg_write!(f, cfg, buf, state, "::", Hint(&locs[0], ""), n, Hint(&locs[1], ""), "::"),
-            GoTo(_, locs, n) => cfg_write!(f, cfg, buf, state, "goto", Hint(&locs[0], " "), n),
-            WhileDo(_, locs, e) => {
+            Name(span, s) => {
+                out_of_range_write!(f, buf, state, span);
+
+                write!(f, "{}", s)
+            }
+            Label(span, locs, n) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write!(f, cfg, buf, state, "::", Hint(&locs[0], ""), n, Hint(&locs[1], ""), "::")
+            }
+            GoTo(span, locs, n) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write!(f, cfg, buf, state, "goto", Hint(&locs[0], " "), n)
+            }
+            WhileDo(span, locs, e) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_while == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "while", Hint(&locs[0], " "), e, Hint(&locs[1], " "), "do",
                            IfNewLine(nl, Hint(&locs[2], " ")), "end")
             }
-            WhileDoB(_, locs, e, n) => {
+            WhileDoB(span, locs, e, n) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_while == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -898,14 +1011,18 @@ impl ConfiguredWrite for Node {
                            IncIndent(None), IfNewLine(nl, Hint(&locs[2], " ")), n, DecIndent(),
                            IfNewLine(nl, Hint(&locs[3], " ")), "end")
             }
-            RepeatUntil(_, locs, e) => {
+            RepeatUntil(span, locs, e) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_repeat_until == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "repeat", IfNewLine(nl, Hint(&locs[0], " ")), "until",
                            Hint(&locs[1], " "), e)
             }
-            RepeatBUntil(_, locs, b, e) => {
+            RepeatBUntil(span, locs, b, e) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_repeat_until == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -913,14 +1030,18 @@ impl ConfiguredWrite for Node {
                            DecIndent(), IfNewLine(nl, Hint(&locs[1], " ")), "until", Hint(&locs[2], " "), e)
             }
 
-            ForInt(_, locs, n, e1, e2) =>
+            ForInt(span, locs, n, e1, e2) =>
             {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "for", Hint(&locs[0], " "), n, Hint(&locs[1], " "), "=",
                            Hint(&locs[2], " "), e1, Hint(&locs[3], ""), ",", Hint(&locs[4], " "), e2,
                            Hint(&locs[5], " "), "do", Hint(&locs[6], " "), "end")
             }
-            ForIntB(_, locs, n, e1, e2, b) => {
+            ForIntB(span, locs, n, e1, e2, b) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -929,7 +1050,9 @@ impl ConfiguredWrite for Node {
                            Hint(&locs[5], " "), "do", IncIndent(None), IfNewLine(nl, Hint(&locs[6], " ")), b,
                            DecIndent(), IfNewLine(nl, Hint(&locs[7], " ")), "end")
             }
-            ForIntStep(_, locs, n, e1, e2, e3) => {
+            ForIntStep(span, locs, n, e1, e2, e3) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -938,7 +1061,9 @@ impl ConfiguredWrite for Node {
                            ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do", IfNewLine(nl, Hint(&locs[8], " ")),
                            "end")
             }
-            ForIntStepB(_, locs, n, e1, e2, e3, b) => {
+            ForIntStepB(span, locs, n, e1, e2, e3, b) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -947,7 +1072,9 @@ impl ConfiguredWrite for Node {
                            ",", Hint(&locs[6], " "), e3, Hint(&locs[7], " "), "do", IncIndent(None),
                            IfNewLine(nl, Hint(&locs[8], " ")), b, DecIndent(), IfNewLine(nl, Hint(&locs[9], " ")), "end")
             }
-            ForRange(_, locs, n, e) => {
+            ForRange(span, locs, n, e) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -959,7 +1086,9 @@ impl ConfiguredWrite for Node {
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[2], " "), e, If(ind, &DecIndent()),
                            Hint(&locs[3], " "), "do", IfNewLine(nl, Hint(&locs[4], " ")), "end")
             }
-            ForRangeB(_, locs, n, e, b) => {
+            ForRangeB(span, locs, n, e, b) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_for == Some(1);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -972,16 +1101,27 @@ impl ConfiguredWrite for Node {
                            DecIndent(), IfNewLine(nl, Hint(&locs[5], " ")), "end")
             }
 
-            RetStatNone(_) => write!(f, "return"),
-            RetStatExpr(_, locs, n) => {
+            RetStatNone(span) => {
+                out_of_range_write!(f, buf, state, span);
+                write!(f, "return")
+            }
+            RetStatExpr(span, locs, n) => {
+                out_of_range_write!(f, buf, state, span);
+
                 cfg_write!(f, cfg, buf, state, "return")?;
                 let ind = n.test_indent(f, cfg, buf, state, Hint(&locs[0], " ")) == Ok(true);
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, If(ind, &IncIndent(None)), Hint(&locs[0], " "), n, If(ind, &DecIndent()))
             }
-            RetStatNoneComma(_, locs) => cfg_write!(f, cfg, buf, state, "return", Hint(&locs[0], ""), ";"),
-            RetStatExprComma(_, locs, n) => {
+            RetStatNoneComma(span, locs) => {
+                out_of_range_write!(f, buf, state, span);
+
+                cfg_write!(f, cfg, buf, state, "return", Hint(&locs[0], ""), ";")
+            }
+            RetStatExprComma(span, locs, n) => {
+                out_of_range_write!(f, buf, state, span);
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "return")?;
 
@@ -992,7 +1132,9 @@ impl ConfiguredWrite for Node {
                            If(ind, &DecIndent()), ";"
                 )
             }
-            StatsRetStat(_, locs, n1, n2) => {
+            StatsRetStat(span, locs, n1, n2) => {
+                out_of_range_write!(f, buf, state, span);
+
                 let nl = cfg.fmt.newline_format_statement.is_some();
                 cfg_write!(f, cfg, buf, state, n1, IfNewLine(nl, Hint(&locs[0], " ")), n2)
             }
@@ -1006,7 +1148,10 @@ impl ConfiguredWrite for Node {
             }
 
             Semicolon(_) => write!(f, ";"),
-            SheBang(_, s) => write!(f, "{}\n", s),
+            SheBang(span, s) => {
+                out_of_range_write!(f, buf, state, span);
+                write!(f, "{}\n", s)
+            }
         }
     }
 }

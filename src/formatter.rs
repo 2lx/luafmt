@@ -1,11 +1,13 @@
+use std::fmt;
+use std::fs;
+use std::path::PathBuf;
+
 use crate::config;
 use crate::config::{Config, ConfiguredWrite};
 use crate::file_util;
 use crate::formatting::reconstruction;
+use crate::formatting::util;
 use crate::parser;
-use std::fmt;
-use std::fs;
-use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum FormatterError {
@@ -71,6 +73,7 @@ pub fn process_buffer_with_config(content: &String, cfg: &Config, verbose: bool)
             let mut state = config::State::default();
 
             // process the tree
+            state.pos_range = Some(util::line_range_to_pos_range(&content, cfg.line_range));
             reconstruction::reconstruct_node_tree(&mut node_tree, cfg);
 
             match node_tree.configured_write(&mut outbuffer, &cfg, &content, &mut state) {

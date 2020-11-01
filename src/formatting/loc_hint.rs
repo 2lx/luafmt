@@ -2,6 +2,7 @@ use std::fmt::Write;
 use crate::config::*;
 use crate::parser::common::*;
 use crate::parser::parse_comment;
+use crate::out_of_range_write;
 
 pub struct CommentLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
 pub struct SpaceLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
@@ -60,6 +61,8 @@ impl CommentLocHint<'_, '_> {
 
 impl ConfiguredWrite for CommentLocHint<'_, '_> {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
+        out_of_range_write!(f, buf, state, (self.0.0, self.0.1));
+
         let comment_buffer = &buf[self.0.0..self.0.1];
         match parse_comment(comment_buffer) {
             Ok(node_tree) => {
