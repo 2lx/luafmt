@@ -1,7 +1,6 @@
 use phf::phf_map;
 use std::fmt;
 
-use super::common::*;
 use super::lexer_util::*;
 
 type TChars<'a> = std::iter::Peekable<std::iter::Enumerate<std::str::Chars<'a>>>;
@@ -242,8 +241,10 @@ impl<'input> Iterator for Lexer<'input> {
                     match self.chars.peek() {
                         Some(&(_, '!')) => {
                             self.chars.next();
-                            let (text_end, end) = get_shebang_ends(&mut self.chars, i + 2);
-                            return ok(i, SheBang(Loc(i, text_end).substr(&self.input)), end);
+                            let (_, end, mut val) = get_shebang_ends(&mut self.chars, i + 2);
+                            val.insert_str(0, "#!");
+
+                            return ok(i, SheBang(val), end);
                         }
                         _ => return ok(i, OpLength, i + 1),
                     }
@@ -287,9 +288,11 @@ impl<'input> Iterator for Lexer<'input> {
                             }
                         }
                         Some(&(_, ch)) if ch.is_ascii_digit() => {
-                            let (end, succ) = get_float_end(&mut self.chars, i);
+                            let (end, succ, mut val) = get_float_end(&mut self.chars, i);
+                            val.insert(0, '.');
+
                             match succ {
-                                true => return ok(i, Numeral(Loc(i, end).substr(&self.input)), end),
+                                true => return ok(i, Numeral(val), end),
                                 false => return Some(Err(LexicalError::UnexpectedEOF)),
                             }
                         }
@@ -358,15 +361,12 @@ impl<'input> Iterator for Lexer<'input> {
                                 Some(&(square_2_start, '[')) => {
                                     self.chars.next();
                                     let text_start = square_2_start + 1;
-                                    let (text_end, token_end, succ) =
+                                    let (_, token_end, succ, val) =
                                         get_multiline_string_ends(&mut self.chars, level, text_start);
 
                                     match succ {
                                         true => {
-                                            let token = MultiLineStringLiteral(
-                                                level,
-                                                Loc(text_start, text_end).substr(&self.input),
-                                            );
+                                            let token = MultiLineStringLiteral(level, val);
                                             return ok(token_start, token, token_end);
                                         }
                                         false => return Some(Err(LexicalError::UnexpectedEOF)),
@@ -379,12 +379,11 @@ impl<'input> Iterator for Lexer<'input> {
                         Some(&(square_2_start, '[')) => {
                             self.chars.next();
                             let text_start = square_2_start + 1;
-                            let (text_end, token_end, succ) = get_multiline_string_ends(&mut self.chars, 0, text_start);
+                            let (_, token_end, succ, val) = get_multiline_string_ends(&mut self.chars, 0, text_start);
 
                             match succ {
                                 true => {
-                                    let token =
-                                        MultiLineStringLiteral(0, Loc(text_start, text_end).substr(&self.input));
+                                    let token = MultiLineStringLiteral(0, val);
                                     return ok(token_start, token, token_end);
                                 }
                                 false => return Some(Err(LexicalError::UnexpectedEOF)),
@@ -396,14 +395,10 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some(&(i, ch @ '"')) | Some(&(i, ch @ '\'')) => {
                     self.chars.next();
-                    let (text_end, token_end, succ) = get_string_ends(&mut self.chars, ch, i);
+                    let (_, token_end, succ, val) = get_string_ends(&mut self.chars, ch, i);
                     match (succ, ch) {
-                        (true, '\'') => {
-                            return ok(i, CharStringLiteral(Loc(i + 1, text_end).substr(&self.input)), token_end)
-                        }
-                        (true, '"') => {
-                            return ok(i, NormalStringLiteral(Loc(i + 1, text_end).substr(&self.input)), token_end)
-                        }
+                        (true, '\'') => return ok(i, CharStringLiteral(val), token_end),
+                        (true, '"') => return ok(i, NormalStringLiteral(val), token_end),
                         _ => return Some(Err(LexicalError::UnexpectedEOF)),
                     }
                 }
@@ -413,16 +408,20 @@ impl<'input> Iterator for Lexer<'input> {
                     match self.chars.peek() {
                         Some(&(_, 'x')) => {
                             self.chars.next();
-                            let (end, succ) = get_hex_integer_end(&mut self.chars, i + 2);
+                            let (end, succ, mut val) = get_hex_integer_end(&mut self.chars, i + 2);
+                            val.insert_str(0, "0x");
+
                             match succ {
-                                true => return ok(i, Numeral(Loc(i, end).substr(&self.input)), end),
+                                true => return ok(i, Numeral(val), end),
                                 false => return Some(Err(LexicalError::UnexpectedEOF)),
                             }
                         }
                         _ => {
-                            let (end, succ) = get_float_end(&mut self.chars, i + 1);
+                            let (end, succ, mut val) = get_float_end(&mut self.chars, i + 1);
+                            val.insert(0, '0');
+
                             match succ {
-                                true => return ok(i, Numeral(Loc(i, end).substr(&self.input)), end),
+                                true => return ok(i, Numeral(val), end),
                                 false => return Some(Err(LexicalError::UnexpectedEOF)),
                             }
                         }
@@ -431,22 +430,22 @@ impl<'input> Iterator for Lexer<'input> {
 
                 Some(&(i, ch)) if ch.is_ascii_digit() => {
                     self.chars.next();
-                    let (end, succ) = get_float_end(&mut self.chars, i + 1);
+                    let (end, succ, mut val) = get_float_end(&mut self.chars, i + 1);
+                    val.insert(0, ch);
+
                     match succ {
-                        true => return ok(i, Numeral(Loc(i, end).substr(&self.input)), end),
+                        true => return ok(i, Numeral(val), end),
                         false => return Some(Err(LexicalError::UnexpectedEOF)),
                     }
                 }
 
                 Some(&(i, ch)) if ch.is_ascii_alphabetic() || ch == '_' => {
-                    let (end, succ) = get_variable_end(&mut self.chars, i);
+                    let (end, succ, val) = get_variable_end(&mut self.chars, i);
                     match succ {
                         true => {
-                            let variable = Loc(i, end).substr(&self.input);
-
-                            match KEYWORDS.get(&variable[..]) {
+                            match KEYWORDS.get(&val[..]) {
                                 Some(w) => return ok(i, w.clone(), end),
-                                _ => return ok(i, Variable(Loc(i, end).substr(&self.input)), end),
+                                _ => return ok(i, Variable(val), end),
                             };
                         }
                         false => return Some(Err(LexicalError::UnexpectedEOF)),
