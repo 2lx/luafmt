@@ -7,9 +7,9 @@ grammar<'input>(input: &'input str);
 // templates
 // cannot be empty, no separators
 TList<T>: Vec<(Loc, T)> = {
-    <e:T> => {
+    <ls:@L> <e:T> => {
         let mut v = Vec::new();
-        v.push((Loc(0, 0), e));
+        v.push((Loc(ls, ls), e));
         v
     },
     <v:TList<T>> <l1:@R> <r1:@L> <e:T> => {
@@ -21,9 +21,9 @@ TList<T>: Vec<(Loc, T)> = {
 
 // cannot be empty, items alternate
 TAltList<T1, T2>: Vec<(Loc, Node)> = {
-    <n:T1> => {
+    <ls:@L> <n:T1> => {
         let mut v = Vec::new();
-        v.push((Loc(0, 0), n));
+        v.push((Loc(ls, ls), n));
         v
     },
     TAltListHelper<T1, T2>,
@@ -35,9 +35,9 @@ TAltList<T1, T2>: Vec<(Loc, Node)> = {
 }
 
 TAltListHelper<T1, T2>: Vec<(Loc, Node)> = {
-    <n1:T1> <l1:@R> <r1:@L> <n2:T2> => {
+    <ls:@L> <n1:T1> <l1:@R> <r1:@L> <n2:T2> => {
         let mut v = Vec::new();
-        v.push((Loc(0, 0), n1));
+        v.push((Loc(ls, ls), n1));
         v.push((Loc(l1, r1), n2));
         v
     },
@@ -52,8 +52,8 @@ TAltListHelper<T1, T2>: Vec<(Loc, Node)> = {
 // syntax
 pub Chunk: Node = {
     <rs:@L> EOF => {
-        let node = Node::VariantList(Loc(0, 0), Vec::new());
-        Node::Chunk(Loc(0, rs), Box::new(node), Loc(0, 0))
+        let node = Node::VariantList(Loc(rs, rs), Vec::new());
+        Node::Chunk(Loc(0, rs), Box::new(node), Loc(rs, rs))
     },
     <r1:@L> <b:VariantList> <l2:@R> <r2:@L> EOF => {
         Node::Chunk(Loc(0, r1), Box::new(b), Loc(l2, r2))

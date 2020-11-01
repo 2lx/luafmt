@@ -1,9 +1,11 @@
+use std::fmt::Write;
+
 use super::decoration::*;
 use super::loc_hint::*;
+use super::util;
 use crate::config::*;
 use crate::parser::common::*;
 use crate::{cfg_write, cfg_write_helper};
-use std::fmt::Write;
 
 pub trait AnyListItem<'a, Node> {
     fn list_item_prefix_hint(&self, cfg: &'a Config) -> &'a str;
@@ -58,13 +60,19 @@ where
                 let item = &items[i];
                 write!(f, "{}", get_sep(prev_item_tp))?;
 
-                let need_newline =
-                    list_node.need_newlines(cfg) && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
-                indent = indent || need_newline;
+                if util::test_out_of_range(&state.pos_range, &item.0) {
+                    cfg_write!(f, cfg, buf, state, item.0)?;
+                } else {
+                    let need_newline =
+                        list_node.need_newlines(cfg) && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
+                    indent = indent || need_newline;
+
+                    #[cfg_attr(rustfmt, rustfmt_skip)]
+                    cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&item.0, list_node.element_prefix_hint())))?;
+                }
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
-                cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&item.0, list_node.element_prefix_hint())),
-                           item.1, Hint::new(&item.2, ""))?;
+                cfg_write!(f, cfg, buf, state, item.1, Hint::new(&item.2, ""))?;
             }
 
             let last = &items[items.len() - 1];
@@ -90,6 +98,7 @@ where
         Some(items) if !items.is_empty() => {
             let first = &items[0];
 
+            // first comment block is always empty
             let need_newline =
                 list_node.need_newlines(cfg) && first.1.need_first_newline(list_node, f, cfg, buf, state);
             indent = indent || need_newline;
@@ -98,16 +107,22 @@ where
             cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&first.0, "")), first.1)?;
 
             for i in 1..items.len() {
-                let prev_item_tp = &items[i - 1];
                 let item = &items[i];
 
-                let hint = item.1.list_item_prefix_hint(cfg);
-                let need_newline =
-                    list_node.need_newlines(cfg) && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
-                indent = indent || need_newline;
+                if util::test_out_of_range(&state.pos_range, &item.0) {
+                    cfg_write!(f, cfg, buf, state, item.0)?;
+                } else {
+                    let prev_item_tp = &items[i - 1];
+                    let hint = item.1.list_item_prefix_hint(cfg);
+                    let need_newline =
+                        list_node.need_newlines(cfg) && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
+                    indent = indent || need_newline;
 
-                #[cfg_attr(rustfmt, rustfmt_skip)]
-                cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&items[i].0, hint)), items[i].1)?;
+                    #[cfg_attr(rustfmt, rustfmt_skip)]
+                    cfg_write!(f, cfg, buf, state, IfNewLine(need_newline, Hint::new(&items[i].0, hint)))?;
+                }
+
+                cfg_write!(f, cfg, buf, state, item.1)?;
             }
         }
         _ => {}

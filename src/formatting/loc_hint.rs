@@ -1,8 +1,11 @@
 use std::fmt::Write;
+use std::cmp::min;
+
+use super::util;
 use crate::config::*;
 use crate::parser::common::*;
 use crate::parser::parse_comment;
-use crate::out_of_range_write;
+use crate::{out_of_range_only_write, out_of_range_comment_only_write};
 
 pub struct CommentLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
 pub struct SpaceLocHint<'a, 'b>(pub &'a Loc, pub &'b str);
@@ -61,9 +64,14 @@ impl CommentLocHint<'_, '_> {
 
 impl ConfiguredWrite for CommentLocHint<'_, '_> {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
-        out_of_range_write!(f, buf, state, (self.0.0, self.0.1));
+        out_of_range_only_write!(f, cfg, buf, state, self.0);
 
         let comment_buffer = &buf[self.0.0..self.0.1];
+        state.comment_pos_range = match state.pos_range.as_ref() {
+            Some(&(l, r)) => Some((l - min(l, self.0.0), r - min(r, self.0.0))),
+            None => None,
+        };
+
         match parse_comment(comment_buffer) {
             Ok(node_tree) => {
                 let mut formatted_comment_block = String::new();
@@ -80,7 +88,9 @@ impl ConfiguredWrite for CommentLocHint<'_, '_> {
 }
 
 impl ConfiguredWrite for SpaceLocHint<'_, '_> {
-    fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, _state: &mut State) -> std::fmt::Result {
+    fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
+        out_of_range_comment_only_write!(f, cfg, buf, state, self.0);
+
         if cfg.fmt.remove_spaces_between_tokens == Some(true) {
             return write!(f, "{}", self.1)
         }

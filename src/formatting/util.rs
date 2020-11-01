@@ -1,13 +1,32 @@
 use crate::config::*;
 use std::fmt::Write;
+use crate::parser::common::Loc;
 
 #[macro_export]
 macro_rules! out_of_range_write {
-    ($wrt: expr, $buf: expr, $state: expr, $span: expr) => {{
-        if let Some(&(l, r)) = $state.pos_range.as_ref() {
-            if $span.1 <= l || $span.0 > r {
-                return write!($wrt, "{}", &$buf[$span.0..$span.1]);
-            }
+    ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr, $($arg:expr),+) => {{
+        if util::test_out_of_range(&$state.pos_range, $span) {
+            return write!($wrt, "{}", &$buf[$span.0..$span.1]);
+        } else if util::test_not_completely_contained(&$state.pos_range, $span) {
+            return cfg_write!($wrt, $cfg, $buf, $state, $($arg),+);
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! out_of_range_only_write {
+    ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr) => {{
+        if util::test_out_of_range(&$state.pos_range, $span) {
+            return write!($wrt, "{}", &$buf[$span.0..$span.1]);
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! out_of_range_comment_only_write {
+    ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr) => {{
+        if util::test_out_of_range(&$state.comment_pos_range, $span) {
+            return write!($wrt, "{}", &$buf[$span.0..$span.1]);
         }
     }};
 }
@@ -53,16 +72,32 @@ macro_rules! test_oneline_no_nl {
     }};
 }
 
+pub fn test_out_of_range(range: &Option<(usize, usize)>, span: &Loc) -> bool {
+    if let Some(&(l, r)) = range.as_ref() {
+        return span.1 <= l || span.0 >= r;
+    }
+
+    return false;
+}
+
+pub fn test_not_completely_contained(range: &Option<(usize, usize)>, span: &Loc) -> bool {
+    if let Some(&(l, r)) = range.as_ref() {
+        return (span.0 < l && span.1 > l) || (span.0 < r && span.1 > r);
+    }
+
+    return false;
+}
+
 pub fn trim_end_spaces_and_tabs<'a>(string: &'a String) -> &'a str {
     string.trim_end_matches(|ch: char| return ch == ' ' || ch == '\t')
 }
 
 pub fn get_len_after_newline(s: &str, _cfg: &Config) -> usize {
-    return s.chars().rev().take_while(|&c| c != '\n').count()
+    return s.chars().rev().take_while(|&c| c != '\n').count();
 }
 
 pub fn get_len_till_newline(s: &str, _cfg: &Config) -> usize {
-    return s.chars().take_while(|&c| c != '\n').count()
+    return s.chars().take_while(|&c| c != '\n').count();
 }
 
 pub fn has_newlines(s: &str) -> bool {
@@ -95,18 +130,25 @@ pub fn write_indent(f: &mut String, cfg: &Config, state: &State) -> std::fmt::Re
     write!(f, "{}", indentation)
 }
 
-pub fn line_range_to_pos_range(buf: &str, lr_opt: Option<(usize, usize)>) -> (usize, usize) {
-    let mut nlpos: Vec::<usize> = buf.chars().enumerate().filter(|(_, ch)| *ch == '\n').map(|(ind, _)| ind).collect();
+pub fn line_range_to_pos_range(buf: &str, lr_opt: Option<(usize, usize)>) -> Option<(usize, usize)> {
+    let mut nlpos: Vec<usize> = buf.chars().enumerate().filter(|(_, ch)| *ch == '\n').map(|(ind, _)| ind).collect();
     nlpos.insert(0, 0);
     nlpos.push(buf.chars().count());
 
     if let Some(lr) = &lr_opt {
-        if lr.0 > 0 && lr.1 > 0 && lr.0 <= lr.1 && lr.0 < nlpos.len() && lr.1 < nlpos.len() {
-            return (nlpos[lr.0 - 1], nlpos[lr.1]);
-        }
+        let left = match lr.0 > 0 && lr.0 <= lr.1 && lr.0 < nlpos.len() {
+            true => lr.0,
+            false => 1,
+        };
+        let right = match lr.1 > 0 && lr.0 <= lr.1 && lr.1 < nlpos.len() {
+            true => lr.1,
+            false => nlpos.len() - 1,
+        };
+
+        return Some((nlpos[left - 1], nlpos[right]));
     }
 
-    (nlpos[0], nlpos[nlpos.len() - 1])
+    None
 }
 
 #[test]
@@ -120,24 +162,24 @@ end
 --comment
 print(123)"#;
 
-    assert_eq!(line_range_to_pos_range(&source, None), (0, 69));
-    assert_eq!(line_range_to_pos_range(&source, Some((0, 100))), (0, 69));
-    assert_eq!(line_range_to_pos_range(&source, Some((1, 100))), (0, 69));
-    assert_eq!(line_range_to_pos_range(&source, Some((0, 8))), (0, 69));
-    assert_eq!(line_range_to_pos_range(&source, Some((1, 8))), (0, 69));
+    assert_eq!(line_range_to_pos_range(&source, None), None);
+    assert_eq!(line_range_to_pos_range(&source, Some((0, 100))), Some((0, 69)));
+    assert_eq!(line_range_to_pos_range(&source, Some((1, 100))), Some((0, 69)));
+    assert_eq!(line_range_to_pos_range(&source, Some((0, 8))), Some((0, 69)));
+    assert_eq!(line_range_to_pos_range(&source, Some((1, 8))), Some((0, 69)));
 
-    assert_eq!(line_range_to_pos_range(&source, Some((1, 1))), (0, 12));
-    assert_eq!(line_range_to_pos_range(&source, Some((2, 2))), (12, 13));
-    assert_eq!(line_range_to_pos_range(&source, Some((3, 3))), (13, 30));
-    assert_eq!(line_range_to_pos_range(&source, Some((4, 4))), (30, 43));
-    assert_eq!(line_range_to_pos_range(&source, Some((5, 5))), (43, 47));
-    assert_eq!(line_range_to_pos_range(&source, Some((6, 6))), (47, 48));
-    assert_eq!(line_range_to_pos_range(&source, Some((7, 7))), (48, 58));
-    assert_eq!(line_range_to_pos_range(&source, Some((8, 8))), (58, 69));
+    assert_eq!(line_range_to_pos_range(&source, Some((1, 1))), Some((0, 12)));
+    assert_eq!(line_range_to_pos_range(&source, Some((2, 2))), Some((12, 13)));
+    assert_eq!(line_range_to_pos_range(&source, Some((3, 3))), Some((13, 30)));
+    assert_eq!(line_range_to_pos_range(&source, Some((4, 4))), Some((30, 43)));
+    assert_eq!(line_range_to_pos_range(&source, Some((5, 5))), Some((43, 47)));
+    assert_eq!(line_range_to_pos_range(&source, Some((6, 6))), Some((47, 48)));
+    assert_eq!(line_range_to_pos_range(&source, Some((7, 7))), Some((48, 58)));
+    assert_eq!(line_range_to_pos_range(&source, Some((8, 8))), Some((58, 69)));
 
-    assert_eq!(line_range_to_pos_range(&source, Some((1, 2))), (0, 13));
-    assert_eq!(line_range_to_pos_range(&source, Some((2, 4))), (12, 43));
-    assert_eq!(line_range_to_pos_range(&source, Some((3, 6))), (13, 48));
+    assert_eq!(line_range_to_pos_range(&source, Some((1, 2))), Some((0, 13)));
+    assert_eq!(line_range_to_pos_range(&source, Some((2, 4))), Some((12, 43)));
+    assert_eq!(line_range_to_pos_range(&source, Some((3, 6))), Some((13, 48)));
 }
 
 #[test]

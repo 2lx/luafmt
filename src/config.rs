@@ -164,10 +164,7 @@ impl FormatOpts {
 
 impl Config {
     pub const fn default() -> Self {
-        Config {
-            line_range: None,
-            fmt: FormatOpts::default(),
-        }
+        Config { line_range: None, fmt: FormatOpts::default() }
     }
 
     pub fn has_empty_format(&self) -> bool {
@@ -190,12 +187,16 @@ impl Config {
             // hint
             "replace_zero_spaces_with_hint" => set_param_value_as!(self.fmt.replace_zero_spaces_with_hint, bool),
             "hint_after_multiline_comment" => set_param_value_as!(self.fmt.hint_after_multiline_comment, String),
-            "hint_after_multiline_comment_text" => set_param_value_as!(self.fmt.hint_after_multiline_comment_text, String),
+            "hint_after_multiline_comment_text" => {
+                set_param_value_as!(self.fmt.hint_after_multiline_comment_text, String)
+            }
             "hint_before_comment" => set_param_value_as!(self.fmt.hint_before_comment, String),
             "hint_before_multiline_comment_text" => {
                 set_param_value_as!(self.fmt.hint_before_multiline_comment_text, String)
             }
-            "hint_before_oneline_comment_text" => set_param_value_as!(self.fmt.hint_before_oneline_comment_text, String),
+            "hint_before_oneline_comment_text" => {
+                set_param_value_as!(self.fmt.hint_before_oneline_comment_text, String)
+            }
             "hint_table_constructor" => set_param_value_as!(self.fmt.hint_table_constructor, String),
 
             "remove_comments" => set_param_value_as!(self.fmt.remove_comments, bool),
@@ -237,7 +238,9 @@ impl Config {
             // other
             "field_separator" => set_param_value_as!(self.fmt.field_separator, String),
             "write_trailing_field_separator" => set_param_value_as!(self.fmt.write_trailing_field_separator, bool),
-            "convert_charstring_to_normalstring" => set_param_value_as!(self.fmt.convert_charstring_to_normalstring, bool),
+            "convert_charstring_to_normalstring" => {
+                set_param_value_as!(self.fmt.convert_charstring_to_normalstring, bool)
+            }
 
             // oneline
             "max_width" => set_param_value_as!(self.fmt.max_width, usize),
@@ -246,7 +249,9 @@ impl Config {
             "enable_oneline_iv_table_field" => set_param_value_as!(self.fmt.enable_oneline_iv_table_field, bool),
             "enable_oneline_kv_table_field" => set_param_value_as!(self.fmt.enable_oneline_kv_table_field, bool),
             "enable_oneline_if" => set_param_value_as!(self.fmt.enable_oneline_if, bool),
-            "enable_oneline_top_level_function" => set_param_value_as!(self.fmt.enable_oneline_top_level_function, bool),
+            "enable_oneline_top_level_function" => {
+                set_param_value_as!(self.fmt.enable_oneline_top_level_function, bool)
+            }
             "enable_oneline_scoped_function" => set_param_value_as!(self.fmt.enable_oneline_scoped_function, bool),
             "enable_oneline_var_suffix" => set_param_value_as!(self.fmt.enable_oneline_var_suffix, bool),
             "enable_oneline_exp_list" => set_param_value_as!(self.fmt.enable_oneline_exp_list, bool),
@@ -255,9 +260,9 @@ impl Config {
                 Some(cap) => match (cap[1].parse(), cap[2].parse()) {
                     (Ok(l1), Ok(l2)) => self.line_range = Some((l1, l2)),
                     _ => eprintln!("Invalid `{}` option value `{}`", option_name, value_str),
-                }
+                },
                 _ => eprintln!("Invalid `{}` option value `{}`", option_name, value_str),
-            }
+            },
 
             _ => eprintln!("Invalid option name `{}`", option_name),
         }
@@ -397,10 +402,17 @@ pub struct State {
     pub stack_indent: Vec<Option<&'static str>>,
     pub function_nested_level: isize,
     pub pos_range: Option<(usize, usize)>,
+    pub comment_pos_range: Option<(usize, usize)>,
 }
 
 impl State {
     pub const fn default() -> Self {
-        State { indent_level: 0, stack_indent: Vec::new(), function_nested_level: 0, pos_range: None }
+        State {
+            indent_level: 0,
+            stack_indent: Vec::new(),
+            function_nested_level: 0,
+            pos_range: None,
+            comment_pos_range: None,
+        }
     }
 }

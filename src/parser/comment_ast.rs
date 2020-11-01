@@ -4,7 +4,8 @@ use super::common::*;
 use crate::config::*;
 use crate::formatting::list;
 use crate::formatting::loc_hint::*;
-use crate::{cfg_write, cfg_write_helper, out_of_range_write};
+use crate::formatting::util;
+use crate::{cfg_write, cfg_write_helper, out_of_range_comment_only_write};
 
 #[derive(Debug)]
 pub enum Node {
@@ -91,11 +92,11 @@ impl ConfiguredWrite for Node {
 
         match self {
             Chunk(locl, n, locr) => {
-                out_of_range_write!(f, buf, state, (locl.0, locr.1));
+                out_of_range_comment_only_write!(f, cfg, buf, state, &Loc(locl.0, locr.1));
                 cfg_write!(f, cfg, buf, state, Hint(&locl, ""), n, Hint(&locr, ""))
             }
             VariantList(span, variants) => {
-                out_of_range_write!(f, buf, state, span);
+                out_of_range_comment_only_write!(f, cfg, buf, state, span);
 
                 if cfg.fmt.remove_single_newlines == Some(true) && variants.len() == 1 {
                     if let (_, NewLineList(_, newlines)) = &variants[0] {
@@ -109,18 +110,18 @@ impl ConfiguredWrite for Node {
                 Ok(())
             }
             CommentList(span, _) => {
-                out_of_range_write!(f, buf, state, span);
+                out_of_range_comment_only_write!(f, cfg, buf, state, span);
                 cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
             NewLineList(span, _) => {
-                out_of_range_write!(f, buf, state, span);
+                out_of_range_comment_only_write!(f, cfg, buf, state, span);
                 cfg_write_list(f, cfg, buf, state, self)?;
                 Ok(())
             }
 
             OneLineComment(span, s) => {
-                out_of_range_write!(f, buf, state, span);
+                out_of_range_comment_only_write!(f, cfg, buf, state, span);
 
                 match cfg.fmt.remove_comments {
                     Some(true) => match cfg.fmt.remove_all_newlines {
@@ -145,7 +146,7 @@ impl ConfiguredWrite for Node {
             }
 
             MultiLineComment(span, level, s) => {
-                out_of_range_write!(f, buf, state, span);
+                out_of_range_comment_only_write!(f, cfg, buf, state, span);
 
                 match cfg.fmt.remove_comments {
                     Some(true) => Ok(()),
@@ -170,7 +171,7 @@ impl ConfiguredWrite for Node {
                 }
             }
             NewLine(span) => {
-                out_of_range_write!(f, buf, state, span);
+                out_of_range_comment_only_write!(f, cfg, buf, state, span);
 
                 match cfg.fmt.remove_all_newlines {
                     Some(true) => Ok(()),
