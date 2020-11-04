@@ -573,7 +573,7 @@ impl ConfiguredWrite for Node {
                 let hint = cfg.fmt.hint_table_constructor.as_ref().unwrap_or(&default_hint);
 
                 let mut test_str = String::new();
-                Hint(&locs[0], &hint).configured_write(&mut test_str, cfg, buf, state);
+                Hint(&locs[0], &hint).configured_write(&mut test_str, cfg, buf, state)?;
                 let nl = test_str.find('\n').is_some();
 
                 #[cfg_attr(rustfmt, rustfmt_skip)]
