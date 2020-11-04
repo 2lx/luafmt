@@ -401,6 +401,7 @@ pub struct State {
     pub indent_level: isize,
     pub stack_indent: Vec<Option<&'static str>>,
     pub function_nested_level: isize,
+    pub block_nested_level: isize,
     pub pos_range: Option<(usize, usize)>,
     pub comment_pos_range: Option<(usize, usize)>,
 }
@@ -411,6 +412,7 @@ impl State {
             indent_level: 0,
             stack_indent: Vec::new(),
             function_nested_level: 0,
+            block_nested_level: 0,
             pos_range: None,
             comment_pos_range: None,
         }
