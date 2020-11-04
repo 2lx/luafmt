@@ -336,10 +336,11 @@ impl list::ListOfItems<Node> for Node {
 
 impl Node {
     fn test_oneline_table_cfg(&self, cfg: &Config) -> Option<Config> {
-        if let Node::TableConstructor(..) = self {
+        if let Node::TableConstructor(span, _, _, _) = self {
             if cfg.fmt.max_width.is_some()
                 && cfg.fmt.newline_format_table_constructor.is_some()
                 && cfg.fmt.force_single_line_table == Some(true)
+                && span.1 - span.0 < 2 * cfg.fmt.max_width.unwrap_or(0)
             {
                 // disable IfNewLine within table constructor
                 // one-line tables are forced to have no trailing separator
@@ -355,37 +356,69 @@ impl Node {
     }
 
     fn test_oneline_table_field(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.fmt.max_width.is_some() && cfg.fmt.newline_format_table_field.is_some() {
-            return test_oneline_no_nl!(f, cfg, buf, state, self);
+        use Node::*;
+        match self {
+            FieldNamedBracket(span, _, _, _) | FieldNamed(span, _, _, _) | FieldSequential(span, _)
+                if cfg.fmt.max_width.is_some()
+                    && cfg.fmt.newline_format_table_field.is_some()
+                    && span.1 - span.0 < 2 * cfg.fmt.max_width.unwrap_or(0) =>
+            {
+                return test_oneline_no_nl!(f, cfg, buf, state, self);
+            }
+            _ => None,
         }
-        None
     }
 
     fn test_oneline_if(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.fmt.max_width.is_some() && cfg.fmt.force_single_line_if == Some(true) && cfg.fmt.newline_format_if.is_some()
-        {
-            // disable IfNewLine within table constructor
-            let mut test_cfg = cfg.clone();
-            test_cfg.fmt.newline_format_if = None;
+        use Node::*;
+        match self {
+            IfThen(span, _, _)
+            | IfThenB(span, _, _, _)
+            | IfThenElse(span, _, _)
+            | IfThenBElse(span, _, _, _)
+            | IfThenElseB(span, _, _, _)
+            | IfThenBElseB(span, _, _, _, _)
+            | IfThenElseIf(span, _, _, _)
+            | IfThenBElseIf(span, _, _, _, _)
+            | IfThenElseIfElse(span, _, _, _)
+            | IfThenBElseIfElse(span, _, _, _, _)
+            | IfThenElseIfElseB(span, _, _, _, _)
+            | IfThenBElseIfElseB(span, _, _, _, _, _)
+                if cfg.fmt.max_width.is_some()
+                    && cfg.fmt.force_single_line_if == Some(true)
+                    && cfg.fmt.newline_format_if.is_some()
+                    && span.1 - span.0 < 2 * cfg.fmt.max_width.unwrap_or(0) =>
+            {
+                // disable IfNewLine within table constructor
+                let mut test_cfg = cfg.clone();
+                test_cfg.fmt.newline_format_if = None;
 
-            return test_oneline_no_nl!(f, &test_cfg, buf, state, self);
+                return test_oneline_no_nl!(f, &test_cfg, buf, state, self);
+            }
+            _ => None,
         }
-        None
     }
 
     fn test_oneline_function(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.fmt.max_width.is_some()
-            && cfg.fmt.newline_format_function.is_some()
-            && ((state.function_nested_level == 0 && cfg.fmt.force_single_line_top_level_function == Some(true))
-                || (state.function_nested_level > 0 && cfg.fmt.force_single_line_scoped_function == Some(true)))
-        {
-            // disable IfNewLine within function body
-            let mut test_cfg = cfg.clone();
-            test_cfg.fmt.newline_format_function = None;
+        use Node::*;
+        match self {
+            FuncBody(span, _) | FuncPBody(span, _, _) | FuncBodyB(span, _, _) | FuncPBodyB(span, _, _, _)
+                if cfg.fmt.max_width.is_some()
+                    && cfg.fmt.newline_format_function.is_some()
+                    && span.1 - span.0 < 2 * cfg.fmt.max_width.unwrap_or(0)
+                    && ((state.function_nested_level == 0
+                        && cfg.fmt.force_single_line_top_level_function == Some(true))
+                        || (state.function_nested_level > 0
+                            && cfg.fmt.force_single_line_scoped_function == Some(true))) =>
+            {
+                // disable IfNewLine within function body
+                let mut test_cfg = cfg.clone();
+                test_cfg.fmt.newline_format_function = None;
 
-            return test_oneline_no_nl!(f, &test_cfg, buf, state, self);
+                return test_oneline_no_nl!(f, &test_cfg, buf, state, self);
+            }
+            _ => None,
         }
-        None
     }
 
     fn test_indent(
