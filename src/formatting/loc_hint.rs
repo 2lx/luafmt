@@ -64,7 +64,6 @@ impl CommentLocHint<'_, '_> {
 
 impl ConfiguredWrite for CommentLocHint<'_, '_> {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
-        // self.0.configured_write(f, cfg, buf, state)
         out_of_range_only_write!(f, cfg, buf, state, self.0);
 
         let comment_buffer = self.0.substr(buf);

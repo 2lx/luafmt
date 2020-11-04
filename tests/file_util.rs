@@ -1,7 +1,7 @@
-extern crate luapp;
+extern crate luafmt;
 
-use luapp::file_util::*;
-use luapp::CFG_PREFIX;
+use luafmt::file_util::*;
+use luafmt::CFG_PREFIX;
 use std::path::Path;
 
 #[test]

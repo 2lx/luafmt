@@ -1,6 +1,6 @@
-extern crate luapp;
-use luapp::config::Config;
-use luapp::formatter::*;
+extern crate luafmt;
+use luafmt::config::Config;
+use luafmt::formatter::*;
 
 use std::fs;
 use std::path::Path;

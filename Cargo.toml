@@ -1,5 +1,5 @@
 [package]
-name = "luapp"
+name = "luafmt"
 version = "0.5.0"
 authors = ["Alexey Minchakov <lexaaim@gmail.com>"]
 edition = "2018"

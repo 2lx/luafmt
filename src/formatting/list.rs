@@ -63,8 +63,8 @@ where
                 if util::test_out_of_range(&state.pos_range, &item.0) {
                     cfg_write!(f, cfg, buf, state, item.0)?;
                 } else {
-                    let need_newline =
-                        list_node.need_newlines(cfg) && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
+                    let need_newline = list_node.need_newlines(cfg)
+                        && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
                     indent = indent || need_newline;
 
                     #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -114,8 +114,8 @@ where
                 } else {
                     let prev_item_tp = &items[i - 1];
                     let hint = item.1.list_item_prefix_hint(cfg);
-                    let need_newline =
-                        list_node.need_newlines(cfg) && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
+                    let need_newline = list_node.need_newlines(cfg)
+                        && item.1.need_newline(&prev_item_tp.1, list_node, f, cfg, buf, state);
                     indent = indent || need_newline;
 
                     #[cfg_attr(rustfmt, rustfmt_skip)]

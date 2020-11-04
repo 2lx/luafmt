@@ -184,7 +184,6 @@ pub fn get_multiline_string_ends(chars: &mut TChars, level: usize, start: usize)
 pub fn get_comment_start_ends_and_type(chars: &mut TChars, start: usize) -> (usize, usize, usize, Option<usize>, bool, String) {
     // we already got "--" symbols
     let mut text_start = start;
-    // let mut result = String::new();
 
     match chars.peek() {
         Some(&(_, '[')) => {
