@@ -265,7 +265,7 @@ impl<'input> Iterator for Lexer<'input> {
                     match self.chars.peek() {
                         Some(&(_, '-')) => {
                             self.chars.next();
-                            let (_, _, _, _, succ) = get_comment_start_ends_and_type(&mut self.chars, i + 2);
+                            let (_, _, _, _, succ, _) = get_comment_start_ends_and_type(&mut self.chars, i + 2);
                             if !succ {
                                 return Some(Err(LexicalError::UnexpectedEOF));
                             }

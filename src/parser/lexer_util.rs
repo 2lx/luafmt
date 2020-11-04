@@ -181,9 +181,10 @@ pub fn get_multiline_string_ends(chars: &mut TChars, level: usize, start: usize)
     }
 }
 
-pub fn get_comment_start_ends_and_type(chars: &mut TChars, start: usize) -> (usize, usize, usize, Option<usize>, bool) {
+pub fn get_comment_start_ends_and_type(chars: &mut TChars, start: usize) -> (usize, usize, usize, Option<usize>, bool, String) {
     // we already got "--" symbols
     let mut text_start = start;
+    // let mut result = String::new();
 
     match chars.peek() {
         Some(&(_, '[')) => {
@@ -198,34 +199,39 @@ pub fn get_comment_start_ends_and_type(chars: &mut TChars, start: usize) -> (usi
                             chars.next();
 
                             text_start = square_2_index + 1;
-                            let (text_end, token_end, succ, _) = get_multiline_string_ends(chars, level, text_start);
+                            let (text_end, token_end, succ, result) = get_multiline_string_ends(chars, level, text_start);
 
-                            return (text_start, text_end, token_end, Some(level), succ);
+                            return (text_start, text_end, token_end, Some(level), succ, result);
                         }
                         Some(&(cur_i, _)) => {
-                            let (text_end, token_end, succ, _) = get_oneline_comment_ends(chars, cur_i);
-                            return (text_start, text_end, token_end, None, succ);
+                            let (text_end, token_end, succ, mut result) = get_oneline_comment_ends(chars, cur_i);
+                            let level_str = (0..level).map(|_| "=").collect::<String>();
+                            result.insert(0, '[');
+                            result.insert_str(1, &level_str);
+
+                            return (text_start, text_end, token_end, None, succ, result);
                         }
-                        None => return (text_start, text_start + level + 1, text_start + level + 1, None, true),
+                        None => return (text_start, text_start + level + 1, text_start + level + 1, None, true, String::new()),
                     }
                 }
                 Some(&(square_2_index, '[')) => {
                     chars.next();
 
                     text_start = square_2_index + 1;
-                    let (text_end, token_end, succ, _) = get_multiline_string_ends(chars, 0, text_start);
-                    return (text_start, text_end, token_end, Some(0), succ);
+                    let (text_end, token_end, succ, result) = get_multiline_string_ends(chars, 0, text_start);
+                    return (text_start, text_end, token_end, Some(0), succ, result);
                 }
                 Some(&(cur_i, _)) => {
-                    let (text_end, token_end, succ, _) = get_oneline_comment_ends(chars, cur_i);
-                    return (text_start, text_end, token_end, None, succ);
+                    let (text_end, token_end, succ, mut result) = get_oneline_comment_ends(chars, cur_i);
+                    result.insert(0, '[');
+                    return (text_start, text_end, token_end, None, succ, result);
                 }
-                None => return (text_start, text_start + 1, text_start + 1, None, true),
+                None => return (text_start, text_start + 1, text_start + 1, None, true, String::new()),
             }
         }
         _ => {
-            let (text_end, token_end, succ, _) = get_oneline_comment_ends(chars, text_start);
-            return (text_start, text_end, token_end, None, succ);
+            let (text_end, token_end, succ, result) = get_oneline_comment_ends(chars, text_start);
+            return (text_start, text_end, token_end, None, succ, result);
         }
     };
 }
@@ -539,83 +545,95 @@ fn test_get_comment_start_end_and_type() {
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 2, 3, None, true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 2, 3, None, true, String::new()));
 
     let mystr = String::from("--");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 2, 2, None, true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 2, 2, None, true, String::new()));
 
     let mystr = String::from("--123\n");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 5, 6, None, true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 5, 6, None, true, "123".to_string()));
 
     let mystr = String::from("--123");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 5, 5, None, true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 5, 5, None, true, "123".to_string()));
 
     let mystr = String::from("--[[]]");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (4, 4, 6, Some(0), true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (4, 4, 6, Some(0), true, String::new()));
 
     let mystr = String::from("--[[123]]");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (4, 7, 9, Some(0), true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (4, 7, 9, Some(0), true, "123".to_string()));
 
     let mystr = String::from("--[=[]=]");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (5, 5, 8, Some(1), true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (5, 5, 8, Some(1), true, String::new()));
 
     let mystr = String::from("--[===[123]===]");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 10, 15, Some(3), true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 10, 15, Some(3), true, "123".to_string()));
 
     let mystr = String::from("--[===123\n");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 9, 10, None, true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 9, 10, None, true, "[===123".to_string()));
 
     let mystr = String::from("--[===123");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 9, 9, None, true));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 9, 9, None, true, "[===123".to_string()));
 
     let mystr = String::from("--[===[123");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 10, 10, Some(3), false));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 10, 10, Some(3), false, "123".to_string()));
 
     let mystr = String::from("--[===[123]");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 11, 11, Some(3), false));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 11, 11, Some(3), false, "123]".to_string()));
 
     let mystr = String::from("--[===[123]===\n");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 15, 15, Some(3), false));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 15, 15, Some(3), false, "123]===\n".to_string()));
 
     let mystr = String::from("--[===[123]=== ]");
     let mut iter = mystr.chars().enumerate().peekable();
     iter.next();
     iter.next();
-    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 16, 16, Some(3), false));
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 16, 16, Some(3), false, "123]=== ]".to_string()));
+
+    let mystr = String::from("--[===[абвг]===]");
+    let mut iter = mystr.chars().enumerate().peekable();
+    iter.next();
+    iter.next();
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (7, 11, 16, Some(3), true, "абвг".to_string()));
+
+    let mystr = String::from("--[==русский язык могуч]==]");
+    let mut iter = mystr.chars().enumerate().peekable();
+    iter.next();
+    iter.next();
+    assert_eq!(get_comment_start_ends_and_type(&mut iter, 2), (2, 27, 27, None, true, "[==русский язык могуч]==]".to_string()));
 }

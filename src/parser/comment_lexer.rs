@@ -1,7 +1,6 @@
 use std::fmt;
 
 use super::lexer_util::*;
-use super::common::*;
 
 type TChars<'a> = std::iter::Peekable<std::iter::Enumerate<std::str::Chars<'a>>>;
 
@@ -92,7 +91,7 @@ impl<'input> Iterator for Lexer<'input> {
                         Some(&(_, '-')) => {
                             self.chars.next();
 
-                            let (text_start, text_end, token_end, opt_level, succ) =
+                            let (_, _, token_end, opt_level, succ, val) =
                                 get_comment_start_ends_and_type(&mut self.chars, token_start + 2);
                             if !succ {
                                 return Some(Err(LexicalError::UnexpectedEOF));
@@ -100,8 +99,8 @@ impl<'input> Iterator for Lexer<'input> {
 
                             let token;
                             match opt_level {
-                                Some(level) => token = MultiLineComment(level, Loc(text_start, text_end).substr(&self.input)),
-                                None => token = OneLineComment(Loc(text_start, text_end).substr(&self.input)),
+                                Some(level) => token = MultiLineComment(level, val),
+                                None => token = OneLineComment(val),
                             };
                             return ok(token_start, token, token_end);
                         }
