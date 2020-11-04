@@ -87,15 +87,15 @@ pub struct FormatOpts {
 
     // oneline
     pub max_width: Option<usize>,
-    pub enable_oneline_binary_op: Option<bool>,
-    pub enable_oneline_table: Option<bool>,
-    pub enable_oneline_iv_table_field: Option<bool>,
-    pub enable_oneline_kv_table_field: Option<bool>,
-    pub enable_oneline_if: Option<bool>,
-    pub enable_oneline_top_level_function: Option<bool>,
-    pub enable_oneline_scoped_function: Option<bool>,
-    pub enable_oneline_var_suffix: Option<bool>,
-    pub enable_oneline_exp_list: Option<bool>,
+    pub force_single_line_binary_op: Option<bool>,
+    pub force_single_line_table: Option<bool>,
+    pub force_single_line_iv_table_field: Option<bool>,
+    pub force_single_line_kv_table_field: Option<bool>,
+    pub force_single_line_if: Option<bool>,
+    pub force_single_line_top_level_function: Option<bool>,
+    pub force_single_line_scoped_function: Option<bool>,
+    pub force_single_line_var_suffix: Option<bool>,
+    pub force_single_line_exp_list: Option<bool>,
 }
 
 impl FormatOpts {
@@ -149,15 +149,15 @@ impl FormatOpts {
 
             // oneline
             max_width: None,
-            enable_oneline_binary_op: None,
-            enable_oneline_table: None,
-            enable_oneline_iv_table_field: None,
-            enable_oneline_kv_table_field: None,
-            enable_oneline_if: None,
-            enable_oneline_top_level_function: None,
-            enable_oneline_scoped_function: None,
-            enable_oneline_var_suffix: None,
-            enable_oneline_exp_list: None,
+            force_single_line_binary_op: None,
+            force_single_line_table: None,
+            force_single_line_iv_table_field: None,
+            force_single_line_kv_table_field: None,
+            force_single_line_if: None,
+            force_single_line_top_level_function: None,
+            force_single_line_scoped_function: None,
+            force_single_line_var_suffix: None,
+            force_single_line_exp_list: None,
         }
     }
 }
@@ -244,17 +244,17 @@ impl Config {
 
             // oneline
             "max_width" => set_param_value_as!(self.fmt.max_width, usize),
-            "enable_oneline_binary_op" => set_param_value_as!(self.fmt.enable_oneline_binary_op, bool),
-            "enable_oneline_table" => set_param_value_as!(self.fmt.enable_oneline_table, bool),
-            "enable_oneline_iv_table_field" => set_param_value_as!(self.fmt.enable_oneline_iv_table_field, bool),
-            "enable_oneline_kv_table_field" => set_param_value_as!(self.fmt.enable_oneline_kv_table_field, bool),
-            "enable_oneline_if" => set_param_value_as!(self.fmt.enable_oneline_if, bool),
-            "enable_oneline_top_level_function" => {
-                set_param_value_as!(self.fmt.enable_oneline_top_level_function, bool)
+            "force_single_line_binary_op" => set_param_value_as!(self.fmt.force_single_line_binary_op, bool),
+            "force_single_line_table" => set_param_value_as!(self.fmt.force_single_line_table, bool),
+            "force_single_line_iv_table_field" => set_param_value_as!(self.fmt.force_single_line_iv_table_field, bool),
+            "force_single_line_kv_table_field" => set_param_value_as!(self.fmt.force_single_line_kv_table_field, bool),
+            "force_single_line_if" => set_param_value_as!(self.fmt.force_single_line_if, bool),
+            "force_single_line_top_level_function" => {
+                set_param_value_as!(self.fmt.force_single_line_top_level_function, bool)
             }
-            "enable_oneline_scoped_function" => set_param_value_as!(self.fmt.enable_oneline_scoped_function, bool),
-            "enable_oneline_var_suffix" => set_param_value_as!(self.fmt.enable_oneline_var_suffix, bool),
-            "enable_oneline_exp_list" => set_param_value_as!(self.fmt.enable_oneline_exp_list, bool),
+            "force_single_line_scoped_function" => set_param_value_as!(self.fmt.force_single_line_scoped_function, bool),
+            "force_single_line_var_suffix" => set_param_value_as!(self.fmt.force_single_line_var_suffix, bool),
+            "force_single_line_exp_list" => set_param_value_as!(self.fmt.force_single_line_exp_list, bool),
 
             "line_range" => match re_lines_opt.captures_iter(value_str).next() {
                 Some(cap) => match (cap[1].parse(), cap[2].parse()) {
@@ -379,15 +379,15 @@ impl fmt::Display for Config {
 
         // oneline
         print_opt!(self.fmt.max_width, "max_width");
-        print_opt!(self.fmt.enable_oneline_binary_op, "enable_oneline_binary_op");
-        print_opt!(self.fmt.enable_oneline_table, "enable_oneline_table");
-        print_opt!(self.fmt.enable_oneline_iv_table_field, "enable_oneline_iv_table_field");
-        print_opt!(self.fmt.enable_oneline_kv_table_field, "enable_oneline_kv_table_field");
-        print_opt!(self.fmt.enable_oneline_if, "enable_oneline_if");
-        print_opt!(self.fmt.enable_oneline_top_level_function, "enable_oneline_top_level_function");
-        print_opt!(self.fmt.enable_oneline_scoped_function, "enable_oneline_scoped_function");
-        print_opt!(self.fmt.enable_oneline_var_suffix, "enable_oneline_var_suffix");
-        print_opt!(self.fmt.enable_oneline_exp_list, "enable_oneline_exp_list");
+        print_opt!(self.fmt.force_single_line_binary_op, "force_single_line_binary_op");
+        print_opt!(self.fmt.force_single_line_table, "force_single_line_table");
+        print_opt!(self.fmt.force_single_line_iv_table_field, "force_single_line_iv_table_field");
+        print_opt!(self.fmt.force_single_line_kv_table_field, "force_single_line_kv_table_field");
+        print_opt!(self.fmt.force_single_line_if, "force_single_line_if");
+        print_opt!(self.fmt.force_single_line_top_level_function, "force_single_line_top_level_function");
+        print_opt!(self.fmt.force_single_line_scoped_function, "force_single_line_scoped_function");
+        print_opt!(self.fmt.force_single_line_var_suffix, "force_single_line_var_suffix");
+        print_opt!(self.fmt.force_single_line_exp_list, "force_single_line_exp_list");
 
         print_opt!(self.line_range, "line_range");
 

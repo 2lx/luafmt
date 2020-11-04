@@ -73,7 +73,7 @@ I   I   e"
             indentation_string: Some("I   ".to_string()),
             newline_format_binary_op: Some(1),
             max_width: Some(30),
-            enable_oneline_binary_op: Some(true),
+            force_single_line_binary_op: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -110,7 +110,7 @@ I   I   and (c and d and e)"
             indentation_string: Some("I   ".to_string()),
             newline_format_binary_op: Some(1),
             max_width: Some(50),
-            enable_oneline_binary_op: Some(true),
+            force_single_line_binary_op: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -145,7 +145,7 @@ fn test_binary_op_same() {
             indentation_string: Some("I   ".to_string()),
             newline_format_binary_op: Some(1),
             max_width: Some(50),
-            enable_oneline_binary_op: Some(true),
+            force_single_line_binary_op: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -166,7 +166,7 @@ I   .. 'abcdefg7'"#
             indentation_string: Some("I   ".to_string()),
             newline_format_binary_op: Some(1),
             max_width: Some(40),
-            enable_oneline_binary_op: Some(true),
+            force_single_line_binary_op: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -188,7 +188,7 @@ I   .. 'abcdefg7'"#
             indentation_string: Some("I   ".to_string()),
             newline_format_binary_op: Some(1),
             max_width: Some(33),
-            enable_oneline_binary_op: Some(true),
+            force_single_line_binary_op: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -255,7 +255,7 @@ I   e
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
             max_width: Some(40),
-            enable_oneline_table: Some(true),
+            force_single_line_table: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -281,8 +281,8 @@ I   e
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
             max_width: Some(55),
-            enable_oneline_table: Some(true),
-            enable_oneline_kv_table_field: Some(true),
+            force_single_line_table: Some(true),
+            force_single_line_kv_table_field: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -305,7 +305,7 @@ I   e
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
             max_width: Some(27),
-            enable_oneline_table: Some(true),
+            force_single_line_table: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -345,7 +345,7 @@ I   e
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
             max_width: Some(15),
-            enable_oneline_table: Some(true),
+            force_single_line_table: Some(true),
             field_separator: Some(";".to_string()),
             write_trailing_field_separator: Some(true),
             ..FormatOpts::default()
@@ -370,7 +370,7 @@ I   c=a;
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
             max_width: Some(27),
-            enable_oneline_table: Some(true),
+            force_single_line_table: Some(true),
             field_separator: Some(";".to_string()),
             write_trailing_field_separator: Some(true),
             ..FormatOpts::default()
@@ -411,9 +411,9 @@ I   e;
             indentation_string: Some("I   ".to_string()),
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
-            enable_oneline_table: Some(true),
-            enable_oneline_iv_table_field: Some(true),
-            enable_oneline_kv_table_field: Some(true),
+            force_single_line_table: Some(true),
+            force_single_line_iv_table_field: Some(true),
+            force_single_line_kv_table_field: Some(true),
             max_width: Some(28),
             field_separator: Some(";".to_string()),
             write_trailing_field_separator: Some(true),
@@ -446,9 +446,9 @@ I   }; d = {}; e;
             indentation_string: Some("I   ".to_string()),
             // newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
-            // enable_oneline_table: Some(true),
-            enable_oneline_iv_table_field: Some(true),
-            enable_oneline_kv_table_field: Some(true),
+            // force_single_line_table: Some(true),
+            force_single_line_iv_table_field: Some(true),
+            force_single_line_kv_table_field: Some(true),
             max_width: Some(29),
             field_separator: Some(";".to_string()),
             write_trailing_field_separator: Some(true),
@@ -473,9 +473,9 @@ I   }; d = {}; e;}"#
             indentation_string: Some("I   ".to_string()),
             // newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
-            // enable_oneline_table: Some(true),
-            enable_oneline_iv_table_field: Some(true),
-            enable_oneline_kv_table_field: Some(true),
+            // force_single_line_table: Some(true),
+            force_single_line_iv_table_field: Some(true),
+            force_single_line_kv_table_field: Some(true),
             max_width: Some(35),
             field_separator: Some(";".to_string()),
             write_trailing_field_separator: Some(true),
@@ -541,7 +541,7 @@ end"#
             indentation_string: Some("I   ".to_string()),
             newline_format_if: Some(1),
             max_width: Some(120),
-            enable_oneline_if: Some(true),
+            force_single_line_if: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -576,7 +576,7 @@ end"#
             indentation_string: Some("I   ".to_string()),
             newline_format_if: Some(1),
             max_width: Some(20),
-            enable_oneline_if: Some(true),
+            force_single_line_if: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -599,7 +599,7 @@ end"#
             indentation_string: Some("I   ".to_string()),
             newline_format_if: Some(1),
             max_width: Some(2000),
-            enable_oneline_if: Some(true),
+            force_single_line_if: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -671,7 +671,7 @@ end"#
             newline_format_function: Some(1),
             newline_format_statement: Some(1),
             max_width: Some(120),
-            enable_oneline_top_level_function: Some(true),
+            force_single_line_top_level_function: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -702,7 +702,7 @@ end"#
             newline_format_function: Some(1),
             newline_format_statement: Some(1),
             max_width: Some(120),
-            enable_oneline_scoped_function: Some(true),
+            force_single_line_scoped_function: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -734,8 +734,8 @@ end"#
             newline_format_function: Some(1),
             newline_format_statement: Some(1),
             max_width: Some(120),
-            enable_oneline_top_level_function: Some(true),
-            enable_oneline_scoped_function: Some(true),
+            force_single_line_top_level_function: Some(true),
+            force_single_line_scoped_function: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -822,7 +822,7 @@ fn test_table_suffix() {
             indentation_string: Some("I   ".to_string()),
             max_width: Some(20),
             newline_format_var_suffix: Some(1),
-            enable_oneline_var_suffix: Some(true),
+            force_single_line_var_suffix: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -844,7 +844,7 @@ fn test_table_suffix() {
             indentation_string: Some("I   ".to_string()),
             max_width: Some(24),
             newline_format_var_suffix: Some(1),
-            enable_oneline_var_suffix: Some(true),
+            force_single_line_var_suffix: Some(true),
             indent_var_suffix: Some(true),
             ..FormatOpts::default()
         },
@@ -952,7 +952,7 @@ I   :method()"#
             indentation_string: Some("I   ".to_string()),
             max_width: Some(24),
             newline_format_var_suffix: Some(1),
-            enable_oneline_var_suffix: Some(true),
+            force_single_line_var_suffix: Some(true),
             indent_var_suffix: Some(true),
             ..FormatOpts::default()
         },
@@ -1013,11 +1013,11 @@ I   I   :method41())"#
             indentation_string: Some("I   ".to_string()),
             max_width: Some(24),
             newline_format_var_suffix: Some(1),
-            enable_oneline_var_suffix: Some(true),
+            force_single_line_var_suffix: Some(true),
             indent_var_suffix: Some(true),
             indent_exp_list: Some(true),
             newline_format_exp_list_first: Some(1),
-            enable_oneline_exp_list: Some(true),
+            force_single_line_exp_list: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -1117,7 +1117,7 @@ a)"#
             indentation_string: Some("I   ".to_string()),
             max_width: Some(24),
             newline_format_exp_list: Some(1),
-            enable_oneline_exp_list: Some(true),
+            force_single_line_exp_list: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -1138,7 +1138,7 @@ fn(12, "abc", a)"#
             max_width: Some(24),
             newline_format_exp_list: Some(1),
             newline_format_exp_list_first: Some(1),
-            enable_oneline_exp_list: Some(true),
+            force_single_line_exp_list: Some(true),
             ..FormatOpts::default()
         },
         ..Config::default()
@@ -1158,7 +1158,7 @@ fn(12, "abc", a)"#
             indentation_string: Some("I   ".to_string()),
             max_width: Some(24),
             newline_format_exp_list: Some(1),
-            enable_oneline_exp_list: Some(true),
+            force_single_line_exp_list: Some(true),
             indent_exp_list: Some(true),
             ..FormatOpts::default()
         },
@@ -1182,7 +1182,7 @@ I   {a=12321, b="asdad"})"#
             max_width: Some(24),
             newline_format_exp_list: Some(1),
             newline_format_exp_list_first: Some(1),
-            enable_oneline_exp_list: Some(true),
+            force_single_line_exp_list: Some(true),
             indent_exp_list: Some(true),
             ..FormatOpts::default()
         },
@@ -1217,7 +1217,7 @@ I   {a=12321, b="asdad"})"#
             newline_format_exp_list: Some(1),
             newline_format_function: Some(1),
             newline_format_statement: Some(1),
-            enable_oneline_exp_list: Some(true),
+            force_single_line_exp_list: Some(true),
             remove_single_newlines: Some(true),
             indent_exp_list: Some(true),
             ..FormatOpts::default()

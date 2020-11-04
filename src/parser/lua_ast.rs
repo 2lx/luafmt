@@ -155,7 +155,7 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
         match parent {
             StatementList(..) => cfg.fmt.newline_format_statement.is_some(),
             ExpList(..) => match cfg.fmt.newline_format_exp_list {
-                Some(1) => match cfg.fmt.enable_oneline_exp_list {
+                Some(1) => match cfg.fmt.force_single_line_exp_list {
                     Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
                     _ => true,
                 },
@@ -164,8 +164,8 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
             ElseIfThenVec(..) => cfg.fmt.newline_format_if == Some(1),
             Fields(_, _, opts) => match cfg.fmt.newline_format_table_field.is_some() {
                 true => {
-                    if opts.is_iv_table == Some(true) && cfg.fmt.enable_oneline_iv_table_field == Some(true) {
-                        if cfg.fmt.enable_oneline_table == Some(true) {
+                    if opts.is_iv_table == Some(true) && cfg.fmt.force_single_line_iv_table_field == Some(true) {
+                        if cfg.fmt.force_single_line_table == Some(true) {
                             if let FieldSequential(_, nseq) = prev {
                                 if let TableConstructor(_, _, _, prev_opts) = &**nseq {
                                     return prev_opts.is_oneline.get()
@@ -179,7 +179,7 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
                         return false;
                     }
 
-                    if cfg.fmt.enable_oneline_kv_table_field == Some(true) && opts.is_iv_table == Some(false) {
+                    if cfg.fmt.force_single_line_kv_table_field == Some(true) && opts.is_iv_table == Some(false) {
                         return self.test_oneline_table_field(f, cfg, buf, state).is_none();
                     }
 
@@ -189,7 +189,7 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
             },
             VarSuffixList(..) => match self {
                 FnMethodCall(..) | TableMember(..) => match cfg.fmt.newline_format_var_suffix.is_some() {
-                    true => match cfg.fmt.enable_oneline_var_suffix {
+                    true => match cfg.fmt.force_single_line_var_suffix {
                         Some(true) => match self {
                             FnMethodCall(_, locs, n1, n2) => match &**n2 {
                                 TableConstructorEmpty(..) | TableConstructor(..) | ArgsRoundBracketsEmpty(..) => {
@@ -218,15 +218,15 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
         match parent {
             Fields(_, _, opts) => match cfg.fmt.newline_format_table_field.is_some() {
                 true => {
-                    if cfg.fmt.enable_oneline_table == Some(true)
+                    if cfg.fmt.force_single_line_table == Some(true)
                         && opts.is_iv_table == Some(true)
-                        && cfg.fmt.enable_oneline_iv_table_field == Some(true)
+                        && cfg.fmt.force_single_line_iv_table_field == Some(true)
                     {
                         return opts.has_indent.get() || opts.is_single_child != Some(true);
                     }
 
-                    if cfg.fmt.enable_oneline_iv_table_field == Some(true) && opts.is_iv_table == Some(true)
-                        || cfg.fmt.enable_oneline_kv_table_field == Some(true) && opts.is_iv_table == Some(false)
+                    if cfg.fmt.force_single_line_iv_table_field == Some(true) && opts.is_iv_table == Some(true)
+                        || cfg.fmt.force_single_line_kv_table_field == Some(true) && opts.is_iv_table == Some(false)
                     {
                         return self.test_oneline_table_field(f, cfg, buf, state) == None;
                     }
@@ -237,7 +237,7 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
             },
             ExpList(..) => match cfg.fmt.newline_format_exp_list_first {
                 // first!
-                Some(1) => match cfg.fmt.enable_oneline_exp_list {
+                Some(1) => match cfg.fmt.force_single_line_exp_list {
                     Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
                     _ => true,
                 },
@@ -289,7 +289,7 @@ impl list::SepListOfItems<Node> for Node {
         use Node::*;
         match self {
             Fields(_, _, opts) => {
-                if cfg.fmt.enable_oneline_table == Some(true)
+                if cfg.fmt.force_single_line_table == Some(true)
                     && (cfg.fmt.newline_format_table_field.is_none()
                         && cfg.fmt.newline_format_table_constructor.is_none()
                         || opts.is_iv_table == Some(true) && !opts.has_indent.get())
@@ -339,7 +339,7 @@ impl Node {
         if let Node::TableConstructor(..) = self {
             if cfg.fmt.max_width.is_some()
                 && cfg.fmt.newline_format_table_constructor.is_some()
-                && cfg.fmt.enable_oneline_table == Some(true)
+                && cfg.fmt.force_single_line_table == Some(true)
             {
                 // disable IfNewLine within table constructor
                 // one-line tables are forced to have no trailing separator
@@ -362,7 +362,7 @@ impl Node {
     }
 
     fn test_oneline_if(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
-        if cfg.fmt.max_width.is_some() && cfg.fmt.enable_oneline_if == Some(true) && cfg.fmt.newline_format_if.is_some()
+        if cfg.fmt.max_width.is_some() && cfg.fmt.force_single_line_if == Some(true) && cfg.fmt.newline_format_if.is_some()
         {
             // disable IfNewLine within table constructor
             let mut test_cfg = cfg.clone();
@@ -376,8 +376,8 @@ impl Node {
     fn test_oneline_function(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> Option<String> {
         if cfg.fmt.max_width.is_some()
             && cfg.fmt.newline_format_function.is_some()
-            && ((state.function_nested_level == 0 && cfg.fmt.enable_oneline_top_level_function == Some(true))
-                || (state.function_nested_level > 0 && cfg.fmt.enable_oneline_scoped_function == Some(true)))
+            && ((state.function_nested_level == 0 && cfg.fmt.force_single_line_top_level_function == Some(true))
+                || (state.function_nested_level > 0 && cfg.fmt.force_single_line_scoped_function == Some(true)))
         {
             // disable IfNewLine within function body
             let mut test_cfg = cfg.clone();
@@ -455,7 +455,7 @@ impl ConfiguredWrite for Node {
 
                 let mut nl1 = cfg.fmt.newline_format_binary_op == Some(1);
                 let mut nl2 = cfg.fmt.newline_format_binary_op == Some(2);
-                if (nl1 || nl2) && cfg.fmt.enable_oneline_binary_op == Some(true) {
+                if (nl1 || nl2) && cfg.fmt.force_single_line_binary_op == Some(true) {
                     if test_oneline!(f, cfg, buf, state, Hint(&locs[0], " "), tok, Hint(&locs[1], " "), r).is_some() {
                         nl1 = false;
                         nl2 = false;
@@ -542,7 +542,7 @@ impl ConfiguredWrite for Node {
                 #[cfg_attr(rustfmt, rustfmt_skip)]
                 cfg_write!(f, cfg, buf, state, "{{", IncFuncLevel())?;
 
-                let ind = match cfg.fmt.enable_oneline_table == Some(true)
+                let ind = match cfg.fmt.force_single_line_table == Some(true)
                     && opts.is_iv_table == Some(true)
                     && opts.is_single_child == Some(true)
                 {
@@ -572,8 +572,12 @@ impl ConfiguredWrite for Node {
                 let default_hint = String::new();
                 let hint = cfg.fmt.hint_table_constructor.as_ref().unwrap_or(&default_hint);
 
+                let mut test_str = String::new();
+                Hint(&locs[0], &hint).configured_write(&mut test_str, cfg, buf, state);
+                let nl = test_str.find('\n').is_some();
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
-                cfg_write!(f, cfg, buf, state, "{{", Hint(&locs[0], &hint), "}}")
+                cfg_write!(f, cfg, buf, state, "{{", IfNewLine(nl, Hint(&locs[0], &hint)), "}}")
             }
             Fields(span, _, _) => {
                 out_of_range_only_write!(f, cfg, buf, state, span);

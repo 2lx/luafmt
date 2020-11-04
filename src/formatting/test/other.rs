@@ -42,3 +42,4 @@ fn test_unicode() {
     let source = r#"local tbl = { field1 = { "Текст на русском" }, field2 = { "Some text" } }"#;
     assert_eq!(ts(source), Ok(source.to_string()), "{:?}", crate::parser::parse_lua(source));
 }
+

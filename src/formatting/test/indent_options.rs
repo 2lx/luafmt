@@ -1077,10 +1077,10 @@ fn test_indent_exp_list() {
             indent_var_suffix: Some(true),
             indent_one_line_exp_list: Some(true),
             newline_format_exp_list: Some(1),
-            enable_oneline_exp_list: Some(true),
+            force_single_line_exp_list: Some(true),
 
             newline_format_var_suffix: Some(1),
-            enable_oneline_var_suffix: Some(true),
+            force_single_line_var_suffix: Some(true),
             max_width: Some(50),
             ..FormatOpts::default()
         },
@@ -1135,10 +1135,10 @@ I   field.field:method();"#
             indent_var_suffix: Some(true),
             // indent_one_line_exp_list: Some(true),
             newline_format_exp_list: Some(1),
-            enable_oneline_exp_list: Some(true),
+            force_single_line_exp_list: Some(true),
 
             newline_format_var_suffix: Some(1),
-            enable_oneline_var_suffix: Some(true),
+            force_single_line_var_suffix: Some(true),
             max_width: Some(100),
             ..FormatOpts::default()
         },

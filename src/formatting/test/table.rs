@@ -11,9 +11,9 @@ fn test_table_iv_oneline() {
             remove_single_newlines: Some(true),
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
-            enable_oneline_table: Some(true),
-            enable_oneline_kv_table_field: Some(true),
-            enable_oneline_iv_table_field: Some(true),
+            force_single_line_table: Some(true),
+            force_single_line_kv_table_field: Some(true),
+            force_single_line_iv_table_field: Some(true),
             max_width: Some(100),
             ..FormatOpts::default()
         },
@@ -34,9 +34,9 @@ fn test_table_iv_oneline() {
             remove_single_newlines: Some(true),
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
-            enable_oneline_table: Some(true),
-            enable_oneline_kv_table_field: Some(true),
-            enable_oneline_iv_table_field: Some(true),
+            force_single_line_table: Some(true),
+            force_single_line_kv_table_field: Some(true),
+            force_single_line_iv_table_field: Some(true),
             indentation_string: Some("    ".to_string()),
             max_width: Some(22),
             ..FormatOpts::default()
@@ -64,9 +64,9 @@ fn test_table_iv_oneline() {
             remove_single_newlines: Some(true),
             newline_format_table_constructor: Some(1),
             newline_format_table_field: Some(1),
-            enable_oneline_table: Some(true),
-            enable_oneline_kv_table_field: Some(false),
-            enable_oneline_iv_table_field: Some(true),
+            force_single_line_table: Some(true),
+            force_single_line_kv_table_field: Some(false),
+            force_single_line_iv_table_field: Some(true),
             indentation_string: Some("    ".to_string()),
             max_width: Some(90),
             ..FormatOpts::default()
@@ -147,6 +147,15 @@ fn test_table_iv_oneline() {
         field4 = { short_field },
         field33 = { fields = field2, fields = { "field", "field" }, field = 1 },
     },
+} }"#;
+    assert_eq!(ts(source), Ok(source.to_string()));
+
+    let source = r#"field = { {
+    field = { func(2, 1, "string"), func(1, 2, "string") },
+    field2 = fieldname(1),
+    { },
+    {--
+    }
 } }"#;
     assert_eq!(ts(source), Ok(source.to_string()));
 }
