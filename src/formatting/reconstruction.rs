@@ -16,6 +16,14 @@ fn update_pos_range(span: &Loc, state: &mut State) {
     }
 }
 
+pub fn update_indexes(buf: &str, state: &mut State) {
+    let mut index = 0;
+    buf.char_indices().enumerate().for_each(|(c, (b, _))| { state.chars_to_bytes.entry(c).or_insert(b); index = c; });
+
+    // insert EOF index
+    state.chars_to_bytes.entry(index + 1).or_insert(buf.len());
+}
+
 pub fn reconstruct_node_tree(node: &mut Node, cfg: &Config, state: &mut State) {
     use Node::*;
     match node {

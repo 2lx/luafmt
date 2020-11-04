@@ -6,7 +6,7 @@ use crate::parser::common::Loc;
 macro_rules! out_of_range_write {
     ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr, $($arg:expr),+) => {{
         if util::test_out_of_range(&$state.pos_range, $span) {
-            return write!($wrt, "{}", $span.substr($buf));
+            return write!($wrt, "{}", $span.substr($buf, $state, 0));
         } else if util::test_not_completely_contained(&$state.pos_range, $span) {
             return cfg_write!($wrt, $cfg, $buf, $state, $($arg),+);
         }
@@ -17,7 +17,7 @@ macro_rules! out_of_range_write {
 macro_rules! out_of_range_only_write {
     ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr) => {{
         if util::test_out_of_range(&$state.pos_range, $span) {
-            return write!($wrt, "{}", $span.substr($buf));
+            return write!($wrt, "{}", $span.substr($buf, $state, 0));
         }
     }};
 }
@@ -26,7 +26,7 @@ macro_rules! out_of_range_only_write {
 macro_rules! out_of_range_comment_only_write {
     ($wrt: expr, $cfg: expr, $buf: expr, $state: expr, $span: expr) => {{
         if util::test_out_of_range(&$state.comment_pos_range, $span) {
-            return write!($wrt, "{}", $span.substr($buf));
+            return write!($wrt, "{}", $span.substr($buf, $state, $state.comment_offset));
         }
     }};
 }
@@ -45,10 +45,6 @@ macro_rules! test_oneline {
 
         match flag {
             false => {
-                // let mut left_len = util::get_len_after_newline(&buffer, $cfg);
-                // if left_len == buffer.chars().count() {
-                //     left_len += util::get_len_after_newline($wrt, $cfg);
-                // }
                 let left_len = util::get_len_after_newline($wrt, $cfg);
                 let right_len = util::get_len_till_newline(&buffer, $cfg);
 

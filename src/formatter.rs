@@ -74,6 +74,7 @@ pub fn process_buffer_with_config(content: &String, cfg: &Config, verbose: bool)
 
             // process the tree
             state.pos_range = util::line_range_to_pos_range(&content, cfg.line_range);
+            reconstruction::update_indexes(&content, &mut state);
             reconstruction::reconstruct_node_tree(&mut node_tree, cfg, &mut state);
 
             match node_tree.configured_write(&mut outbuffer, &cfg, &content, &mut state) {

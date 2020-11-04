@@ -1,5 +1,6 @@
 use super::parse_lua;
 use crate::config::*;
+use crate::formatting::reconstruction;
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
@@ -12,11 +13,13 @@ enum TestError {
 fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
     match parse_lua(source) {
         Err(_) => Err(TestError::ErrorWhileParsing),
-        Ok(result) => {
-            let mut output = String::new();
+        Ok(mut node_tree) => {
             let mut state = State::default();
+            reconstruction::update_indexes(&source, &mut state);
+            reconstruction::reconstruct_node_tree(&mut node_tree, cfg, &mut state);
 
-            match result.configured_write(&mut output, cfg, source, &mut state) {
+            let mut output = String::new();
+            match node_tree.configured_write(&mut output, cfg, source, &mut state) {
                 Ok(_) => Ok(output),
                 _ => Err(TestError::ErrorWhileWriting),
             }

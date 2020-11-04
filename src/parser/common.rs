@@ -1,5 +1,4 @@
 use std::fmt::Write;
-use std::cmp::min;
 
 use crate::config::*;
 
@@ -7,18 +6,26 @@ use crate::config::*;
 pub struct Loc(pub usize, pub usize);
 
 impl ConfiguredWrite for Loc {
-    fn configured_write(&self, f: &mut String, _cfg: &Config, buf: &str, _state: &mut State) -> std::fmt::Result {
-        write!(f, "{}", self.substr(buf))
+    fn configured_write(&self, f: &mut String, _cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
+        write!(f, "{}", self.substr(buf, state, 0))
     }
 }
 
 impl Loc {
-    pub fn len(&self) -> usize {
-        self.1 - min(self.0, self.1)
-    }
+    pub fn substr<'a>(&self, buf: &'a str, state: &State, offset: usize) -> &'a str {
+        let byte_offset_opt = state.chars_to_bytes.get(&offset);
+        let from_opt = state.chars_to_bytes.get(&(self.0 + offset));
+        let to_opt = state.chars_to_bytes.get(&(self.1 + offset));
 
-    pub fn substr(&self, buf: &str) -> String {
-        buf.chars().by_ref().skip(self.0).take(self.len()).collect::<String>()
+        match (from_opt, to_opt, byte_offset_opt) {
+            (Some(&from), Some(&to), Some(&byte_offset)) if from >= byte_offset && to >= byte_offset => {
+                &buf[from - byte_offset..to - byte_offset]
+            }
+            _ => {
+                // println!("ERROR HERE: ({}, {}), ({}, {})", self.0, self.1, self.0 + offset, self.1 + offset);
+                ""
+            }
+        }
     }
 }
 

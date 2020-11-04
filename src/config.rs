@@ -3,6 +3,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
+use std::collections::HashMap;
 
 use crate::parser;
 
@@ -404,10 +405,12 @@ pub struct State {
     pub block_nested_level: isize,
     pub pos_range: Option<(usize, usize)>,
     pub comment_pos_range: Option<(usize, usize)>,
+    pub comment_offset: usize,
+    pub chars_to_bytes: HashMap::<usize, usize>,
 }
 
 impl State {
-    pub const fn default() -> Self {
+    pub fn default() -> Self {
         State {
             indent_level: 0,
             stack_indent: Vec::new(),
@@ -415,6 +418,8 @@ impl State {
             block_nested_level: 0,
             pos_range: None,
             comment_pos_range: None,
+            comment_offset: 0,
+            chars_to_bytes: HashMap::new(),
         }
     }
 }

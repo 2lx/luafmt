@@ -66,7 +66,8 @@ impl ConfiguredWrite for CommentLocHint<'_, '_> {
     fn configured_write(&self, f: &mut String, cfg: &Config, buf: &str, state: &mut State) -> std::fmt::Result {
         out_of_range_only_write!(f, cfg, buf, state, self.0);
 
-        let comment_buffer = self.0.substr(buf);
+        let comment_buffer = self.0.substr(buf, state, 0);
+        state.comment_offset = self.0.0;
         state.comment_pos_range = match state.pos_range.as_ref() {
             Some(&(l, r)) => Some((l - min(l, self.0.0), r - min(r, self.0.0))),
             None => None,
@@ -95,7 +96,7 @@ impl ConfiguredWrite for SpaceLocHint<'_, '_> {
             return write!(f, "{}", self.1)
         }
 
-        write!(f, "{}", self.0.substr(buf))
+        write!(f, "{}", self.0.substr(buf, state, state.comment_offset))
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::config::*;
 use super::parse_comment;
+use crate::formatting::reconstruction;
 
 #[allow(dead_code)]
 static CFG_DEFAULT: Config = Config::default();
@@ -15,11 +16,14 @@ enum TestError {
 fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
     match parse_comment(source) {
         Err(_) => Err(TestError::ErrorWhileParsing),
-        Ok(result) => {
-            let mut output = String::new();
+        Ok(node_tree) => {
             let mut state = State::default();
 
-            match result.configured_write(&mut output, cfg, source, &mut state) {
+            reconstruction::update_indexes(&source, &mut state);
+            // reconstruction::reconstruct_node_tree(&mut node_tree, cfg, &mut state);
+
+            let mut output = String::new();
+            match node_tree.configured_write(&mut output, cfg, source, &mut state) {
                 Ok(_) => Ok(output),
                 _ => Err(TestError::ErrorWhileWriting),
             }

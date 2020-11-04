@@ -15,6 +15,9 @@ pub fn ts_base(source: &str, cfg: &Config) -> Result<String, TestError> {
         Err(_) => Err(TestError::ErrorWhileParsing),
         Ok(mut node_tree) => {
             let mut state = State::default();
+
+            reconstruction::update_indexes(&source, &mut state);
+            // println!("{:?}", state.chars_to_bytes);
             reconstruction::reconstruct_node_tree(&mut node_tree, cfg, &mut state);
 
             let mut output = String::new();
