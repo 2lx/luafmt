@@ -1,4 +1,4 @@
-# LuaPP - Lua Pretty-Printer
+# LuaFmt - Lua Formatter / Pretty-Printer
 
 A tool for formatting Lua code, written in Rust. Features:
 * provides [format options](configuration.md);
@@ -18,21 +18,21 @@ $ export PATH=$PATH:$HOME/.cargo/bin
 Building and installation:
 ```
 cd TEMP
-git clone git@github.com:2lx/luapp.git .
-cd luapp
+git clone git@github.com:2lx/luafmt.git .
+cd luafmt
 cargo build --release
 ```
 
 ## Usage
 
 ```
-luapp [-ir] [configuration options] {sources/directories}
+luafmt [-ivr] [configuration options] {sources/directories}
 ```
 
-There are several supported types of `LuaPP` configuration options format. The examples set the string value `" "` for `hint_table_construtor` option (it may depend on your shell command interpreter):
-* `luapp "--hint_table_constructor= " FILES`
-* `luapp --hint_table_constructor=" " FILES`
-* `luapp --hint_table_constructor=\  FILES`
+There are several supported types of `LuaFmt` configuration options format. The examples set the string value `" "` for `hint_table_construtor` option (it may depend on your shell command interpreter):
+* `luafmt "--hint_table_constructor= " FILES`
+* `luafmt --hint_table_constructor=" " FILES`
+* `luafmt --hint_table_constructor=\  FILES`
 
 ## Formatting features
 * ...
