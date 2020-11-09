@@ -17,10 +17,10 @@ $ export PATH=$PATH:$HOME/.cargo/bin
 
 Building and installation:
 ```
-cd TEMP
-git clone git@github.com:2lx/luafmt.git .
-cd luafmt
-cargo build --release
+$ cd TEMP
+$ git clone git@github.com:2lx/luafmt.git .
+$ cd luafmt
+$ cargo build --release
 ```
 Then add `{PATH}/target/release` to `$PATH`.
 
