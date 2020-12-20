@@ -529,7 +529,7 @@ Op9<T>: Node = {
 }
 
 Op10<T>: Node = {
-    <ls:@L> "not" <l1:@R> <r1:@L> <e:Op11<T>> <rs:@R>
+    <ls:@L> "not" <l1:@R> <r1:@L> <e:Op10<T>> <rs:@R>
         => Node::UnaryNot(Loc(ls, rs), [Loc(l1, r1)], Box::new(e)),
     <ls:@L> "#"   <l1:@R> <r1:@L> <e:Op11<T>> <rs:@R>
         => Node::UnaryOp(Loc(ls, rs), [Loc(l1, r1)], Str("#"), Box::new(e)),

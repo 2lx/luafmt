@@ -337,7 +337,7 @@ fn test_keep_comments_ops() {
     }
 
     // unary ops
-    for op in vec!["not", "-", "#", "~"] {
+    for op in vec!["not", "-", "#", "~", "not not", "not not not"] {
         let str = format!("c--[=[1]=]=--2\n{}--3\nb", op);
         assert_eq!(tsdef(&str), Ok(str.to_string()));
 
