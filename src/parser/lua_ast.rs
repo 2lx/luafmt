@@ -572,8 +572,10 @@ impl ConfiguredWrite for Node {
                 let hint = cfg.fmt.hint_table_constructor.as_ref().unwrap_or(&default_hint);
                 let mut nl = cfg.fmt.newline_format_table_constructor == Some(1);
 
+                let bnl = cfg.fmt.write_newline_at_multiline_table == Some(true) && !opts.is_oneline.get();
+
                 #[cfg_attr(rustfmt, rustfmt_skip)]
-                cfg_write!(f, cfg, buf, state, "{{", IncFuncLevel())?;
+                cfg_write!(f, cfg, buf, state, IfNewLine(bnl, Hint(&Loc(0, 0), &hint)), "{{", IncFuncLevel())?;
 
                 let ind = match cfg.fmt.force_single_line_table == Some(true)
                     && opts.is_iv_table == Some(true)

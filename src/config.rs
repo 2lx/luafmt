@@ -52,6 +52,7 @@ pub struct FormatOpts {
     pub remove_all_newlines: Option<bool>,
     pub remove_spaces_between_tokens: Option<bool>,
     pub write_newline_at_eof: Option<bool>,
+    pub write_newline_at_multiline_table: Option<bool>,
 
     // indentation
     pub indentation_string: Option<String>,
@@ -116,6 +117,7 @@ impl FormatOpts {
             remove_all_newlines: None,
             remove_spaces_between_tokens: None,
             write_newline_at_eof: None,
+            write_newline_at_multiline_table: None,
 
             // indentation
             indentation_string: None,
@@ -205,6 +207,7 @@ impl Config {
             "remove_all_newlines" => set_param_value_as!(self.fmt.remove_all_newlines, bool),
             "remove_spaces_between_tokens" => set_param_value_as!(self.fmt.remove_spaces_between_tokens, bool),
             "write_newline_at_eof" => set_param_value_as!(self.fmt.write_newline_at_eof, bool),
+            "write_newline_at_multiline_table" => set_param_value_as!(self.fmt.write_newline_at_multiline_table, bool),
 
             // indentation
             "indentation_string" => set_param_value_as!(self.fmt.indentation_string, String),
@@ -346,6 +349,7 @@ impl fmt::Display for Config {
         print_opt!(self.fmt.remove_all_newlines, "remove_all_newlines");
         print_opt!(self.fmt.remove_spaces_between_tokens, "remove_spaces_between_tokens");
         print_opt!(self.fmt.write_newline_at_eof, "write_newline_at_eof");
+        print_opt!(self.fmt.write_newline_at_multiline_table, "write_newline_at_multiline_table");
 
         // indentation
         print_opt!(self.fmt.indentation_string, "indentation_string");
