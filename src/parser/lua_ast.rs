@@ -154,12 +154,15 @@ impl<'a> list::AnyListItem<'a, Node> for Node {
         use Node::*;
         match parent {
             StatementList(..) => cfg.fmt.newline_format_statement.is_some(),
-            ExpList(..) => match cfg.fmt.newline_format_exp_list {
-                Some(1) => match cfg.fmt.force_single_line_exp_list {
-                    Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
-                    _ => true,
+            ExpList(..) => match (self, cfg.fmt.write_newline_at_explist_multiline_table, cfg.fmt.write_newline_at_multiline_table) {
+                (TableConstructor(..), Some(true), Some(false)) => true,
+                _ => match cfg.fmt.newline_format_exp_list {
+                    Some(1) => match cfg.fmt.force_single_line_exp_list {
+                        Some(true) => test_oneline!(f, cfg, buf, state, self).is_none(),
+                        _ => true,
+                    },
+                    _ => false,
                 },
-                _ => false,
             },
             ElseIfThenVec(..) => cfg.fmt.newline_format_if == Some(1),
             Fields(_, _, opts) => match cfg.fmt.newline_format_table_field.is_some() {
