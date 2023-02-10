@@ -30,6 +30,8 @@ Then add `{PATH}/target/release` to `$PATH`.
 luafmt [-ivr] [configuration options] {sources/directories}
 ```
 
+[Default config](.luafmt.lua) (put it in your project or any parent directory).
+
 There are several supported types of `LuaFmt` configuration options format. The examples set the string value `" "` for `hint_table_construtor` option (it may depend on your shell command interpreter):
 * `luafmt "--hint_table_constructor= " FILES`
 * `luafmt --hint_table_constructor=" " FILES`
