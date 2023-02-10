@@ -39,7 +39,7 @@ where
     match list_node.items() {
         Some(items) if !items.is_empty() => {
             let sep_opt = list_node.separator(cfg);
-            let get_sep = |item: &'n (Loc, Node, Loc, String)| -> &'c str {
+            let get_sep = |item: &'n (Loc, Node, Loc, String)| -> &str {
                 match &sep_opt {
                     Some(sep) => &sep,
                     None => &item.3,

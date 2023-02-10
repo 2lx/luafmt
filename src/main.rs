@@ -45,7 +45,7 @@ fn parse_options(options: &Vec<String>) -> (Config, ProgramOpts) {
                 Some(cap) if &cap[1] == "v" || &cap[1] == "verbose" => program_opts.verbose = true,
                 _ => eprintln!("Unrecognized option `{}`", option),
             },
-        }
+        };
     }
 
     (config, program_opts)
