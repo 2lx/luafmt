@@ -40,6 +40,8 @@ There are several supported types of `LuaFmt` configuration options format. The 
 ## Formatting features
 * ...
 
+## Features
+Supports partial formatting of only a few consecutive top-level statements (option `--line_range=30:40`).
 
 ## Limitations
 * supports only valid lua scripts; 
