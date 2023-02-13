@@ -351,6 +351,8 @@ impl Node {
                 test_cfg.fmt.newline_format_table_constructor = None;
                 test_cfg.fmt.newline_format_table_field = None;
                 test_cfg.fmt.write_trailing_field_separator = Some(false);
+                test_cfg.fmt.write_newline_at_multiline_table = Some(false);
+                test_cfg.fmt.write_newline_at_explist_multiline_table = Some(false);
 
                 return Some(test_cfg);
             }
