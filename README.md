@@ -4,7 +4,8 @@ A tool for formatting Lua code, written in Rust. Features:
 * provides [format options](configuration.md);
 * supports reading configuration options from the `.luafmt*.lua` in the source file directory. If file is not found, it recursively searches the parent directories for the configuration file;
 * can update lua files in place (`-i` option), process multiple files/directories or all files in a directory and possible subdirectories (`-r` option);
-* [formatting features](#formatting-features).
+* supports partial formatting of only a few consecutive top-level statements (option `--line_range=30:40`).
+* plugin for `vim`: [2lx/vim-luafmt](https://github.com/2lx/vim-luafmt)
 
 ## Installing from source
 
@@ -39,9 +40,6 @@ There are several supported types of `LuaFmt` configuration options format. The 
 
 ## Formatting features
 * ...
-
-## Features
-Supports partial formatting of only a few consecutive top-level statements (option `--line_range=30:40`).
 
 ## Limitations
 * supports only valid lua scripts; 
