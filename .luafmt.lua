@@ -42,11 +42,11 @@ newline_format_exp_list = 1
 -- other
 field_separator = ","
 write_trailing_field_separator = true
-convert_charstring_to_normalstring = true
+convert_charstring_to_normalstring = false
 
 max_width = 110
 force_single_line_table = true
-force_single_line_iv_table_field = true
+force_single_line_iv_table_field = false
 force_single_line_kv_table_field = false
 
 force_single_line_binary_op = true
