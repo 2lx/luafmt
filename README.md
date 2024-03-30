@@ -42,8 +42,7 @@ There are several supported types of `LuaFmt` configuration options format. The 
 * ...
 
 ## Limitations
-* supports only valid lua scripts; 
-* in very specific cases, there may be problems with statements, prefixed by opening round bracket (peculiarity of implementation Lua LR(1) parser, Lua itself has a similar problem). Fixed by adding semicolons in front of them.
+* supports only valid lua scripts.
 
 ## License
 
